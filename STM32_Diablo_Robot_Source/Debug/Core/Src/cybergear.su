@@ -1,0 +1,12 @@
+../Core/Src/cybergear.c:37:6:Motor_SendAngle	16	static
+../Core/Src/cybergear.c:59:19:Motor_SendCurrent	16	static
+../Core/Src/cybergear.c:71:6:Motor_RequestDeviceIDs	16	static
+../Core/Src/cybergear.c:79:19:writeParameter	56	static
+../Core/Src/cybergear.c:108:19:clearMotorFault	56	static
+../Core/Src/cybergear.c:132:19:motorEnable	56	static
+../Core/Src/cybergear.c:151:19:getMotorDeviceID	56	static
+../Core/Src/cybergear.c:174:19:setMechanicalZero	56	static
+../Core/Src/cybergear.c:198:10:float_to_uint	32	static
+../Core/Src/cybergear.c:215:19:singleParameterRead	56	static
+../Core/Src/cybergear.c:241:19:setIqRef	16	static
+../Core/Src/cybergear.c:259:19:motorStop	56	static

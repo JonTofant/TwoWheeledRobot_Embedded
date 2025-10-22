@@ -1,0 +1,3 @@
+../Core/Src/telemetry.c:44:16:calculate_checksum	24	static
+../Core/Src/telemetry.c:56:6:Send_Telemetry	24	static
+../Core/Src/telemetry.c:105:6:Telemetry_UART_TxCpltCallback	16	static

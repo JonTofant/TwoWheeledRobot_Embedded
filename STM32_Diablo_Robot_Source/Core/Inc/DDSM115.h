@@ -1,0 +1,61 @@
+/*
+ * DDSM115.h
+ *
+ *  Created on: Mar 6, 2025
+ *      Author: Jon Tofant
+ */
+
+#ifndef INC_DDSM115_H_
+#define INC_DDSM115_H_
+
+#include "stm32f4xx_hal.h"  // This includes the HAL definitions including HAL_StatusTypeDef.
+#include <stdbool.h>
+#include <stdint.h>
+
+#define MAX_MOTORS_DDSM115 2
+
+// Motor structure definition with an error flag.
+typedef struct {
+    uint8_t motorID;
+
+    float target_angle;
+    float target_current;
+    float min_angle;
+    float max_angle;
+    bool  errorFlag;
+
+    // State
+    float phi_rad;
+    float phi_dot_rad_s;
+    float x;
+    float x_dot;
+    float x_ddot;
+
+    float prev_x_dot;
+
+    // Internal
+    int32_t num_rotations;
+    uint16_t prev_raw_pos;
+    bool initialized;
+
+    // NEW:
+    float phi_zero;  // First reading used as zero reference
+    bool  phi_zero_initialized;
+} DDSM115;
+
+
+
+// Extern declaration of motor array.
+extern DDSM115 DDSM115MotorList[MAX_MOTORS_DDSM115];
+
+
+uint8_t compute_crc8(uint8_t *data, uint8_t len);
+void sendPositionCommand(uint8_t motorID, float angle_deg);
+uint16_t angleToValue(float angle_deg);
+void DDMS115setMode(uint8_t motorID, uint8_t mode);
+void DDSM115setCurrent(uint8_t motorID, float current_amp);
+void DDSM115ChangeID(uint8_t motorID, uint8_t newID);
+void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_radius);
+
+
+#endif /* INC_DDSM115_H_ */
