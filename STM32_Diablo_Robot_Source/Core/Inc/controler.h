@@ -7,11 +7,17 @@
 
 #ifndef INC_CONTROLER_H_
 #define INC_CONTROLER_H_
+
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+
 #include "cybergear.h"
+#include "StateEstimator.h"
+#include "telemetry.h"
+#include "kinematics.h"
 
 
-
-void update_pitch_leveling_controller(float current_pitch_rad, float dt);
 
 
 // LQI gains for the cascade controler
@@ -45,5 +51,12 @@ extern float current_motor2_out;
 extern float total_torque_out;
 // Calculated Force F output (optional log)
 extern float total_force_out;
+
+void update_pitch_leveling_controller(float current_pitch_rad, float dt);
+
+void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
+                                       float* current_motor1_out,
+                                       float* current_motor2_out,
+                                       float* total_force_out);
 
 #endif /* INC_CONTROLER_H_ */

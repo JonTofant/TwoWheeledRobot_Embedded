@@ -12,6 +12,7 @@
 
 // Include cybergear.h for the CyberGear struct definition
 #include "cybergear.h"
+#include <stdbool.h>
 
 //Inverzna kinematika
 extern const float L1_C;
@@ -31,7 +32,25 @@ extern float xc_des_r;
 extern float delta_varphi_l;
 extern float delta_varphi_r;
 
+// Define the struct and typedef
+typedef struct {
+    bool is_initialized;
+    float prev_B_x;
+    float prev_B_y;
+    float prev_C_x;
+    float prev_C_y;
+} LegState;
 
+// Declare globals if you want
+extern LegState leg_state_rf;
+extern LegState leg_state_lf;
+extern LegState leg_state_rb;
+extern LegState leg_state_lb;
+
+// Function prototypes
+void init_leg_state(LegState* state);
+bool set_leg_foot_position(CyberGear* motor_right, CyberGear* motor_left,
+                           LegState* leg_state, float xf, float yf);
 
 // Struct for leg geometry
 typedef struct {
@@ -69,6 +88,13 @@ void calculate_Xc_Yc(float phi1, float phi2, LegGeometry* legGeometry);
 void calculate_L_and_theta(LegGeometry* legGeometry);
 void calculate_L_dot(LegGeometry* legGeometry, float dt);
 void calculate_L_ddot(LegGeometry* legGeometry, float dt);
-void calculate_Transpose_Jaboian(LegGeometry* legGeometry, float phi1, float phi2);
 void calulate_Theta_dot(LegGeometry* legGeometry, float dt);
+
+static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
+                                  float L_upper, float L_lower,
+                                  float *out_x1, float *out_y1, float *out_x2, float *out_y2);
+
+static void chooseContinuousSolution_c(float prev_x, float prev_y,
+                                       float x1, float y1, float x2, float y2,
+                                       float *out_x, float *out_y);
 #endif /* INC_KINEMATICS_H_ */
