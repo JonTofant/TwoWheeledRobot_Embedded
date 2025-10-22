@@ -1,5 +1,6 @@
 "./Core/Src/DDSM115.o"
 "./Core/Src/StartupStrategy.o"
+"./Core/Src/StateEstimator.o"
 "./Core/Src/controler.o"
 "./Core/Src/cybergear.o"
 "./Core/Src/cybergear_angle_protection.o"

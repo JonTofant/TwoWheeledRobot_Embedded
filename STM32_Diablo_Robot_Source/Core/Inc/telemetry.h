@@ -14,6 +14,9 @@
 // Define the Start-of-Frame byte for the telemetry packet
 #define TELEMETRY_SOF 0xAA
 
+extern float theta_des_l_telemetry;
+extern float theta_des_r_telemetry;
+
 // This structure defines the data payload for telemetry.
 // All variables sent over UART should be included here.
 typedef struct {

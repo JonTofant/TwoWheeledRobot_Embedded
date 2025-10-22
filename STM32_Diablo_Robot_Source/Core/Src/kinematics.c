@@ -9,6 +9,24 @@
 #include <math.h>
 
 
+//Inverzna kinematika
+const float L1_C = 12.9f;
+const float L2_C = 10.0f;
+const float L3_C = 20.0f;
+const float PI_C = 3.14159265359f;
+
+// Header Kinematika ?
+float base_target_y = -13.0f;
+float final_y_left = -13.0f;
+float final_y_right = -13.0f;
+
+// Header kinematika ?
+float xc_des_l =0;
+float xc_des_r = 0;
+
+float delta_varphi_l;
+float delta_varphi_r;
+
 // Leg geometry definition
 LegGeometry LegGeometryList[MAX_NUM_LEGS] = {
     {

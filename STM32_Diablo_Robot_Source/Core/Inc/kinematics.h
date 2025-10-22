@@ -13,6 +13,26 @@
 // Include cybergear.h for the CyberGear struct definition
 #include "cybergear.h"
 
+//Inverzna kinematika
+extern const float L1_C;
+extern const float L2_C;
+extern const float L3_C;
+extern const float PI_C;
+
+// Header Kinematika ?
+extern float base_target_y;
+extern float final_y_left;
+extern float final_y_right;
+
+// Header kinematika ?
+extern float xc_des_l;
+extern float xc_des_r;
+
+extern float delta_varphi_l;
+extern float delta_varphi_r;
+
+
+
 // Struct for leg geometry
 typedef struct {
 	float l0;  	 // Length of the hip-to-hip distance

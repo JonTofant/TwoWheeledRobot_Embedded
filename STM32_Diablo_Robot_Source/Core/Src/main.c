@@ -34,6 +34,7 @@
 #include "controler.h"
 #include "joystick.h"
 #include "StartupStrategy.h"
+#include "StateEstimator.h"
 
 /* USER CODE END Includes */
 
@@ -50,7 +51,7 @@
 #define PACKET_SIZE 19
 
 // Mathematical constant 2*pi
-#define TWO_PI (2.0f * M_PI)
+
 
 
 // CyberGear Motor preprocessor macro
@@ -122,56 +123,6 @@ uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 
 
 
-
-// At the top of LQR_Controller.c (or main.c if globals are defined elsewhere)
-extern volatile float estimated_theta_rad;
-extern volatile float estimated_theta_dot_rad_s;
-extern volatile float estimated_phi_dot_rad_s; // Assuming this is also global
-
-
-// LQI gains for the cascade controler
-float K_GAINS[2] = {100.0f,   10.0f};
-float K_I_THETA = -18.0f; // Integral gain for theta
-
-// Header Kinematika ?
-float base_target_y = -13.0f;
-float final_y_left = -13.0f;
-float final_y_right = -13.0f;
-
-// Header kinematika ?
-float xc_des_l =0;
-float xc_des_r = 0;
-
-// Position control gains for fall strategy
- float Kp_pos = 0.13f;
- float Kd_pos = -0.015f;
- float Ki_pos = 0.25f;
-float x_target = 0;
-
-
-
-
-
-
-
-float Kp_pos_chasis = 1.2f;
-float Kd_pos_chasis = -0.15f;
-float Ki_pos_chasis = 0.6f;
-
-float position_integral_L;
-float position_integral_R;
-
-
-
-//Inverzna kinematika
-const float L1_C = 12.9f;
-const float L2_C = 10.0f;
-const float L3_C = 20.0f;
-const float PI_C = 3.14159265359f;
-
-float delta_varphi_l;
-float delta_varphi_r;
-
 // Kontinuiteta inverzne kinematike
 struct LegState {
     bool is_initialized;
@@ -180,63 +131,6 @@ struct LegState {
     float prev_C_x;
     float prev_C_y;
 };
-
-
-volatile float estimated_x = 0.0f; // Linear position (m)
-volatile float estimated_x_dot = 0.0f; // Linear velocity (m/s)
-
-float desired_x_left=0;
-float desired_x_right=0; // Desired linear position for left and right motors (m)
-
-//Target chasis position
-float target_x_chasis = 12.9/2;
-float target_y_chasis = -13.0;
-
-
-volatile float integral_x_error = 0.0f; // Integrated linear position error state
-
-// Motor Parameters
-const float MOTOR_TORQUE_CONSTANT_KT = 0.75f; // Nm/A (DDSM115)
-
-float current_motor1_out= 0.0f; // Current output for left ddsm115 motor
-
-float current_motor2_out= 0.0f; // Current output for right ddsm115 motor
-float total_torque_out= 0.0f; // Total torque output
-float total_force_out = 0.0f; // Calculated Force F output (optional log)
-
-
-float angle_DDSM = 0.0f; // Angle from DDSM115
-float velocityDDSM = 0.0f; // Velocity from DDSM115
-float angle_DSSM_previous = 0.0f;
-float roll_kalman_prev = 0.0f;
-extern uint8_t rx_buf[]; // Defined in MRF.c
-
-
-
-// CONTROLLER VARIABLES
-uint8_t uart3_controller_byte;
-uint8_t uart3_controller_buf[UART3_CONTROLLER_PACKET_LEN];
-uint8_t uart3_controller_index = 0;
-uint8_t uart3_controller_packet_ready = 0;
-
-int16_t axisLX;
-uint16_t throttle;
-uint16_t brake;
-uint8_t xPressed;
-uint8_t dpadUp;
-uint8_t dpadDown;
-uint8_t startPressed;
-
-float desired_x_dualshock = 0.0f;
-float desired_angle_dualshock = 0.0f; // Desired angle from the dualshock controller
-
-
-// You mentioned you will make variables global. The variables theta_des_L and theta_des_R
-// in your `calculate_cascaded_motor_currents` function are currently local.
-// You should declare them here as global variables so they can be accessed by the telemetry function.
-// I've named them with a `_telemetry` suffix to be clear.
-float theta_des_l_telemetry;
-float theta_des_r_telemetry;
 
 
 /* USER CODE END PV */
@@ -263,12 +157,7 @@ float calculate_angular_velocity_phi(uint16_t current_raw_counts,
                                      uint16_t previous_raw_counts,
                                      float sample_time_s);
 
-void update_base_state_estimates(const uint8_t* Buffer,
-                                 volatile float* current_phi_rad,
-                                 volatile float* current_phi_dot_rad_s,
-                                 volatile float* current_x,
-                                 volatile float* current_x_dot,
-								 volatile float * current_x_ddot);
+
 
 // New LQI controller function
 void calculate_lqi_motor_currents(float x_target, // Target position (m)
@@ -555,8 +444,8 @@ int main(void)
 		 float v_right = input - steering * (turn_gain * fabsf(input) + pivot_strength);
 
 		 // === Scale and integrate ===
-		 desired_x_left  = v_left  * scale_factor * delta_time * scale_speed;
-		 desired_x_right = v_right * scale_factor * delta_time * scale_speed;
+		 desired_v_left  = v_left  * scale_factor * delta_time * scale_speed;
+		 desired_v_right = v_right * scale_factor * delta_time * scale_speed;
 
 		 // === D-pad control for body ===
 		 if (dpadUp == 1)   base_target_y -= 0.1f;
@@ -652,8 +541,8 @@ int main(void)
 
 					// Izračun želenega xc z pd regulatorjem
 					// --- [Outer Loop Errors] ---
-					float x_err_L = v_L - desired_x_left;
-					float x_err_R = v_R - desired_x_right;
+					float x_err_L = v_L - desired_v_left;
+					float x_err_R = v_R - desired_v_right;
 
 					// --- [Outer Loop Integration (optional)] ---
 					if (Ki_pos > 0.0f) {
@@ -746,7 +635,7 @@ int main(void)
 
 		 if(!isFallen){
 
-		 calculate_cascaded_motor_currents(desired_x_left,desired_x_right, &current_motor1_out, &current_motor2_out, &total_force_out);
+		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
 		 // SEND CURRENT TO MOTORS
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
@@ -1618,64 +1507,6 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
   * @param current_x_dot: Pointer to global variable storing linear velocity (m/s).
   * @retval None (Results are stored in the global variables via pointers).
   */
-void update_base_state_estimates(const uint8_t* Buffer,
-                                 volatile float* current_phi_rad,
-                                 volatile float* current_phi_dot_rad_s,
-                                 volatile float* current_x,
-                                 volatile float* current_x_dot,
-								 volatile float * current_x_ddot)
-{
-    // Static variables for phi calculation persist state between calls FOR THIS MOTOR
-    static int32_t phi_num_rotations = 0;
-    static uint16_t phi_prev_raw_pos = 0;
-    static bool phi_initialized = false;
-
-    // 1. Check if the feedback is from the designated motor (e.g., 0x10)
-    uint8_t motor_id = Buffer[0];
-    if (motor_id != 0x10) { // <<< Use #define MOTOR_ID_FOR_PHI_DOT if defined
-        return;
-    }
-
-    // --- Proceed only if data is from the correct motor ---
-
-    // 2. Extract and calculate ANGULAR Velocity (Phi_dot)
-    uint16_t raw_velocity = ((uint16_t)Buffer[4] << 8) | Buffer[5];
-    int16_t velocityDDSM_RPM = (int16_t)raw_velocity;
-    // Apply sign correction if needed based on wiring/definition
-    *current_phi_dot_rad_s = -(float)velocityDDSM_RPM * RPM_TO_RAD_PER_SEC;
-
-    // 3. Calculate LINEAR Velocity (x_dot)
-    *current_x_dot = *current_phi_dot_rad_s * WHEEL_RADIUS_R;
-
-    // 4. Extract current raw ANGULAR position
-    uint16_t current_raw_pos = ((uint16_t)Buffer[6] << 8) | Buffer[7];
-
-    // 5. Handle ANGULAR POSITION initialization
-    if (!phi_initialized) {
-        phi_prev_raw_pos = current_raw_pos;
-        if (fabsf(*current_phi_rad) < 1e-6f) { // Use global phi_rad for initial check
-             *current_phi_rad = (float)current_raw_pos * (TWO_PI / RAW_POS_MAX_COUNT) ;
-        }
-        phi_num_rotations = roundf(*current_phi_rad / TWO_PI); // Estimate initial rotations
-        phi_initialized = true;
-        // Ensure x is also initialized correctly on the first run
-        *current_x = *current_phi_rad * WHEEL_RADIUS_R;
-    } else {
-        // 6. Calculate ANGULAR POSITION wrap-around and continuous angle
-        int32_t delta_raw = (int32_t)current_raw_pos - (int32_t)phi_prev_raw_pos;
-        if (delta_raw > RAW_POS_HALF_RANGE) { phi_num_rotations--; }
-        else if (delta_raw < -RAW_POS_HALF_RANGE) { phi_num_rotations++; }
-
-        float current_angle_base_rad = (float)current_raw_pos * (TWO_PI / RAW_POS_MAX_COUNT);
-        *current_phi_rad = (current_angle_base_rad + (float)phi_num_rotations * TWO_PI)-12.355f;
-
-        // 7. Calculate LINEAR Position (x)
-        *current_x = *current_phi_rad * WHEEL_RADIUS_R;
-    }
-
-    // 8. Update the previous raw position state for the next call
-    phi_prev_raw_pos = current_raw_pos;
-}
 
 
 void init_leg_state(struct LegState* state) {
