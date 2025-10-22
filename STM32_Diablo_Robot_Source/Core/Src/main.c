@@ -34,6 +34,7 @@
 #include "controler.h"
 #include "joystick.h"
 #include "StartupStrategy.h"
+#include "StateEstimator.h"
 
 /* USER CODE END Includes */
 
@@ -50,7 +51,7 @@
 #define PACKET_SIZE 19
 
 // Mathematical constant 2*pi
-#define TWO_PI (2.0f * M_PI)
+
 
 
 // CyberGear Motor preprocessor macro
@@ -122,121 +123,8 @@ uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 
 
 
-
-// At the top of LQR_Controller.c (or main.c if globals are defined elsewhere)
-extern volatile float estimated_theta_rad;
-extern volatile float estimated_theta_dot_rad_s;
-extern volatile float estimated_phi_dot_rad_s; // Assuming this is also global
-
-
-// LQI gains for the cascade controler
-float K_GAINS[2] = {100.0f,   10.0f};
-float K_I_THETA = -18.0f; // Integral gain for theta
-
-// Header Kinematika ?
-float base_target_y = -13.0f;
-float final_y_left = -13.0f;
-float final_y_right = -13.0f;
-
-// Header kinematika ?
-float xc_des_l =0;
-float xc_des_r = 0;
-
-// Position control gains for fall strategy
- float Kp_pos = 0.13f;
- float Kd_pos = -0.015f;
- float Ki_pos = 0.25f;
-float x_target = 0;
-
-
-
-
-
-
-
-float Kp_pos_chasis = 1.2f;
-float Kd_pos_chasis = -0.15f;
-float Ki_pos_chasis = 0.6f;
-
-float position_integral_L;
-float position_integral_R;
-
-
-
-//Inverzna kinematika
-const float L1_C = 12.9f;
-const float L2_C = 10.0f;
-const float L3_C = 20.0f;
-const float PI_C = 3.14159265359f;
-
-float delta_varphi_l;
-float delta_varphi_r;
-
 // Kontinuiteta inverzne kinematike
-struct LegState {
-    bool is_initialized;
-    float prev_B_x;
-    float prev_B_y;
-    float prev_C_x;
-    float prev_C_y;
-};
 
-
-volatile float estimated_x = 0.0f; // Linear position (m)
-volatile float estimated_x_dot = 0.0f; // Linear velocity (m/s)
-
-float desired_x_left=0;
-float desired_x_right=0; // Desired linear position for left and right motors (m)
-
-//Target chasis position
-float target_x_chasis = 12.9/2;
-float target_y_chasis = -13.0;
-
-
-volatile float integral_x_error = 0.0f; // Integrated linear position error state
-
-// Motor Parameters
-const float MOTOR_TORQUE_CONSTANT_KT = 0.75f; // Nm/A (DDSM115)
-
-float current_motor1_out= 0.0f; // Current output for left ddsm115 motor
-
-float current_motor2_out= 0.0f; // Current output for right ddsm115 motor
-float total_torque_out= 0.0f; // Total torque output
-float total_force_out = 0.0f; // Calculated Force F output (optional log)
-
-
-float angle_DDSM = 0.0f; // Angle from DDSM115
-float velocityDDSM = 0.0f; // Velocity from DDSM115
-float angle_DSSM_previous = 0.0f;
-float roll_kalman_prev = 0.0f;
-extern uint8_t rx_buf[]; // Defined in MRF.c
-
-
-
-// CONTROLLER VARIABLES
-uint8_t uart3_controller_byte;
-uint8_t uart3_controller_buf[UART3_CONTROLLER_PACKET_LEN];
-uint8_t uart3_controller_index = 0;
-uint8_t uart3_controller_packet_ready = 0;
-
-int16_t axisLX;
-uint16_t throttle;
-uint16_t brake;
-uint8_t xPressed;
-uint8_t dpadUp;
-uint8_t dpadDown;
-uint8_t startPressed;
-
-float desired_x_dualshock = 0.0f;
-float desired_angle_dualshock = 0.0f; // Desired angle from the dualshock controller
-
-
-// You mentioned you will make variables global. The variables theta_des_L and theta_des_R
-// in your `calculate_cascaded_motor_currents` function are currently local.
-// You should declare them here as global variables so they can be accessed by the telemetry function.
-// I've named them with a `_telemetry` suffix to be clear.
-float theta_des_l_telemetry;
-float theta_des_r_telemetry;
 
 
 /* USER CODE END PV */
@@ -259,40 +147,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 uint16_t getDMACurrentIndex(void);
 volatile uint16_t rxReadIndex = 0;       // Your software read pointer
-float calculate_angular_velocity_phi(uint16_t current_raw_counts,
-                                     uint16_t previous_raw_counts,
-                                     float sample_time_s);
-
-void update_base_state_estimates(const uint8_t* Buffer,
-                                 volatile float* current_phi_rad,
-                                 volatile float* current_phi_dot_rad_s,
-                                 volatile float* current_x,
-                                 volatile float* current_x_dot,
-								 volatile float * current_x_ddot);
-
-// New LQI controller function
-void calculate_lqi_motor_currents(float x_target, // Target position (m)
-                                  float* current_motor1_out,
-                                  float* current_motor2_out,
-                                  float* total_force_out); // Optional output
-
-void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
-                                       float* current_motor1_out,
-                                       float* current_motor2_out,
-                                       float* total_force_out);
 
 
-void init_leg_state(struct LegState* state);
 
-bool set_leg_foot_position(CyberGear* motor_right, CyberGear* motor_left, struct LegState* leg_state, float xf, float yf);
+
+
+
+
 // (We can make the helper functions "static" as they are only used in this file)
-static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
-                                  float L_upper, float L_lower,
-                                  float *out_x1, float *out_y1, float *out_x2, float *out_y2);
 
-static void chooseContinuousSolution_c(float prev_x, float prev_y,
-                                       float x1, float y1, float x2, float y2,
-                                       float *out_x, float *out_y);
 
 
 #define BNO080_PACKET_SIZE 25  // 1 SOF + 6×4-byte floats
@@ -301,17 +164,9 @@ static void chooseContinuousSolution_c(float prev_x, float prev_y,
 
 static uint8_t  uart1RxBuffer[UART1_RX_BUFFER_SIZE];
 
-float yaw_esp32 ;
-float pitch_esp32  ;
-float roll_esp32   ;
-float gx_esp32   ;
-float gy_esp32  ;
-float gz_esp32   ;
 
-struct LegState leg_state_rf; // For Right-Front leg
-struct LegState leg_state_lf; // For Left-Front leg
-struct LegState leg_state_rb; // For Right-Back leg
-struct LegState leg_state_lb; // For Left-Back leg
+
+
 
 /* USER CODE END PFP */
 
@@ -555,8 +410,8 @@ int main(void)
 		 float v_right = input - steering * (turn_gain * fabsf(input) + pivot_strength);
 
 		 // === Scale and integrate ===
-		 desired_x_left  = v_left  * scale_factor * delta_time * scale_speed;
-		 desired_x_right = v_right * scale_factor * delta_time * scale_speed;
+		 desired_v_left  = v_left  * scale_factor * delta_time * scale_speed;
+		 desired_v_right = v_right * scale_factor * delta_time * scale_speed;
 
 		 // === D-pad control for body ===
 		 if (dpadUp == 1)   base_target_y -= 0.1f;
@@ -652,8 +507,8 @@ int main(void)
 
 					// Izračun želenega xc z pd regulatorjem
 					// --- [Outer Loop Errors] ---
-					float x_err_L = v_L - desired_x_left;
-					float x_err_R = v_R - desired_x_right;
+					float x_err_L = v_L - desired_v_left;
+					float x_err_R = v_R - desired_v_right;
 
 					// --- [Outer Loop Integration (optional)] ---
 					if (Ki_pos > 0.0f) {
@@ -746,7 +601,7 @@ int main(void)
 
 		 if(!isFallen){
 
-		 calculate_cascaded_motor_currents(desired_x_left,desired_x_right, &current_motor1_out, &current_motor2_out, &total_force_out);
+		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
 		 // SEND CURRENT TO MOTORS
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
@@ -1485,119 +1340,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 
-void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
-                                       float* current_motor1_out,
-                                       float* current_motor2_out,
-                                       float* total_force_out)
-{
-    // --- [STATE] Persistent Integrators ---
-    static float position_integral_L = 0.0f;
-    static float position_integral_R = 0.0f;
-    static float theta_error_integral_L = 0.0f;
-    static float theta_error_integral_R = 0.0f;
-    static uint32_t last_time_ms = 0;
-
-    // --- [TIMING] Compute dt ---
-    uint32_t current_time_ms = HAL_GetTick();
-    float dt = (last_time_ms == 0) ? 0.01f : (current_time_ms - last_time_ms) / 1000.0f;
-    last_time_ms = current_time_ms;
-
-    // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---
-    float temp_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
-    float temp_theta_dot = gx_esp32;
-
-    // --- [SENSOR INPUT] Per-Motor Wheel States ---
-    float x_L     = -DDSM115MotorList[0].x;
-    float x_dot_L = -DDSM115MotorList[0].x_dot;
-    float x_ddot_L = -DDSM115MotorList[0].x_ddot;
-
-    float x_R     =  DDSM115MotorList[1].x;
-    float x_dot_R =  DDSM115MotorList[1].x_dot;
-    float x_ddot_R = DDSM115MotorList[1].x_ddot;
-
-
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- OUTER LOOP: POSITION CONTROL -------------------------
-    ////////////////////////////////////////////////////////////////////////////////
-
-    // --- [Outer Loop Errors] ---
-    float x_err_L = x_dot_L - x_target_left;
-    float x_err_R = x_dot_R - x_target_right;
-
-    // --- [Outer Loop Integration (optional)] ---
-    if (Ki_pos > 0.0f) {
-        position_integral_L += x_err_L * dt;
-        position_integral_R += x_err_R * dt;
-
-        const float MAX_POS_INTEGRAL = 0.2f;
-        if (position_integral_L > MAX_POS_INTEGRAL) position_integral_L = MAX_POS_INTEGRAL;
-        if (position_integral_L < -MAX_POS_INTEGRAL) position_integral_L = -MAX_POS_INTEGRAL;
-        if (position_integral_R > MAX_POS_INTEGRAL) position_integral_R = MAX_POS_INTEGRAL;
-        if (position_integral_R < -MAX_POS_INTEGRAL) position_integral_R = -MAX_POS_INTEGRAL;
-    }
-
-    // --- [Theta Desired from Outer Loop PD] ---
-    float theta_des_L = -(Kp_pos * x_err_L + Kd_pos * x_ddot_L + Ki_pos * position_integral_L);
-    float theta_des_R = -(Kp_pos * x_err_R + Kd_pos * x_ddot_R + Ki_pos * position_integral_R);
-
-    theta_des_l_telemetry = theta_des_L;
-    theta_des_r_telemetry = theta_des_R;
-
-    // --- [Clamp Desired Angle] ---
-    const float MAX_THETA_DES = 0.244346095;  // ≈ 14 degrees
-    if (theta_des_L > MAX_THETA_DES) theta_des_L = MAX_THETA_DES;
-    if (theta_des_L < -MAX_THETA_DES) theta_des_L = -MAX_THETA_DES;
-    if (theta_des_R > MAX_THETA_DES) theta_des_R = MAX_THETA_DES;
-    if (theta_des_R < -MAX_THETA_DES) theta_des_R = -MAX_THETA_DES;
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- INNER LOOP: ANGLE TRACKING LQI -----------------------
-    ////////////////////////////////////////////////////////////////////////////////
-
-    float temp_theta_l_plus_varphi = temp_theta + delta_varphi_l;
-    float temp_theta_r_plus_varphi = temp_theta + delta_varphi_r;
-    // --- [Inner Loop Errors] ---
-    float theta_error_L = temp_theta_l_plus_varphi - theta_des_L;
-    float theta_error_R = temp_theta_r_plus_varphi - theta_des_R;
-
-    // --- [Inner Loop Integration (LQI)] ---
-    theta_error_integral_L += theta_error_L * dt;
-    theta_error_integral_R += theta_error_R * dt;
-
-    const float MAX_THETA_I = 0.2f;
-    if (theta_error_integral_L > MAX_THETA_I) theta_error_integral_L = MAX_THETA_I;
-    if (theta_error_integral_L < -MAX_THETA_I) theta_error_integral_L = -MAX_THETA_I;
-    if (theta_error_integral_R > MAX_THETA_I) theta_error_integral_R = MAX_THETA_I;
-    if (theta_error_integral_R < -MAX_THETA_I) theta_error_integral_R = -MAX_THETA_I;
-
-    // --- [Compute Force from LQI] ---
-    float force_L = -(K_GAINS[0] * theta_error_L + K_GAINS[1] * temp_theta_dot + K_I_THETA * theta_error_integral_L);
-    float force_R = -(K_GAINS[0] * theta_error_R + K_GAINS[1] * temp_theta_dot + K_I_THETA * theta_error_integral_R);
-
-    // --- [Optional Logging: average total force] ---
-    if (total_force_out) {
-        *total_force_out = 0.5f * (force_L + force_R);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- ACTUATOR: CURRENT COMPUTATION ------------------------
-    ////////////////////////////////////////////////////////////////////////////////
-
-    float current_L = (force_L * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
-    float current_R = (force_R * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
-
-    // --- [Deadzone Compensation] ---
-    if (current_L > 0) current_L += DZ_LEFT_POS;
-    else if (current_L < 0) current_L -= DZ_LEFT_NEG;
-
-    if (current_R > 0) current_R += DZ_RIGHT_POS;
-    else if (current_R < 0) current_R -= DZ_RIGHT_NEG;
-
-    // --- [Final Motor Current Outputs] ---
-    *current_motor1_out = -current_R;  // Motor 0x10 (Right)
-    *current_motor2_out =  current_L;  // Motor 0x11 (Left)
-}
 
 
 
@@ -1618,165 +1360,13 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
   * @param current_x_dot: Pointer to global variable storing linear velocity (m/s).
   * @retval None (Results are stored in the global variables via pointers).
   */
-void update_base_state_estimates(const uint8_t* Buffer,
-                                 volatile float* current_phi_rad,
-                                 volatile float* current_phi_dot_rad_s,
-                                 volatile float* current_x,
-                                 volatile float* current_x_dot,
-								 volatile float * current_x_ddot)
-{
-    // Static variables for phi calculation persist state between calls FOR THIS MOTOR
-    static int32_t phi_num_rotations = 0;
-    static uint16_t phi_prev_raw_pos = 0;
-    static bool phi_initialized = false;
-
-    // 1. Check if the feedback is from the designated motor (e.g., 0x10)
-    uint8_t motor_id = Buffer[0];
-    if (motor_id != 0x10) { // <<< Use #define MOTOR_ID_FOR_PHI_DOT if defined
-        return;
-    }
-
-    // --- Proceed only if data is from the correct motor ---
-
-    // 2. Extract and calculate ANGULAR Velocity (Phi_dot)
-    uint16_t raw_velocity = ((uint16_t)Buffer[4] << 8) | Buffer[5];
-    int16_t velocityDDSM_RPM = (int16_t)raw_velocity;
-    // Apply sign correction if needed based on wiring/definition
-    *current_phi_dot_rad_s = -(float)velocityDDSM_RPM * RPM_TO_RAD_PER_SEC;
-
-    // 3. Calculate LINEAR Velocity (x_dot)
-    *current_x_dot = *current_phi_dot_rad_s * WHEEL_RADIUS_R;
-
-    // 4. Extract current raw ANGULAR position
-    uint16_t current_raw_pos = ((uint16_t)Buffer[6] << 8) | Buffer[7];
-
-    // 5. Handle ANGULAR POSITION initialization
-    if (!phi_initialized) {
-        phi_prev_raw_pos = current_raw_pos;
-        if (fabsf(*current_phi_rad) < 1e-6f) { // Use global phi_rad for initial check
-             *current_phi_rad = (float)current_raw_pos * (TWO_PI / RAW_POS_MAX_COUNT) ;
-        }
-        phi_num_rotations = roundf(*current_phi_rad / TWO_PI); // Estimate initial rotations
-        phi_initialized = true;
-        // Ensure x is also initialized correctly on the first run
-        *current_x = *current_phi_rad * WHEEL_RADIUS_R;
-    } else {
-        // 6. Calculate ANGULAR POSITION wrap-around and continuous angle
-        int32_t delta_raw = (int32_t)current_raw_pos - (int32_t)phi_prev_raw_pos;
-        if (delta_raw > RAW_POS_HALF_RANGE) { phi_num_rotations--; }
-        else if (delta_raw < -RAW_POS_HALF_RANGE) { phi_num_rotations++; }
-
-        float current_angle_base_rad = (float)current_raw_pos * (TWO_PI / RAW_POS_MAX_COUNT);
-        *current_phi_rad = (current_angle_base_rad + (float)phi_num_rotations * TWO_PI)-12.355f;
-
-        // 7. Calculate LINEAR Position (x)
-        *current_x = *current_phi_rad * WHEEL_RADIUS_R;
-    }
-
-    // 8. Update the previous raw position state for the next call
-    phi_prev_raw_pos = current_raw_pos;
-}
 
 
-void init_leg_state(struct LegState* state) {
-    state->is_initialized = false;
-    state->prev_B_x = 0.0f;
-    state->prev_B_y = 0.0f;
-    state->prev_C_x = 0.0f;
-    state->prev_C_y = 0.0f;
-}
-
-static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
-                                  float L_upper, float L_lower,
-                                  float *out_x1, float *out_y1, float *out_x2, float *out_y2)
-{
-    float dx = foot_x - base_x;
-    float dy = foot_y - base_y;
-    float d_sq = dx * dx + dy * dy;
-    float d = sqrtf(d_sq);
-
-    if (d > (L_upper + L_lower) || d < fabsf(L_upper - L_lower)) {
-        return false;
-    }
-
-    float a = (L_upper * L_upper - L_lower * L_lower + d_sq) / (2.0f * d);
-    float h_sq = L_upper * L_upper - a * a;
-    float h = (h_sq > 0) ? sqrtf(h_sq) : 0;
-    float x2 = base_x + a * dx / d;
-    float y2 = base_y + a * dy / d;
-    float rx = -dy * (h / d);
-    float ry =  dx * (h / d);
-
-    *out_x1 = x2 + rx; *out_y1 = y2 + ry;
-    *out_x2 = x2 - rx; *out_y2 = y2 - ry;
-    return true;
-}
-
-static void chooseContinuousSolution_c(float prev_x, float prev_y,
-                                       float x1, float y1, float x2, float y2,
-                                       float *out_x, float *out_y)
-{
-    float dist1_sq = (x1 - prev_x) * (x1 - prev_x) + (y1 - prev_y) * (y1 - prev_y);
-    float dist2_sq = (x2 - prev_x) * (x2 - prev_x) + (y2 - prev_y) * (y2 - prev_y);
-    if (dist1_sq < dist2_sq) {
-        *out_x = x1;
-        *out_y = y1;
-    } else {
-        *out_x = x2;
-        *out_y = y2;
-    }
-}
 
 
-bool set_leg_foot_position(CyberGear* motor_right, CyberGear* motor_left, struct LegState* leg_state, float xf, float yf) {
-    const float O0_x = 0.0f, O0_y = 0.0f;
-    const float A_x = L1_C, A_y = 0.0f;
 
-    float B_x1, B_y1, B_x2, B_y2;
-    float C_x1, C_y1, C_x2, C_y2;
-    float chosen_B_x, chosen_B_y;
-    float chosen_C_x, chosen_C_y;
 
-    // Solve for all possible knee positions for both legs independently
-    bool reach_B = solveIKTwoSolutions_c(A_x, A_y, xf, yf, L2_C, L3_C, &B_x1, &B_y1, &B_x2, &B_y2);
-    bool reach_C = solveIKTwoSolutions_c(O0_x, O0_y, xf, yf, L2_C, L3_C, &C_x1, &C_y1, &C_x2, &C_y2);
 
-    if (!(reach_B && reach_C)) {
-        return false; // Position is unreachable
-    }
-
-    // --- CHANGE: Always enforce outward configuration by x-coordinate ---
-    // For the right knee (B), choose the solution with the LARGER x-coordinate.
-    chosen_B_x = (B_x1 > B_x2) ? B_x1 : B_x2;
-    chosen_B_y = (B_x1 > B_x2) ? B_y1 : B_y2;
-
-    // For the left knee (C), choose the solution with the SMALLER x-coordinate.
-    chosen_C_x = (C_x1 < C_x2) ? C_x1 : C_x2;
-    chosen_C_y = (C_x1 < C_x2) ? C_y1 : C_y2;
-
-    // --- Keep this: Update the state for the next iteration (optional, but harmless) ---
-    leg_state->prev_B_x = chosen_B_x;
-    leg_state->prev_B_y = chosen_B_y;
-    leg_state->prev_C_x = chosen_C_x;
-    leg_state->prev_C_y = chosen_C_y;
-
-    // --- CHANGE: No longer needed, but you can remove this flag entirely if desired ---
-    leg_state->is_initialized = true;
-
-    // --- Calculate mathematical angles from the chosen knee points ---
-    float calculated_alpha1_rad = atan2f(chosen_B_y - A_y, chosen_B_x - A_x);
-    float calculated_alpha2_rad = atan2f(chosen_C_y - O0_y, chosen_C_x - O0_x);
-
-    // --- Apply YOUR original, physically-tuned final transformation ---
-    float physical_angle_right = -calculated_alpha1_rad;
-    float physical_angle_left  = -(calculated_alpha2_rad + PI_C);
-
-    // --- Assign to motors ---
-    motor_right->target_angle = physical_angle_right;
-    motor_left->target_angle = physical_angle_left;
-
-    return true;
-}
 
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)

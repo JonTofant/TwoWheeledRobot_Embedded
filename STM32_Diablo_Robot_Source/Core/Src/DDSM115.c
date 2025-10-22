@@ -14,6 +14,8 @@
 
 float dt = 0.02;
 
+// Motor Parameters
+const float MOTOR_TORQUE_CONSTANT_KT = 0.75f; // Nm/A (DDSM115)
 
 const uint32_t ENCODER_FULL_RANGE_COUNTS = 32768;
 const float ENCODER_HALF_RANGE_COUNTS = 16384.0f;

@@ -1,7 +1,7 @@
-../Core/Src/DDSM115.c:49:9:compute_crc8	4
-../Core/Src/DDSM115.c:63:6:sendPositionCommand	1
-../Core/Src/DDSM115.c:95:10:angleToValue	3
-../Core/Src/DDSM115.c:113:6:DDMS115setMode	1
-../Core/Src/DDSM115.c:132:6:DDSM115setCurrent	3
-../Core/Src/DDSM115.c:172:6:DDSM115ChangeID	2
-../Core/Src/DDSM115.c:206:6:update_ddsm115_state	6
+../Core/Src/DDSM115.c:51:9:compute_crc8	4
+../Core/Src/DDSM115.c:65:6:sendPositionCommand	1
+../Core/Src/DDSM115.c:97:10:angleToValue	3
+../Core/Src/DDSM115.c:115:6:DDMS115setMode	1
+../Core/Src/DDSM115.c:134:6:DDSM115setCurrent	3
+../Core/Src/DDSM115.c:174:6:DDSM115ChangeID	2
+../Core/Src/DDSM115.c:208:6:update_ddsm115_state	6

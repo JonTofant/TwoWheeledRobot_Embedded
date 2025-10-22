@@ -15,6 +15,9 @@
 
 #define MAX_MOTORS_DDSM115 2
 
+// Motor Parameters
+extern const float MOTOR_TORQUE_CONSTANT_KT; // Nm/A (DDSM115)
+
 // Defined motor variables for either RS485 comm protocol or the motor itself
 #define RS485_BUFFER_SIZE 10
 

@@ -9,6 +9,31 @@
 #include <math.h>
 
 
+//Inverzna kinematika
+const float L1_C = 12.9f;
+const float L2_C = 10.0f;
+const float L3_C = 20.0f;
+const float PI_C = 3.14159265359f;
+
+// Header Kinematika ?
+float base_target_y = -13.0f;
+float final_y_left = -13.0f;
+float final_y_right = -13.0f;
+
+// Header kinematika ?
+float xc_des_l =0;
+float xc_des_r = 0;
+
+float delta_varphi_l;
+float delta_varphi_r;
+
+
+// Global leg states
+LegState leg_state_rf = {0};
+LegState leg_state_lf = {0};
+LegState leg_state_rb = {0};
+LegState leg_state_lb = {0};
+
 // Leg geometry definition
 LegGeometry LegGeometryList[MAX_NUM_LEGS] = {
     {
@@ -140,79 +165,6 @@ void calculate_L_ddot(LegGeometry* legGeometry, float dt) {
 	legGeometry->l_dot_prev = l_dot;
 }
 
-void calculate_Transpose_Jaboian(LegGeometry* legGeometry, float phi1, float phi2) {
-	// Calculate the transpose of the Jacobian
-	float l1 = legGeometry->l1;
-	float l2 = legGeometry->l2;
-	float l0 = legGeometry->l0;
-	float x0  = sinf(phi1);
-	float x1  = cosf(phi1);
-	float x2  = pow(l2, 2);
-	float x3  = 2*pow(l1, 2);
-	float x4  = phi1 - phi2;
-	float x5  = 2*l0*l1;
-	float x6  = pow(l0, 2) - x3*cosf(x4) + x3 - x5*(x1 - cosf(phi2));
-	float x7  = sqrt(4*x2/x6 - 1);
-	float dxc_dphi1 = -0.5*l1*x0 + 0.5*l1*x1*x7 - 1.0*l1*x2*(x0 - sinf(phi2))*(x0*x5 + x3*sinf(x4))/(pow(x6, 2)*x7);
-	x0  = sinf(phi1);
-	x1  = cosf(phi1);
-	x2  = pow(l2, 2);
-	x3  = 2*pow(l1, 2);
-	x4  = phi1 - phi2;
-	x5  = 2*l0*l1;
-	x6  = pow(l0, 2) - x3*cosf(x4) + x3 - x5*(x1 - cosf(phi2));
-	x7  = sqrt(4*x2/x6 - 1);
-	float dxc_dphi2 = -0.5*l1*x0 + 0.5*l1*x1*x7 - 1.0*l1*x2*(x0 - sinf(phi2))*(x0*x5 + x3*sinf(x4))/(pow(x6, 2)*x7);
-	x0 =  pow(l0, 2);
-	x1 =  2*pow(l1, 2);
-	x2 = phi1 - phi2;
-	x3 = x1*cosf(x2);
-	x4 = cosf(phi1);
-	x5 =  cosf(phi2);
-	x6 =  2*l0*l1*(x4 - x5);
-	x7 =  x0 + x1 - x3 - x6;
-	float x8 = pow(x7, 2);
-	float x9 =  pow(l2, 2);
-	float x10 =  sqrt((-x0 - x1 + x3 + x6 + 4*x9)/x7);
-	float x11 =  sinf(phi1);
-	float x12 =  2.0*x9*(l0*x11 + l1*sinf(x2));
-	float dyc_dphi1 = l1*(-l0*x12 + l1*x12*(x4 + x5) + 0.5*x10*x8*(x10*x11 + x4))/(x10*x8);
-	x0 =pow(l0, 2);
-	x1 = 2*pow(l1, 2);
-	x2 = phi1 - phi2;
-	x3 =  x1*cos(x2);
-	x4 =  cos(phi1);
-	x5 =  cos(phi2);
-	x6 =  2*l0*l1*(x4 - x5);
-	x7 =  x0 + x1 - x3 - x6;
-	x8 = pow(x7, 2);
-	x9 =  pow(l2, 2);
-	x10 = sqrt((-x0 - x1 + x3 + x6 + 4*x9)/x7);
-	x11 =  sin(phi2);
-	x12 = 2.0*x9*(l0*x11 + l1*sin(x2));
-	float dyc_dphi2 = l1*(l0*x12 - l1*x12*(x4 + x5) + 0.5*x10*x8*(x10*x11 + x5))/(x10*x8);
-	float J[2][2] = {
-		{dxc_dphi1, dxc_dphi2 },
-		{dyc_dphi1, dyc_dphi2 }
-	};
-	// Calculate the transpose of the Jacobian
-	float J_T[2][2] = {
-		{J[0][0], J[1][0]},
-		{J[0][1], J[1][1]}
-	};
-
-	// Write the results of jacobian and jacobian transpose back to the leg geometry struct
-	legGeometry->J[0][0] = J[0][0];
-	legGeometry->J[0][1] = J[0][1];
-	legGeometry->J[1][0] = J[1][0];
-	legGeometry->J[1][1] = J[1][1];
-
-	legGeometry->J_T[0][0] = J_T[0][0];
-	legGeometry->J_T[0][1] = J_T[0][1];
-	legGeometry->J_T[1][0] = J_T[1][0];
-	legGeometry->J_T[1][1] = J_T[1][1];
-
-}
 
 void calulate_Theta_dot(LegGeometry* legGeometry, float dt) {
 	// Calculate the derivative of theta, making sure dt is positive.
@@ -226,3 +178,104 @@ void calulate_Theta_dot(LegGeometry* legGeometry, float dt) {
 }
 
 
+
+void init_leg_state(LegState* state) {
+    state->is_initialized = false;
+    state->prev_B_x = 0.0f;
+    state->prev_B_y = 0.0f;
+    state->prev_C_x = 0.0f;
+    state->prev_C_y = 0.0f;
+}
+
+
+bool set_leg_foot_position(CyberGear* motor_right, CyberGear* motor_left, LegState* leg_state, float xf, float yf) {
+    const float O0_x = 0.0f, O0_y = 0.0f;
+    const float A_x = L1_C, A_y = 0.0f;
+
+    float B_x1, B_y1, B_x2, B_y2;
+    float C_x1, C_y1, C_x2, C_y2;
+    float chosen_B_x, chosen_B_y;
+    float chosen_C_x, chosen_C_y;
+
+    // Solve for all possible knee positions for both legs independently
+    bool reach_B = solveIKTwoSolutions_c(A_x, A_y, xf, yf, L2_C, L3_C, &B_x1, &B_y1, &B_x2, &B_y2);
+    bool reach_C = solveIKTwoSolutions_c(O0_x, O0_y, xf, yf, L2_C, L3_C, &C_x1, &C_y1, &C_x2, &C_y2);
+
+    if (!(reach_B && reach_C)) {
+        return false; // Position is unreachable
+    }
+
+    // --- CHANGE: Always enforce outward configuration by x-coordinate ---
+    // For the right knee (B), choose the solution with the LARGER x-coordinate.
+    chosen_B_x = (B_x1 > B_x2) ? B_x1 : B_x2;
+    chosen_B_y = (B_x1 > B_x2) ? B_y1 : B_y2;
+
+    // For the left knee (C), choose the solution with the SMALLER x-coordinate.
+    chosen_C_x = (C_x1 < C_x2) ? C_x1 : C_x2;
+    chosen_C_y = (C_x1 < C_x2) ? C_y1 : C_y2;
+
+    // --- Keep this: Update the state for the next iteration (optional, but harmless) ---
+    leg_state->prev_B_x = chosen_B_x;
+    leg_state->prev_B_y = chosen_B_y;
+    leg_state->prev_C_x = chosen_C_x;
+    leg_state->prev_C_y = chosen_C_y;
+
+    // --- CHANGE: No longer needed, but you can remove this flag entirely if desired ---
+    leg_state->is_initialized = true;
+
+    // --- Calculate mathematical angles from the chosen knee points ---
+    float calculated_alpha1_rad = atan2f(chosen_B_y - A_y, chosen_B_x - A_x);
+    float calculated_alpha2_rad = atan2f(chosen_C_y - O0_y, chosen_C_x - O0_x);
+
+    // --- Apply YOUR original, physically-tuned final transformation ---
+    float physical_angle_right = -calculated_alpha1_rad;
+    float physical_angle_left  = -(calculated_alpha2_rad + PI_C);
+
+    // --- Assign to motors ---
+    motor_right->target_angle = physical_angle_right;
+    motor_left->target_angle = physical_angle_left;
+
+    return true;
+}
+
+
+static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
+                                  float L_upper, float L_lower,
+                                  float *out_x1, float *out_y1, float *out_x2, float *out_y2)
+{
+    float dx = foot_x - base_x;
+    float dy = foot_y - base_y;
+    float d_sq = dx * dx + dy * dy;
+    float d = sqrtf(d_sq);
+
+    if (d > (L_upper + L_lower) || d < fabsf(L_upper - L_lower)) {
+        return false;
+    }
+
+    float a = (L_upper * L_upper - L_lower * L_lower + d_sq) / (2.0f * d);
+    float h_sq = L_upper * L_upper - a * a;
+    float h = (h_sq > 0) ? sqrtf(h_sq) : 0;
+    float x2 = base_x + a * dx / d;
+    float y2 = base_y + a * dy / d;
+    float rx = -dy * (h / d);
+    float ry =  dx * (h / d);
+
+    *out_x1 = x2 + rx; *out_y1 = y2 + ry;
+    *out_x2 = x2 - rx; *out_y2 = y2 - ry;
+    return true;
+}
+
+static void chooseContinuousSolution_c(float prev_x, float prev_y,
+                                       float x1, float y1, float x2, float y2,
+                                       float *out_x, float *out_y)
+{
+    float dist1_sq = (x1 - prev_x) * (x1 - prev_x) + (y1 - prev_y) * (y1 - prev_y);
+    float dist2_sq = (x2 - prev_x) * (x2 - prev_x) + (y2 - prev_y) * (y2 - prev_y);
+    if (dist1_sq < dist2_sq) {
+        *out_x = x1;
+        *out_y = y1;
+    } else {
+        *out_x = x2;
+        *out_y = y2;
+    }
+}

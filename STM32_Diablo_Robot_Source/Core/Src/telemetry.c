@@ -23,8 +23,12 @@ extern float theta_des_l_telemetry;
 extern float theta_des_r_telemetry;
 extern float xc_des_l;
 extern float xc_des_r;
-extern float desired_x_left;
-extern float desired_x_right;
+extern float desired_v_left;
+extern float desired_v_right;
+
+
+float theta_des_l_telemetry;
+float theta_des_r_telemetry;
 
 // Motor macros from main.c for convenience
 #define MOTOR_CG_LF CyberGearMotorList[0]
@@ -89,8 +93,8 @@ void Send_Telemetry(UART_HandleTypeDef *huart) {
     telemetry_packet.payload.xc_des_r = xc_des_r;
 
     // Desired wheel positions
-    telemetry_packet.payload.desired_x_left = desired_x_left;
-    telemetry_packet.payload.desired_x_right = desired_x_right;
+    telemetry_packet.payload.desired_x_left = desired_v_left;
+    telemetry_packet.payload.desired_x_right = desired_v_right;
 
     // 4. Calculate the checksum over the payload part of the packet.
     telemetry_packet.checksum = calculate_checksum((uint8_t*)&telemetry_packet.payload, sizeof(TelemetryPayload_t));
