@@ -11,8 +11,28 @@
 #include "stm32f4xx_hal.h"  // This includes the HAL definitions including HAL_StatusTypeDef.
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 
 #define MAX_MOTORS_DDSM115 2
+
+// Defined motor variables for either RS485 comm protocol or the motor itself
+#define RS485_BUFFER_SIZE 10
+
+#define RAW_POS_MAX_COUNT 32768.0f // Max raw value + 1 (0 to 32767 = 32768 distinct values), use float for division
+#define RAW_POS_HALF_RANGE (RAW_POS_MAX_COUNT / 2) // Threshold for wrap detection = 16384
+
+extern const uint32_t ENCODER_FULL_RANGE_COUNTS;
+extern const float ENCODER_HALF_RANGE_COUNTS;
+extern const float COUNTS_TO_RADIANS_FACTOR_PHI;
+extern const float RPM_TO_RAD_PER_SEC;
+
+#define WHEEL_RADIUS_R 0.0505f
+
+extern float DZ_RIGHT_POS;
+extern float DZ_RIGHT_NEG;
+extern float DZ_LEFT_POS;
+extern float DZ_LEFT_NEG;
+
 
 // Motor structure definition with an error flag.
 typedef struct {

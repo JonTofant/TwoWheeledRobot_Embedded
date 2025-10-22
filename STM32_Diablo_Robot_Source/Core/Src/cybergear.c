@@ -20,6 +20,9 @@
 #define leftBackMinAngle -M_PI/6-OFFSET
 #define leftBackMaxAngle M_PI_2+OFFSET
 
+uint8_t CAN_received_data[8];
+
+
 // Initialize motors with errorFlag set to true (unverified) and names for clarity.
 CyberGear CyberGearMotorList[MAX_MOTORS] = {
     { .hostID = 0xFE, .motorID = 0x1E, .angle = 1.0f, .min_angle = leftBackMinAngle, .max_angle = leftBackMaxAngle,

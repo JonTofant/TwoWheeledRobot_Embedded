@@ -17,6 +17,7 @@
 #define ANGLE_MIN  -12.5f
 #define ANGLE_MAX   12.5f
 
+extern uint8_t CAN_received_data[8];
 
 // Motor structure definition with an error flag.
 typedef struct {

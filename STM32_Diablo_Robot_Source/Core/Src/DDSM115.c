@@ -4,16 +4,27 @@
  *  Created on: Mar 6, 2025
  *      Author: tofant
  */
-
-float dt = 0.02;
+// Todo globalise this
 
 #include "DDSM115.h"
 #include <string.h>  // for memcpy
 #include "main.h"
 #include "math.h"
-#define RPM_TO_RAD_PER_SEC (2.0f * (float)M_PI / 60.0f)
-#define RAW_POS_MAX_COUNT 32768.0f // Max raw value + 1 (0 to 32767 = 32768 distinct values), use float for division
-#define RAW_POS_HALF_RANGE (RAW_POS_MAX_COUNT / 2) // Threshold for wrap detection = 16384
+#include <stdint.h>
+
+float dt = 0.02;
+
+
+const uint32_t ENCODER_FULL_RANGE_COUNTS = 32768;
+const float ENCODER_HALF_RANGE_COUNTS = 16384.0f;
+const float COUNTS_TO_RADIANS_FACTOR_PHI = (2.0f * M_PI) / (float)ENCODER_FULL_RANGE_COUNTS;
+const float RPM_TO_RAD_PER_SEC = (2.0f * M_PI) / 60.0f; // ≈ 0.104719755f
+
+
+float DZ_RIGHT_POS = 0.04f;
+float DZ_RIGHT_NEG = 0.04f;
+float DZ_LEFT_POS  = 0.04f;
+float DZ_LEFT_NEG  = 0.04f;
 
 DDSM115 DDSM115MotorList[MAX_MOTORS_DDSM115] = {
 	{ .motorID = 0x11, .target_angle = 0.0f, .min_angle = -6.283f, .max_angle = 6.283f, .errorFlag = true, .x =0, .x_dot =0, .x_ddot =0, .prev_x_dot = 0 },

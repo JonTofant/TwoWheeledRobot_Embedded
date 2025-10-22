@@ -32,6 +32,9 @@
 #include "system_init.h"
 #include "telemetry.h"
 #include "controler.h"
+#include "joystick.h"
+#include "StartupStrategy.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,35 +47,18 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define RS485_BUFFER_SIZE 10
-#define GYRO_RX_BUFFER_SIZE 19
 #define PACKET_SIZE 19
-#define UART3_CONTROLLER_PACKET_LEN 11
-#define TELEMETRY_SOF 0xAA // Start of Frame byte
 
-
-#define WHEEL_RADIUS_R 0.0505f
-
-// Define constants related to the motor feedback
-#define RAW_POS_MAX_COUNT 32768.0f // Max raw value + 1 (0 to 32767 = 32768 distinct values), use float for division
-#define RAW_POS_RANGE     32768    // Integer range size
-#define RAW_POS_HALF_RANGE (RAW_POS_RANGE / 2) // Threshold for wrap detection = 16384
+// Mathematical constant 2*pi
 #define TWO_PI (2.0f * M_PI)
 
-#define MAX_LEAN_ANGLE_RAD (10.0f * (M_PI / 180.0f))  // 10 degrees in radians
 
+// CyberGear Motor preprocessor macro
 #define MOTOR_CG_LF CyberGearMotorList[0]
 #define MOTOR_CG_LB CyberGearMotorList[1]
 #define MOTOR_CG_RF CyberGearMotorList[2]
 #define MOTOR_CG_RB CyberGearMotorList[3]
 
-
-// Deadzone vrednosti odvisne od motorja in smeri
-
-float DZ_RIGHT_POS = 0.04f;
-float DZ_RIGHT_NEG = 0.04f;
-float DZ_LEFT_POS  = 0.04f;
-float DZ_LEFT_NEG  = 0.04f;
 
 /* USER CODE END PD */
 
@@ -113,9 +99,6 @@ CAN_RxHeaderTypeDef pRxHeader;
 CAN_FilterTypeDef sFilterConfig;
 
 
-I2C_HandleTypeDef hi2c1;
-
-uint8_t CAN_received_data[8];
 
 uint8_t RxSingleByte;
 uint16_t angle_u;
@@ -132,8 +115,6 @@ volatile bool isLOCOMOTION = false;
 volatile bool isSTATIC = true;
 volatile bool isJUMP = false;
 static bool uartSynced = false;
-
-// DEMO mode Boolean
 volatile bool isDEMO = true;
 
 
@@ -142,47 +123,22 @@ uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 
 
 
-uint8_t rxBuffer[GYRO_RX_BUFFER_SIZE];
-
-float roll_kalman_offset;
-float previous_roll_kalman_offset;
-
-const uint32_t ENCODER_FULL_RANGE_COUNTS = 32768;
-// Half the range, used to detect wrap-around
-const float ENCODER_HALF_RANGE_COUNTS = 16384.0f;
-// Conversion factor from counts to radians
-const float COUNTS_TO_RADIANS_FACTOR_PHI = (2.0f * M_PI) / (float)ENCODER_FULL_RANGE_COUNTS;
-const float RPM_TO_RAD_PER_SEC = (2.0f * M_PI) / 60.0f; // Approx 0.104719755f
-
-
 // At the top of LQR_Controller.c (or main.c if globals are defined elsewhere)
 extern volatile float estimated_theta_rad;
 extern volatile float estimated_theta_dot_rad_s;
 extern volatile float estimated_phi_dot_rad_s; // Assuming this is also global
 
 
-// LQI gains for the cascaded controller
-//float K_GAINS[2] = {185.0f,   15.0f};
-//float K_I_THETA = -18.0f; // Integral gain for theta
-
-// LQI gains for the fall strategy
+// LQI gains for the cascade controler
 float K_GAINS[2] = {100.0f,   10.0f};
 float K_I_THETA = -18.0f; // Integral gain for theta
 
-// Position control gains
-// float Kp_pos = 0.25f;
-// float Kd_pos = 0.15f;
-// float Ki_pos = 0.0f;
-//float x_target = 0;
-//float LEAN_KP = 0.3f;  // Tune this as needed
-//float LEAN_KD = 0.07f;
-
-
+// Header Kinematika ?
 float base_target_y = -13.0f;
 float final_y_left = -13.0f;
 float final_y_right = -13.0f;
 
-
+// Header kinematika ?
 float xc_des_l =0;
 float xc_des_r = 0;
 
@@ -193,13 +149,9 @@ float xc_des_r = 0;
 float x_target = 0;
 
 
-float scale_speed = 35;
 
 
-//Startup strategy
-uint8_t attempt_for_amount_of_samples = 45;
-bool isStartupStrategy = false;
-bool isStartupStategySuccess = false;
+
 
 
 float Kp_pos_chasis = 1.2f;
