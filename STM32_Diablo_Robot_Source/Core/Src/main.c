@@ -1327,8 +1327,33 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM3)
 	{
 		// Every 1ms (1000Hz)
-		// Set the flag for CAN transmission
-		//isCANReady = true;
+
+		// Todo norm the state
+
+		// Square the state
+		float v_left_2 = DDSM115MotorList[0].x_dot * DDSM115MotorList[0].x_dot ;
+		float v_right_2 = DDSM115MotorList[1].x_dot * DDSM115MotorList[1].x_dot ;
+		float theta_2 = roll_esp32 * roll_esp32;
+		float theta_dot_2 = gx_esp32* gx_esp32;
+
+		// Check condition
+		float sqrt_sum_l = sqrt(v_left_2+v_right_2+ theta_2+theta_dot_2);
+		float sqrt_sum_r = sqrt(v_left_2+v_right_2+ theta_2+theta_dot_2);
+
+		if (sqrt_sum > 0.1){
+			// Another check for to prevent zeno effect
+			isDDSM115Ready = true;
+			isCYBERGEARReady = true;
+		}
+
+
+
+
+
+
+
+
+
 	}
 	if (htim->Instance == TIM4)
 	{
