@@ -1326,7 +1326,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim->Instance == TIM3)
 	{
-		// Every 10ms (100Hz)
+		// Every 1ms (1000Hz)
 		// Set the flag for CAN transmission
 		//isCANReady = true;
 	}
