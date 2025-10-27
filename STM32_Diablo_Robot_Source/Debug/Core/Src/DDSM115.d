@@ -34,7 +34,10 @@ Core/Src/DDSM115.o: ../Core/Src/DDSM115.c ../Core/Inc/DDSM115.h \
  ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h \
+ ../Core/Inc/controler.h ../Core/Inc/cybergear.h \
+ ../Core/Inc/StateEstimator.h ../Core/Inc/DDSM115.h \
+ ../Core/Inc/telemetry.h ../Core/Inc/kinematics.h
 ../Core/Inc/DDSM115.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -72,3 +75,9 @@ Core/Src/DDSM115.o: ../Core/Src/DDSM115.c ../Core/Inc/DDSM115.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h:
+../Core/Inc/controler.h:
+../Core/Inc/cybergear.h:
+../Core/Inc/StateEstimator.h:
+../Core/Inc/DDSM115.h:
+../Core/Inc/telemetry.h:
+../Core/Inc/kinematics.h:

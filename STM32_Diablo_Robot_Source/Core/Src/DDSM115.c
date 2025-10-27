@@ -11,8 +11,9 @@
 #include "main.h"
 #include "math.h"
 #include <stdint.h>
+#include "controler.h"
+float motor_dt = 0.0f; // 1ms fixed dt for motor updates
 
-float dt = 0.02;
 
 // Motor Parameters
 const float MOTOR_TORQUE_CONSTANT_KT = 0.75f; // Nm/A (DDSM115)
@@ -235,8 +236,8 @@ void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_rad
     }
 
     // 3. Acceleration
-    if (dt > 0.0f) { // Avoid division by zero
-        motor->x_ddot = -((motor->x_dot - motor->prev_x_dot) / dt);
+    if (motor_dt > 0.0f) { // Avoid division by zero
+        motor->x_ddot = -((motor->x_dot - motor->prev_x_dot) / motor_dt);
     } else {
         motor->x_ddot = 0.0f; // Set acceleration to zero if dt is invalid
     }

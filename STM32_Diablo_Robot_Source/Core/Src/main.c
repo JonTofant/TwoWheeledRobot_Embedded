@@ -512,8 +512,8 @@ int main(void)
 
 					// --- [Outer Loop Integration (optional)] ---
 					if (Ki_pos > 0.0f) {
-						position_integral_L += x_err_L * 0.015; // * dt
-						position_integral_R += x_err_R * 0.015; // * dt
+						position_integral_L += x_err_L * dt; // * dt
+						position_integral_R += x_err_R * dt; // * dt
 
 						const float MAX_POS_INTEGRAL = 0.2f;
 						if (position_integral_L > MAX_POS_INTEGRAL) position_integral_L = MAX_POS_INTEGRAL;
@@ -1251,20 +1251,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-	   if (huart->Instance == UART5)
-	    {
-	        uint8_t motor_id = RS485_RxBuffer[0];
+    if (huart->Instance == UART5)
+    {
+        static uint32_t last_motor_time_us = 0;
+        uint32_t now = HAL_GetTick() * 1000; // ms -> us
 
-	        for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
-	            if (DDSM115MotorList[i].motorID == motor_id) {
-	            	update_ddsm115_state(&DDSM115MotorList[i], RS485_RxBuffer, 0.0505f);
-	                break;
-	            }
-	        }
+        // calculate motor dt in seconds
+        motor_dt = (last_motor_time_us == 0) ? 0.001f : (now - last_motor_time_us) / 1e6f;
+        // clamp to avoid division by zero
+        if (motor_dt <= 0.0f) motor_dt = 0.001f;
 
-	        // Restart reception for next frame
-	        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
-	    }
+        last_motor_time_us = now;
+
+        uint8_t motor_id = RS485_RxBuffer[0];
+
+        for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
+            if (DDSM115MotorList[i].motorID == motor_id) {
+                update_ddsm115_state(&DDSM115MotorList[i], RS485_RxBuffer, 0.0505f);
+                break;
+            }
+        }
+
+        // restart reception for next frame
+        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
+    }
     if (huart->Instance == USART1)
     {
         // Size = number of bytes received into uart1RxBuffer[]
@@ -1324,41 +1334,42 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance == TIM3)
-	{
-		// Every 1ms (1000Hz)
+		 if (htim->Instance == TIM3)
+		    {
+		        static uint32_t last_trigger_time = 0;
+		        uint32_t now = HAL_GetTick(); // 1 ms resolution
+		        uint32_t dt_since_last_trigger = now - last_trigger_time;
 
-		// Todo norm the state
+		        // Minimum trigger period in ms
+		        const uint32_t MIN_TRIGGER_INTERVAL_MS = 5; // adjust as needed
 
-		// Square the state
-		float v_left_2 = DDSM115MotorList[0].x_dot * DDSM115MotorList[0].x_dot ;
-		float v_right_2 = DDSM115MotorList[1].x_dot * DDSM115MotorList[1].x_dot ;
-		float theta_2 = roll_esp32 * roll_esp32;
-		float theta_dot_2 = gx_esp32* gx_esp32;
+		        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
+		        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
 
-		// Check condition
-		float sqrt_sum_l = sqrt(v_left_2+v_right_2+ theta_2+theta_dot_2);
-		float sqrt_sum_r = sqrt(v_left_2+v_right_2+ theta_2+theta_dot_2);
+		        e_angle = (roll_esp32 - ((theta_des_l_telemetry + theta_des_r_telemetry) * 0.5f)) / max_error_angle;
+		        e_angvel = (gx_esp32 - 0.0f) / max_error_angvel;
+		        e_vel    = (measured_velocity - desired_velocity) / max_error_vel;
 
-		if (sqrt_sum > 0.1){
-			// Another check for to prevent zeno effect
-			isDDSM115Ready = true;
-			isCYBERGEARReady = true;
-		}
+		        e_norm = sqrtf(e_angle * e_angle + e_angvel * e_angvel + e_vel * e_vel);
 
+		        if (e_norm > event_threshold && dt_since_last_trigger >= MIN_TRIGGER_INTERVAL_MS) {
+		            isDDSM115Ready = true;
+		            isCYBERGEARReady = true;
+		            event_trigger_count++;
+		            last_trigger_time = now;
+		        }
 
-
-
-
-
-
-
-
-	}
+		        // Update trigger frequency stats (optional)
+		        if (now - event_trigger_window_start >= 1000) {
+		            avg_trigger_rate_hz = event_trigger_count;
+		            event_trigger_count = 0;
+		            event_trigger_window_start = now;
+		        }
+		    }
 	if (htim->Instance == TIM4)
 	{
-		isDDSM115Ready = true;
-		isCYBERGEARReady = true;
+		//isDDSM115Ready = true;
+		//isCYBERGEARReady = true;
 		isTELEMETRYReady = true;
 
 	}

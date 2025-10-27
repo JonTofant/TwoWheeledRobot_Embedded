@@ -20,6 +20,23 @@
 
 
 
+// Event based Variables
+extern float event_threshold;        // tunable
+extern float max_error_angle;        // experimental normalization constants
+extern float max_error_angvel;
+extern float max_error_vel;
+
+extern volatile uint32_t event_trigger_count;
+extern volatile uint32_t event_trigger_window_start;
+extern float avg_trigger_rate_hz;
+extern float dt;
+
+extern float e_angle;
+extern float e_angvel;
+extern float e_vel;
+
+extern float e_norm;
+
 // LQI gains for the cascade controler
 extern float K_GAINS[2];
 extern float K_I_THETA;

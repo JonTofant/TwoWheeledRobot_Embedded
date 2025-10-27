@@ -14,6 +14,26 @@ volatile float Ki_pitch = 0.0f;
 volatile float Kd_pitch = 0.0f;
 
 
+// Event based variables
+float event_threshold = 0.1f;        // tunable
+float max_error_angle = 1.5f;        // experimental normalization constants
+float max_error_angvel = 100.0f;
+float max_error_vel = 13.0f;
+float dt = 0.0f;
+
+volatile uint32_t event_trigger_count = 0;
+volatile uint32_t event_trigger_window_start = 0;
+float avg_trigger_rate_hz = 0.0f;
+
+float e_angle = 0;
+float e_angvel = 0;
+float e_vel    = 0;
+
+float e_norm = 0;
+
+
+
+
 float K_GAINS[2] = {100.0f,   10.0f};
 float K_I_THETA = -18.0f; // Integral gain for theta
 
@@ -112,12 +132,22 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
     static float position_integral_R = 0.0f;
     static float theta_error_integral_L = 0.0f;
     static float theta_error_integral_R = 0.0f;
-    static uint32_t last_time_ms = 0;
+    static uint32_t last_time_us = 0;
 
     // --- [TIMING] Compute dt ---
-    uint32_t current_time_ms = HAL_GetTick();
-    float dt = (last_time_ms == 0) ? 0.01f : (current_time_ms - last_time_ms) / 1000.0f;
-    last_time_ms = current_time_ms;
+    extern TIM_HandleTypeDef htim3;
+
+    uint32_t current_time_us = __HAL_TIM_GET_COUNTER(&htim3);
+    float dt;
+
+    if (last_time_us <= current_time_us)
+        dt = (current_time_us - last_time_us) / 1e6f;
+    else
+        dt = ((0xFFFF - last_time_us) + current_time_us + 1) / 1e6f; // handle overflow
+
+    last_time_us = current_time_us;
+    if (dt < 1e-6f) dt = 1e-6f; // prevent div-by-zero
+
 
     // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---
     float temp_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
