@@ -1,5 +1,4 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/controler.h \
- ../Core/Inc/cybergear.h \
+Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -32,17 +31,17 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/controler.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/StateEstimator.h ../Core/Inc/DDSM115.h \
- ../Core/Inc/telemetry.h ../Core/Inc/kinematics.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h \
  ../Core/Inc/cybergear.h ../Core/Inc/DDSM115.h ../Core/Inc/kinematics.h \
- ../Core/Inc/watchdog.h ../Core/Inc/system_init.h ../Core/Inc/main.h \
- ../Core/Inc/telemetry.h ../Core/Inc/joystick.h \
- ../Core/Inc/StartupStrategy.h ../Core/Inc/StateEstimator.h
-../Core/Inc/controler.h:
-../Core/Inc/cybergear.h:
+ ../Core/Inc/cybergear.h ../Core/Inc/watchdog.h ../Core/Inc/DDSM115.h \
+ ../Core/Inc/kinematics.h ../Core/Inc/system_init.h ../Core/Inc/main.h \
+ ../Core/Inc/telemetry.h ../Core/Inc/controler.h \
+ ../Core/Inc/StateEstimator.h ../Core/Inc/telemetry.h \
+ ../Core/Inc/joystick.h ../Core/Inc/StartupStrategy.h \
+ ../Core/Inc/StateEstimator.h
+../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
@@ -75,20 +74,21 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/controler.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-../Core/Inc/StateEstimator.h:
-../Core/Inc/DDSM115.h:
-../Core/Inc/telemetry.h:
-../Core/Inc/kinematics.h:
-../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h:
 ../Core/Inc/cybergear.h:
 ../Core/Inc/DDSM115.h:
 ../Core/Inc/kinematics.h:
+../Core/Inc/cybergear.h:
 ../Core/Inc/watchdog.h:
+../Core/Inc/DDSM115.h:
+../Core/Inc/kinematics.h:
 ../Core/Inc/system_init.h:
 ../Core/Inc/main.h:
+../Core/Inc/telemetry.h:
+../Core/Inc/controler.h:
+../Core/Inc/StateEstimator.h:
 ../Core/Inc/telemetry.h:
 ../Core/Inc/joystick.h:
 ../Core/Inc/StartupStrategy.h:

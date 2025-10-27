@@ -17,7 +17,6 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <controler.h>
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -799,9 +798,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 167;
+  htim3.Init.Prescaler = 83;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 49999;
+  htim3.Init.Period = 1999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -1336,17 +1335,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 		 if (htim->Instance == TIM3)
 		    {
+
+			 	// Checl time from last trigger to now. Making sure the trigger is not shorted than MIN_TRIGGER_INTERVAL_MS
 		        static uint32_t last_trigger_time = 0;
 		        uint32_t now = HAL_GetTick(); // 1 ms resolution
 		        uint32_t dt_since_last_trigger = now - last_trigger_time;
 
 		        // Minimum trigger period in ms
-		        const uint32_t MIN_TRIGGER_INTERVAL_MS = 5; // adjust as needed
+		        const uint32_t MIN_TRIGGER_INTERVAL_MS = 15; // adjust as needed
 
 		        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
 		        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
 
-		        e_angle = (roll_esp32 - ((theta_des_l_telemetry + theta_des_r_telemetry) * 0.5f)) / max_error_angle;
+		        e_angle = ((roll_esp32 - 0.010328498f) - ((theta_des_l_telemetry + theta_des_r_telemetry) * 0.5f)) / max_error_angle;
 		        e_angvel = (gx_esp32 - 0.0f) / max_error_angvel;
 		        e_vel    = (measured_velocity - desired_velocity) / max_error_vel;
 
@@ -1431,8 +1432,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

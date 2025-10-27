@@ -29,7 +29,7 @@ extern float max_error_vel;
 extern volatile uint32_t event_trigger_count;
 extern volatile uint32_t event_trigger_window_start;
 extern float avg_trigger_rate_hz;
-extern float dt;
+extern volatile float dt;
 
 extern float e_angle;
 extern float e_angvel;

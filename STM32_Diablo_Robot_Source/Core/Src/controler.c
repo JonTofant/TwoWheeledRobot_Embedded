@@ -19,7 +19,7 @@ float event_threshold = 0.1f;        // tunable
 float max_error_angle = 1.5f;        // experimental normalization constants
 float max_error_angvel = 100.0f;
 float max_error_vel = 13.0f;
-float dt = 0.0f;
+volatile float dt = 0.0f;
 
 volatile uint32_t event_trigger_count = 0;
 volatile uint32_t event_trigger_window_start = 0;
@@ -38,17 +38,17 @@ float K_GAINS[2] = {100.0f,   10.0f};
 float K_I_THETA = -18.0f; // Integral gain for theta
 
 
-float Kp_pos_chasis = 1.2f;
-float Kd_pos_chasis = -0.15f;
-float Ki_pos_chasis = 0.6f;
+float Kp_pos_chasis = 0.0f; // POSITIVE VALUE
+float Kd_pos_chasis = -0.0f;//NEGATIVE VALUE
+float Ki_pos_chasis = 0.0f;//POSITIVE VALUE
 
 float position_integral_L;
 float position_integral_R;
 
 // Position control gains for fall strategy
- float Kp_pos = 0.13f;
- float Kd_pos = -0.015f;
- float Ki_pos = 0.25f;
+ float Kp_pos = 0.169f;
+ float Kd_pos = -0.0075f;
+ float Ki_pos = 0.40f;
 
  float desired_v_left=0;
  float desired_v_right=0;
@@ -135,18 +135,22 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
     static uint32_t last_time_us = 0;
 
     // --- [TIMING] Compute dt ---
-    extern TIM_HandleTypeDef htim3;
+        extern TIM_HandleTypeDef htim3;
+        uint32_t current_time_us = __HAL_TIM_GET_COUNTER(&htim3);
 
-    uint32_t current_time_us = __HAL_TIM_GET_COUNTER(&htim3);
-    float dt;
+        if (last_time_us <= current_time_us)
+            dt = (current_time_us - last_time_us) / 1e6f;
+        else
+            dt = ((1999 - last_time_us) + current_time_us + 1) / 1e6f; // Period 1999 for 2 ms
 
-    if (last_time_us <= current_time_us)
-        dt = (current_time_us - last_time_us) / 1e6f;
-    else
-        dt = ((0xFFFF - last_time_us) + current_time_us + 1) / 1e6f; // handle overflow
+        // Debug check: Flag if dt < 0.01 s (except first call)
+        if (dt < 0.01f && last_time_us != 0)
+        {
+            // Optional: Halt for debugging
+            // Error_Handler();
+        }
 
-    last_time_us = current_time_us;
-    if (dt < 1e-6f) dt = 1e-6f; // prevent div-by-zero
+        last_time_us = current_time_us;
 
 
     // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---

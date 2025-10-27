@@ -1,2 +1,2 @@
 ../Core/Src/controler.c:79:6:update_pitch_leveling_controller	11
-../Core/Src/controler.c:125:6:calculate_cascaded_motor_currents	21
+../Core/Src/controler.c:125:6:calculate_cascaded_motor_currents	20
