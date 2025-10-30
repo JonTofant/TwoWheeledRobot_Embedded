@@ -8,6 +8,13 @@
 
 #include "controler.h"
 
+//SMC
+float lambda =2.3f;   // Convergence speed parameter
+float K = 0.04f;       // SMC gain (must exceed max expected disturbance)
+float phi = 0.04;     // Boundary layer for chattering reduction
+float sliding_surface_L;
+float sliding_surface_R;
+
 // PITCH CONTROLLER (PID)
 volatile float Kp_pitch = 0.0f;
 volatile float Ki_pitch = 0.0f;
@@ -128,120 +135,114 @@ void update_pitch_leveling_controller(float current_pitch_rad, float dt)
 }
 
 
-void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
-                                       float* current_motor1_out,
-                                       float* current_motor2_out,
-                                       float* total_force_out)
+//////////////////////////////////////////////////////////////////////////////
+// -------------------- CASCADED MOTOR CONTROL: SMC OUTER LOOP ------------- //
+//////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief  Calculates motor currents for a cascaded control of inverted pendulum.
+ *         Outer loop is velocity control using SMC sliding surfaces computed externally.
+ *         Inner loop is angle tracking via LQI.
+ *
+ * @param  x_target_left   Desired linear velocity for left wheel [m/s]
+ * @param  x_target_right  Desired linear velocity for right wheel [m/s]
+ * @param  sliding_surface_left  Precomputed sliding surface for left wheel (from 2 ms loop)
+ * @param  sliding_surface_right Precomputed sliding surface for right wheel (from 2 ms loop)
+ * @param  current_motor1_out    Pointer to output current for right motor [A]
+ * @param  current_motor2_out    Pointer to output current for left motor [A]
+ * @param  total_force_out       Optional pointer to average total force [N]
+ */
+void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_right,
+                                           float sliding_surface_left, float sliding_surface_right,
+                                           float* current_motor1_out,
+                                           float* current_motor2_out,
+                                           float* total_force_out)
 {
-    // --- [STATE] Persistent Integrators ---
-    static float position_integral_L = 0.0f;
-    static float position_integral_R = 0.0f;
-    static float theta_error_integral_L = 0.0f;
-    static float theta_error_integral_R = 0.0f;
-    static uint32_t last_time_us = 0;
-
-    // --- [TIMING] Compute dt ---
+    // --- [STATE] Persistent Integrators for Inner Loop LQI ---
+    static float theta_error_integral_left  = 0.0f;
+    static float theta_error_integral_right = 0.0f;
     static uint32_t last_cycles = 0;
-    uint32_t current_cycles = DWT->CYCCNT;
-    dt = (current_cycles - last_cycles) / (float)SystemCoreClock;
-    last_cycles = current_cycles;
-    dt = 0.015;
 
 
+    // --- [TIMING] Compute dt in seconds ---
+     uint32_t current_cycles = DWT->CYCCNT;
+     dt = (current_cycles - last_cycles) / (float)SystemCoreClock;
+     last_cycles = current_cycles;
 
-    // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---
-    float temp_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
-    float temp_theta_dot = gx_esp32;
+    // --- [SENSOR INPUT] IMU & Wheel States ---
+    float current_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
+    float current_theta_dot = gx_esp32;
 
-    // --- [SENSOR INPUT] Per-Motor Wheel States ---
-    float x_L     = -DDSM115MotorList[0].x;
-    float x_dot_L = -DDSM115MotorList[0].x_dot;
-    float x_ddot_L = -DDSM115MotorList[0].x_ddot;
-
-    float x_R     =  DDSM115MotorList[1].x;
-    float x_dot_R =  DDSM115MotorList[1].x_dot;
-    float x_ddot_R = DDSM115MotorList[1].x_ddot;
-
-
+    float wheel_vel_left  = -DDSM115MotorList[0].x_dot;
+    float wheel_vel_right =  DDSM115MotorList[1].x_dot;
+    float wheel_acc_left  = -DDSM115MotorList[0].x_ddot;
+    float wheel_acc_right =  DDSM115MotorList[1].x_ddot;
 
     ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- OUTER LOOP: POSITION CONTROL -------------------------
+    // -------------------- OUTER LOOP: SLIDING SURFACE -> Theta Desired -------- //
     ////////////////////////////////////////////////////////////////////////////////
 
-    // --- [Outer Loop Errors] ---
-    float x_err_L = x_dot_L - x_target_left;
-    float x_err_R = x_dot_R - x_target_right;
+    // --- Saturation function for chattering reduction ---
+    float sat_left  = sliding_surface_left  / phi;
+    float sat_right = sliding_surface_right / phi;
 
-    // --- [Outer Loop Integration (optional)] ---
-    if (Ki_pos > 0.0f) {
-        position_integral_L += x_err_L * dt;
-        position_integral_R += x_err_R * dt;
+    if (sat_left  >  1.0f) sat_left  =  1.0f;
+    if (sat_left  < -1.0f) sat_left  = -1.0f;
+    if (sat_right >  1.0f) sat_right =  1.0f;
+    if (sat_right < -1.0f) sat_right = -1.0f;
 
-        const float MAX_POS_INTEGRAL = 0.2f;
-        if (position_integral_L > MAX_POS_INTEGRAL) position_integral_L = MAX_POS_INTEGRAL;
-        if (position_integral_L < -MAX_POS_INTEGRAL) position_integral_L = -MAX_POS_INTEGRAL;
-        if (position_integral_R > MAX_POS_INTEGRAL) position_integral_R = MAX_POS_INTEGRAL;
-        if (position_integral_R < -MAX_POS_INTEGRAL) position_integral_R = -MAX_POS_INTEGRAL;
-    }
+    // --- Desired pitch angle for inner loop LQI ---
+    float theta_des_left  = -K * sat_left;
+    float theta_des_right = -K * sat_right;
 
-    // --- [Theta Desired from Outer Loop PD] ---
-    float theta_des_L = -(Kp_pos * x_err_L + Kd_pos * x_ddot_L + Ki_pos * position_integral_L);
-    float theta_des_R = -(Kp_pos * x_err_R + Kd_pos * x_ddot_R + Ki_pos * position_integral_R);
-
-    theta_des_l_telemetry = theta_des_L;
-    theta_des_r_telemetry = theta_des_R;
-
-    // --- [Clamp Desired Angle] ---
-    const float MAX_THETA_DES = 0.244346095;  // ≈ 14 degrees
-    if (theta_des_L > MAX_THETA_DES) theta_des_L = MAX_THETA_DES;
-    if (theta_des_L < -MAX_THETA_DES) theta_des_L = -MAX_THETA_DES;
-    if (theta_des_R > MAX_THETA_DES) theta_des_R = MAX_THETA_DES;
-    if (theta_des_R < -MAX_THETA_DES) theta_des_R = -MAX_THETA_DES;
+    // --- Clamp Desired Angle to safe limits ---
+    const float MAX_THETA_DES = 0.244346095f;  // ≈ 14 degrees
+    if (theta_des_left  > MAX_THETA_DES) theta_des_left  = MAX_THETA_DES;
+    if (theta_des_left  < -MAX_THETA_DES) theta_des_left  = -MAX_THETA_DES;
+    if (theta_des_right > MAX_THETA_DES) theta_des_right = MAX_THETA_DES;
+    if (theta_des_right < -MAX_THETA_DES) theta_des_right = -MAX_THETA_DES;
 
     ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- INNER LOOP: ANGLE TRACKING LQI -----------------------
+    // -------------------- INNER LOOP: ANGLE TRACKING LQI ----------------------- //
     ////////////////////////////////////////////////////////////////////////////////
 
-    float temp_theta_l_plus_varphi = temp_theta + delta_varphi_l;
-    float temp_theta_r_plus_varphi = temp_theta + delta_varphi_r;
-    // --- [Inner Loop Errors] ---
-    float theta_error_L = temp_theta_l_plus_varphi - theta_des_L;
-    float theta_error_R = temp_theta_r_plus_varphi - theta_des_R;
+    float theta_error_left  = current_theta + delta_varphi_l - theta_des_left;
+    float theta_error_right = current_theta + delta_varphi_r - theta_des_right;
 
-    // --- [Inner Loop Integration (LQI)] ---
-    theta_error_integral_L += theta_error_L * dt;
-    theta_error_integral_R += theta_error_R * dt;
+    // --- Integrate inner-loop error ---
+    theta_error_integral_left  += theta_error_left  * dt;
+    theta_error_integral_right += theta_error_right * dt;
 
+    // --- Limit integral term to prevent windup ---
     const float MAX_THETA_I = 0.2f;
-    if (theta_error_integral_L > MAX_THETA_I) theta_error_integral_L = MAX_THETA_I;
-    if (theta_error_integral_L < -MAX_THETA_I) theta_error_integral_L = -MAX_THETA_I;
-    if (theta_error_integral_R > MAX_THETA_I) theta_error_integral_R = MAX_THETA_I;
-    if (theta_error_integral_R < -MAX_THETA_I) theta_error_integral_R = -MAX_THETA_I;
+    if (theta_error_integral_left  > MAX_THETA_I) theta_error_integral_left  = MAX_THETA_I;
+    if (theta_error_integral_left  < -MAX_THETA_I) theta_error_integral_left  = -MAX_THETA_I;
+    if (theta_error_integral_right > MAX_THETA_I) theta_error_integral_right = MAX_THETA_I;
+    if (theta_error_integral_right < -MAX_THETA_I) theta_error_integral_right = -MAX_THETA_I;
 
-    // --- [Compute Force from LQI] ---
-    float force_L = -(K_GAINS[0] * theta_error_L + K_GAINS[1] * temp_theta_dot + K_I_THETA * theta_error_integral_L);
-    float force_R = -(K_GAINS[0] * theta_error_R + K_GAINS[1] * temp_theta_dot + K_I_THETA * theta_error_integral_R);
+    // --- Compute motor forces from LQI ---
+    float force_left  = -(K_GAINS[0] * theta_error_left  + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_left);
+    float force_right = -(K_GAINS[0] * theta_error_right + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_right);
 
-    // --- [Optional Logging: average total force] ---
+    // --- Optional: log average total force ---
     if (total_force_out) {
-        *total_force_out = 0.5f * (force_L + force_R);
+        *total_force_out = 0.5f * (force_left + force_right);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- ACTUATOR: CURRENT COMPUTATION ------------------------
-    ////////////////////////////////////////////////////////////////////////////////
+    // --- Convert force to motor currents ---
+    float current_left  = (force_left  * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
+    float current_right = (force_right * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
 
-    float current_L = (force_L * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
-    float current_R = (force_R * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
+    // --- Deadzone Compensation ---
+    if (current_left > 0) current_left  += DZ_LEFT_POS;
+    else if (current_left < 0) current_left  -= DZ_LEFT_NEG;
 
-    // --- [Deadzone Compensation] ---
-    if (current_L > 0) current_L += DZ_LEFT_POS;
-    else if (current_L < 0) current_L -= DZ_LEFT_NEG;
+    if (current_right > 0) current_right += DZ_RIGHT_POS;
+    else if (current_right < 0) current_right -= DZ_RIGHT_NEG;
 
-    if (current_R > 0) current_R += DZ_RIGHT_POS;
-    else if (current_R < 0) current_R -= DZ_RIGHT_NEG;
-
-    // --- [Final Motor Current Outputs] ---
-    *current_motor1_out = -current_R;  // Motor 0x10 (Right)
-    *current_motor2_out =  current_L;  // Motor 0x11 (Left)
+    // --- Final motor outputs ---
+    *current_motor1_out = -current_right;  // Right motor
+    *current_motor2_out =  current_left;   // Left motor
 }
+
+

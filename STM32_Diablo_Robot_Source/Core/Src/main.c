@@ -600,7 +600,7 @@ int main(void)
 
 		 if(!isFallen){
 
-		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
+		 calculate_cascaded_motor_currents_smc(sliding_surface_L,sliding_surface_R,desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
 		 // SEND CURRENT TO MOTORS
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
@@ -1323,73 +1323,68 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	 /*if (htim->Instance == TIM3)
+	if (htim->Instance == TIM3)
 	    {
-	        // Static variables to store previous error values for derivative calculation
+	        // --- Static storage for derivative calculations ---
 	        static float last_e_angle = 0.0f;
 	        static float last_e_angvel = 0.0f;
 	        static float last_e_vel = 0.0f;
-	        static uint32_t last_time_ms = 0;
-
-	        // Check time from the last trigger to now to ensure it's not shorter than MIN_TRIGGER_INTERVAL_MS
 	        static uint32_t last_trigger_time = 0;
-	        uint32_t now = HAL_GetTick(); // 1 ms resolution
-	        uint32_t dt_since_last_trigger = now - last_trigger_time;
+	        static uint32_t event_window_start = 0;
+	        static uint32_t event_count = 0;
 
-	        // Minimum trigger period in ms
-	        const uint32_t MIN_TRIGGER_INTERVAL_MS = 15; // adjust as needed
+	        const uint32_t MIN_TRIGGER_INTERVAL_MS = 15; // minimum time between triggers
 
+	        uint32_t now = HAL_GetTick(); // current time in ms
+
+	        // --- Calculate errors ---
 	        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
 	        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
 
-	        // Calculate current errors
-	        float e_angle = ((roll_esp32 - 0.010328498f) - ((theta_des_l_telemetry + theta_des_r_telemetry) * 0.5f));
-	        float e_angvel = (gx_esp32 - 0.0f);
-	        float e_vel    = (measured_velocity - desired_velocity);
+	        float e_angle = (roll_esp32 - 0.010328498f) - 0.5f * (theta_des_l_telemetry + theta_des_r_telemetry);
+	        float e_angvel = gx_esp32; // desired angular velocity = 0
+	        float e_vel = measured_velocity - desired_velocity;
+	        // --- Compute sliding surfaces ---
+	        sliding_surface_L = e_angle + lambda * e_angvel;
+	        sliding_surface_R = e_angle + lambda * e_angvel; // or some right-side version
 
-	        // Calculate time delta for derivative
-	        uint32_t current_time_ms = HAL_GetTick();
-	        float dt = (current_time_ms - last_time_ms) / 1000.0f;
-	        last_time_ms = current_time_ms;
+	        // --- Compute derivatives ---
+	        float dt = 0.002f; // fixed 2 ms for this callback
+	        float de_angle_dt = (e_angle - last_e_angle) / dt;
+	        float de_angvel_dt = (e_angvel - last_e_angvel) / dt;
+	        float de_vel_dt = (e_vel - last_e_vel) / dt;
 
-	        if (dt > 0.0f) {
-	            // Calculate derivatives of the error components
-	            float de_angle_dt = (e_angle - last_e_angle) / dt;
-	            float de_angvel_dt = (e_angvel - last_e_angvel) / dt;
-	            float de_vel_dt = (e_vel - last_e_vel) / dt;
+	        last_e_angle = e_angle;
+	        last_e_angvel = e_angvel;
+	        last_e_vel = e_vel;
 
-	            // Update last error values for the next iteration
-	            last_e_angle = e_angle;
-	            last_e_angvel = e_angvel;
-	            last_e_vel = e_vel;
+	        // --- Event trigger check ---
+	        if ((fabsf(sliding_surface_L) > event_threshold ||
+	             fabsf(sliding_surface_R) > event_threshold ||
+	             fabsf(de_angle_dt) > d_e_angle_threshold ||
+	             fabsf(de_angvel_dt) > d_e_angvel_threshold ||
+	             fabsf(de_vel_dt) > d_e_vel_threshold) &&
+	             (now - last_trigger_time >= MIN_TRIGGER_INTERVAL_MS))
+	        {
+	            isDDSM115Ready = true;
+	            isCYBERGEARReady = true;
 
-	            // --- Define your new thresholds for the error derivatives ---
-
-
-	            // Trigger if the absolute value of any error derivative exceeds its threshold
-	            if ((fabsf(de_angle_dt) > d_e_angle_threshold ||
-	                 fabsf(de_angvel_dt) > d_e_angvel_threshold ||
-	                 fabsf(de_vel_dt) > d_e_vel_threshold) &&
-	                 dt_since_last_trigger >= MIN_TRIGGER_INTERVAL_MS)
-	            {
-	                isDDSM115Ready = true;
-	                isCYBERGEARReady = true;
-	                event_trigger_count++;
-	                last_trigger_time = now;
-	            }
+	            last_trigger_time = now;
+	            event_count++;
 	        }
 
-	        // Update trigger frequency stats (optional)
-	        if (now - event_trigger_window_start >= 1000) {
-	            avg_trigger_rate_hz = event_trigger_count;
-	            event_trigger_count = 0;
-	            event_trigger_window_start = now;
+	        // --- Optional: update average trigger frequency every 1 s ---
+	        if (now - event_window_start >= 1000)
+	        {
+	            avg_trigger_rate_hz = event_count;
+	            event_count = 0;
+	            event_window_start = now;
 	        }
-	    }*/
+	    }
 	if (htim->Instance == TIM4)
 	{
-		isDDSM115Ready = true;
-		isCYBERGEARReady = true;
+		//isDDSM115Ready = true;
+		//isCYBERGEARReady = true;
 		//isTELEMETRYReady = true;
 
 	}

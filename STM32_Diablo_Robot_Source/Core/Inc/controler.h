@@ -18,6 +18,15 @@
 #include "kinematics.h"
 
 
+extern float sliding_surface_L;
+extern float sliding_surface_R;
+
+
+// SMC
+extern float lambda;   // Convergence speed parameter
+extern float K;       // SMC gain (must exceed max expected disturbance)
+extern float phi;     // Boundary layer for chattering reduction
+
 
 
 // Event based Variables
@@ -75,9 +84,10 @@ extern float total_force_out;
 
 void update_pitch_leveling_controller(float current_pitch_rad, float dt);
 
-void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
-                                       float* current_motor1_out,
-                                       float* current_motor2_out,
-                                       float* total_force_out);
+void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_right,
+                                           float sliding_surface_left, float sliding_surface_right,
+                                           float* current_motor1_out,
+                                           float* current_motor2_out,
+                                           float* total_force_out);
 
 #endif /* INC_CONTROLER_H_ */
