@@ -4,4 +4,4 @@
 ../Core/Src/DDSM115.c:116:6:DDMS115setMode	32	static
 ../Core/Src/DDSM115.c:135:6:DDSM115setCurrent	32	static
 ../Core/Src/DDSM115.c:175:6:DDSM115ChangeID	32	static
-../Core/Src/DDSM115.c:209:6:update_ddsm115_state	56	static
+../Core/Src/DDSM115.c:209:6:update_ddsm115_state	64	static

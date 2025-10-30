@@ -13,7 +13,7 @@
 ../Core/Src/main.c:1038:13:MX_GPIO_Init	1
 ../Core/Src/main.c:1129:6:HAL_CAN_RxFifo0MsgPendingCallback	5
 ../Core/Src/main.c:1224:6:HAL_UART_RxCpltCallback	5
-../Core/Src/main.c:1251:6:HAL_UARTEx_RxEventCallback	10
-../Core/Src/main.c:1334:6:HAL_TIM_PeriodElapsedCallback	6
-../Core/Src/main.c:1409:6:HAL_UART_TxCpltCallback	2
-../Core/Src/main.c:1425:6:Error_Handler	1
+../Core/Src/main.c:1251:6:HAL_UARTEx_RxEventCallback	8
+../Core/Src/main.c:1324:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:1428:6:HAL_UART_TxCpltCallback	2
+../Core/Src/main.c:1444:6:Error_Handler	1

@@ -575,7 +575,7 @@ int main(void)
 
 				 writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
 				 writeParameter(0x7016, &MOTOR_CG_LB.target_angle, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
-				 HAL_Delay(5);
+				 HAL_Delay(4);
 				 writeParameter(0x7016, &MOTOR_CG_RF.target_angle, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 				 writeParameter(0x7016, &MOTOR_CG_RB.target_angle, MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 				 isCYBERGEARReady = false;
@@ -1252,16 +1252,6 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     if (huart->Instance == UART5)
     {
-        static uint32_t last_motor_time_us = 0;
-        uint32_t now = HAL_GetTick() * 1000; // ms -> us
-
-        // calculate motor dt in seconds
-        motor_dt = (last_motor_time_us == 0) ? 0.001f : (now - last_motor_time_us) / 1e6f;
-        // clamp to avoid division by zero
-        if (motor_dt <= 0.0f) motor_dt = 0.001f;
-
-        last_motor_time_us = now;
-
         uint8_t motor_id = RS485_RxBuffer[0];
 
         for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
@@ -1333,45 +1323,74 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-		 if (htim->Instance == TIM3)
-		    {
+	 /*if (htim->Instance == TIM3)
+	    {
+	        // Static variables to store previous error values for derivative calculation
+	        static float last_e_angle = 0.0f;
+	        static float last_e_angvel = 0.0f;
+	        static float last_e_vel = 0.0f;
+	        static uint32_t last_time_ms = 0;
 
-			 	// Checl time from last trigger to now. Making sure the trigger is not shorted than MIN_TRIGGER_INTERVAL_MS
-		        static uint32_t last_trigger_time = 0;
-		        uint32_t now = HAL_GetTick(); // 1 ms resolution
-		        uint32_t dt_since_last_trigger = now - last_trigger_time;
+	        // Check time from the last trigger to now to ensure it's not shorter than MIN_TRIGGER_INTERVAL_MS
+	        static uint32_t last_trigger_time = 0;
+	        uint32_t now = HAL_GetTick(); // 1 ms resolution
+	        uint32_t dt_since_last_trigger = now - last_trigger_time;
 
-		        // Minimum trigger period in ms
-		        const uint32_t MIN_TRIGGER_INTERVAL_MS = 15; // adjust as needed
+	        // Minimum trigger period in ms
+	        const uint32_t MIN_TRIGGER_INTERVAL_MS = 15; // adjust as needed
 
-		        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
-		        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
+	        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
+	        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
 
-		        e_angle = ((roll_esp32 - 0.010328498f) - ((theta_des_l_telemetry + theta_des_r_telemetry) * 0.5f)) / max_error_angle;
-		        e_angvel = (gx_esp32 - 0.0f) / max_error_angvel;
-		        e_vel    = (measured_velocity - desired_velocity) / max_error_vel;
+	        // Calculate current errors
+	        float e_angle = ((roll_esp32 - 0.010328498f) - ((theta_des_l_telemetry + theta_des_r_telemetry) * 0.5f));
+	        float e_angvel = (gx_esp32 - 0.0f);
+	        float e_vel    = (measured_velocity - desired_velocity);
 
-		        e_norm = sqrtf(e_angle * e_angle + e_angvel * e_angvel + e_vel * e_vel);
+	        // Calculate time delta for derivative
+	        uint32_t current_time_ms = HAL_GetTick();
+	        float dt = (current_time_ms - last_time_ms) / 1000.0f;
+	        last_time_ms = current_time_ms;
 
-		        if (e_norm > event_threshold && dt_since_last_trigger >= MIN_TRIGGER_INTERVAL_MS) {
-		            isDDSM115Ready = true;
-		            isCYBERGEARReady = true;
-		            event_trigger_count++;
-		            last_trigger_time = now;
-		        }
+	        if (dt > 0.0f) {
+	            // Calculate derivatives of the error components
+	            float de_angle_dt = (e_angle - last_e_angle) / dt;
+	            float de_angvel_dt = (e_angvel - last_e_angvel) / dt;
+	            float de_vel_dt = (e_vel - last_e_vel) / dt;
 
-		        // Update trigger frequency stats (optional)
-		        if (now - event_trigger_window_start >= 1000) {
-		            avg_trigger_rate_hz = event_trigger_count;
-		            event_trigger_count = 0;
-		            event_trigger_window_start = now;
-		        }
-		    }
+	            // Update last error values for the next iteration
+	            last_e_angle = e_angle;
+	            last_e_angvel = e_angvel;
+	            last_e_vel = e_vel;
+
+	            // --- Define your new thresholds for the error derivatives ---
+
+
+	            // Trigger if the absolute value of any error derivative exceeds its threshold
+	            if ((fabsf(de_angle_dt) > d_e_angle_threshold ||
+	                 fabsf(de_angvel_dt) > d_e_angvel_threshold ||
+	                 fabsf(de_vel_dt) > d_e_vel_threshold) &&
+	                 dt_since_last_trigger >= MIN_TRIGGER_INTERVAL_MS)
+	            {
+	                isDDSM115Ready = true;
+	                isCYBERGEARReady = true;
+	                event_trigger_count++;
+	                last_trigger_time = now;
+	            }
+	        }
+
+	        // Update trigger frequency stats (optional)
+	        if (now - event_trigger_window_start >= 1000) {
+	            avg_trigger_rate_hz = event_trigger_count;
+	            event_trigger_count = 0;
+	            event_trigger_window_start = now;
+	        }
+	    }*/
 	if (htim->Instance == TIM4)
 	{
-		//isDDSM115Ready = true;
-		//isCYBERGEARReady = true;
-		isTELEMETRYReady = true;
+		isDDSM115Ready = true;
+		isCYBERGEARReady = true;
+		//isTELEMETRYReady = true;
 
 	}
 }

@@ -31,6 +31,10 @@ extern volatile uint32_t event_trigger_window_start;
 extern float avg_trigger_rate_hz;
 extern volatile float dt;
 
+extern float d_e_angle_threshold;   // Threshold for angular error change (rad/s)
+extern float d_e_angvel_threshold;  // Threshold for angular velocity error change (rad/s^2)
+extern float d_e_vel_threshold;     // Threshold for linear velocity error change (m/s^2)
+
 extern float e_angle;
 extern float e_angvel;
 extern float e_vel;

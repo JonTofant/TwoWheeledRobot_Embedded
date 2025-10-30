@@ -66,7 +66,8 @@ typedef struct {
     // NEW:
     float phi_zero;  // First reading used as zero reference
     bool  phi_zero_initialized;
-    uint32_t last_update_time_us; // <--- new
+    uint32_t last_update_time_us;
+    float motor_dt;               // actual sample time in seconds
 
 } DDSM115;
 

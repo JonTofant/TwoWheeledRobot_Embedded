@@ -210,13 +210,19 @@ void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_rad
 {
     if (Buffer[0] != motor->motorID) return;
 
-    // 1. Velocity
+    // --- 0. Sample time for this motor ---
+    uint32_t now = HAL_GetTick() * 1000; // ms -> us
+    motor->motor_dt = (motor->last_update_time_us == 0) ? 0.001f : (now - motor->last_update_time_us) / 1e6f;
+    motor->motor_dt = 0.015;
+    motor->last_update_time_us = now;
+
+    // --- 1. Velocity ---
     uint16_t raw_velocity = ((uint16_t)Buffer[4] << 8) | Buffer[5];
     int16_t rpm = (int16_t)raw_velocity;
     motor->phi_dot_rad_s = -(float)rpm * RPM_TO_RAD_PER_SEC;
     motor->x_dot = motor->phi_dot_rad_s * wheel_radius;
 
-    // 2. Position
+    // --- 2. Position ---
     uint16_t current_raw_pos = ((uint16_t)Buffer[6] << 8) | Buffer[7];
 
     if (!motor->initialized) {
@@ -229,20 +235,16 @@ void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_rad
         motor->phi_rad = 0.0f;
         motor->num_rotations = 0;
         motor->x = 0.0f;
-        motor->x_ddot = 0.0f; // Initialize acceleration
-        motor->prev_x_dot = motor->x_dot; // Store initial velocity
+        motor->x_ddot = 0.0f;
+        motor->prev_x_dot = motor->x_dot;
         motor->initialized = true;
         return;
     }
 
-    // 3. Acceleration
-    if (motor_dt > 0.0f) { // Avoid division by zero
-        motor->x_ddot = -((motor->x_dot - motor->prev_x_dot) / motor_dt);
-    } else {
-        motor->x_ddot = 0.0f; // Set acceleration to zero if dt is invalid
-    }
+    // --- 3. Acceleration ---
+    motor->x_ddot = (motor->x_dot - motor->prev_x_dot) / motor->motor_dt;
 
-    // 4. Wrap detection
+    // --- 4. Wrap detection ---
     int32_t delta = (int32_t)current_raw_pos - (int32_t)motor->prev_raw_pos;
     if (delta > RAW_POS_HALF_RANGE) motor->num_rotations--;
     else if (delta < -RAW_POS_HALF_RANGE) motor->num_rotations++;
@@ -252,7 +254,8 @@ void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_rad
     motor->phi_rad = unwrapped - motor->phi_zero;
     motor->x = motor->phi_rad * wheel_radius;
 
-    // Update previous velocity
+    // --- 5. Update previous state ---
     motor->prev_x_dot = motor->x_dot;
     motor->prev_raw_pos = current_raw_pos;
 }
+

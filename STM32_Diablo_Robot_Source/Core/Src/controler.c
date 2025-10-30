@@ -38,17 +38,23 @@ float K_GAINS[2] = {100.0f,   10.0f};
 float K_I_THETA = -18.0f; // Integral gain for theta
 
 
-float Kp_pos_chasis = 0.0f; // POSITIVE VALUE
-float Kd_pos_chasis = -0.0f;//NEGATIVE VALUE
-float Ki_pos_chasis = 0.0f;//POSITIVE VALUE
+float Kp_pos_chasis = 1.2f;
+float Kd_pos_chasis = -0.112;
+float Ki_pos_chasis = 0.6f;
+
 
 float position_integral_L;
 float position_integral_R;
 
 // Position control gains for fall strategy
- float Kp_pos = 0.169f;
- float Kd_pos = -0.0075f;
- float Ki_pos = 0.40f;
+float Kp_pos = 0.13f;
+float Kd_pos = -0.0112;
+float Ki_pos = 0.25f;
+
+extern float d_e_angle_threshold = 0.5f;   // Threshold for angular error change (rad/s)
+extern float d_e_angvel_threshold = 2.0f;  // Threshold for angular velocity error change (rad/s^2)
+extern float d_e_vel_threshold = 1.0f;     // Threshold for linear velocity error change (m/s^2)
+
 
  float desired_v_left=0;
  float desired_v_right=0;
@@ -135,22 +141,12 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
     static uint32_t last_time_us = 0;
 
     // --- [TIMING] Compute dt ---
-        extern TIM_HandleTypeDef htim3;
-        uint32_t current_time_us = __HAL_TIM_GET_COUNTER(&htim3);
+    static uint32_t last_cycles = 0;
+    uint32_t current_cycles = DWT->CYCCNT;
+    dt = (current_cycles - last_cycles) / (float)SystemCoreClock;
+    last_cycles = current_cycles;
+    dt = 0.015;
 
-        if (last_time_us <= current_time_us)
-            dt = (current_time_us - last_time_us) / 1e6f;
-        else
-            dt = ((1999 - last_time_us) + current_time_us + 1) / 1e6f; // Period 1999 for 2 ms
-
-        // Debug check: Flag if dt < 0.01 s (except first call)
-        if (dt < 0.01f && last_time_us != 0)
-        {
-            // Optional: Halt for debugging
-            // Error_Handler();
-        }
-
-        last_time_us = current_time_us;
 
 
     // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---
