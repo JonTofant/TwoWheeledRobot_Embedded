@@ -52,6 +52,13 @@ extern float total_torque_out;
 // Calculated Force F output (optional log)
 extern float total_force_out;
 
+
+// SMC
+extern float lambda;   // Convergence speed parameter
+extern float K;       // SMC gain (must exceed max expected disturbance)
+extern float phi;     // Boundary layer for chattering reduction
+
+
 void update_pitch_leveling_controller(float current_pitch_rad, float dt);
 
 void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
