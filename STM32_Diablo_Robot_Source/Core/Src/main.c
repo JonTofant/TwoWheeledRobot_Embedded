@@ -1341,9 +1341,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
 	        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
 
-	        float e_angle = (roll_esp32 - 0.010328498f) - 0.5f * (theta_des_l_telemetry + theta_des_r_telemetry);
-	        float e_angvel = gx_esp32; // desired angular velocity = 0
-	        float e_vel = measured_velocity - desired_velocity;
+	        e_angle = (roll_esp32 - 0.010328498f) - 0.5f * (theta_des_l_telemetry + theta_des_r_telemetry);
+	        e_angvel = gx_esp32; // desired angular velocity = 0
+	        e_vel = measured_velocity - desired_velocity;
 	        // --- Compute sliding surfaces ---
 	        sliding_surface_L = e_angle + lambda * e_angvel;
 	        sliding_surface_R = e_angle + lambda * e_angvel; // or some right-side version
