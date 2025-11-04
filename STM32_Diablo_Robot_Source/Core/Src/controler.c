@@ -25,8 +25,10 @@ float sliding_surface_dot_R;
 float sigma_L;
 float sigma_R;
 float alpha_sigma = 30.0f; // convergence rate for sigma -> increases speed to drive s -> 0
-
-
+float sigma_v;
+float s_left,  s_right;      // inner surfaces (one per wheel)
+float sigma_v_dot;
+float alpha = 30.0f;
 
 // PITCH CONTROLLER (PID)
 volatile float Kp_pitch = 0.0f;
@@ -174,48 +176,76 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
     static float theta_error_integral_right = 0.0f;
     static uint32_t last_cycles = 0;
 
-    // --- Compute dt dynamically ---
-    uint32_t current_cycles = DWT->CYCCNT;
-    dt = (current_cycles - last_cycles) / (float)SystemCoreClock;
-    last_cycles = current_cycles;
+    /* ----- dynamic dt ----- */
+    uint32_t now_cycles = DWT->CYCCNT;
+    dt = (now_cycles - last_cycles) / (float)SystemCoreClock;
+    last_cycles = now_cycles;
 
-    // --- Sensor input ---
+    /* ----- sensor input ----- */
     float current_theta     = roll_esp32 - 0.010328498f;
     float current_theta_dot = gx_esp32;
 
-    // --- Inner loop LQI ---
+    /* -------------------------------------------------------------
+       1. ASMC control law (outer → inner)
+       ------------------------------------------------------------- */
+    /*  sign(s)  – switching on the inner surface
+        s         – proportional damping on the outer surface   */
+    float u_left  = -(K_sigma * (s_left  > 0.0f ? 1.0f : (s_left  < 0.0f ? -1.0f : 0.0f)) +
+                      K_s     * sigma_v);
+
+    float u_right = -(K_sigma * (s_right > 0.0f ? 1.0f : (s_right < 0.0f ? -1.0f : 0.0f)) +
+                      K_s     * sigma_v);
+
+    /*  u is a *torque* command for the wheel (Nm)   */
+    float torque_left  = u_left;
+    float torque_right = u_right;
+
+    /* -------------------------------------------------------------
+       2. Convert torque → desired wheel-angle for the inner LQI
+       ------------------------------------------------------------- */
+    /*  Simple proportional mapping (you can add a low-pass if needed) */
+    const float TORQUE_TO_ANGLE = 1.0f / K_GAINS[0];   // ≈ 1/Kp_angle
+    theta_des_l_telemetry = torque_left  * TORQUE_TO_ANGLE;
+    theta_des_r_telemetry = torque_right * TORQUE_TO_ANGLE;
+
+    /* -------------------------------------------------------------
+       3. Inner LQI (angle tracking) – unchanged except the reference
+       ------------------------------------------------------------- */
     float theta_error_left  = current_theta + delta_varphi_l - theta_des_l_telemetry;
     float theta_error_right = current_theta + delta_varphi_r - theta_des_r_telemetry;
 
     theta_error_integral_left  += theta_error_left  * dt;
     theta_error_integral_right += theta_error_right * dt;
 
-    // Limit integral
     const float MAX_THETA_I = 0.2f;
     if (theta_error_integral_left  > MAX_THETA_I) theta_error_integral_left  = MAX_THETA_I;
     if (theta_error_integral_left  < -MAX_THETA_I) theta_error_integral_left  = -MAX_THETA_I;
     if (theta_error_integral_right > MAX_THETA_I) theta_error_integral_right = MAX_THETA_I;
     if (theta_error_integral_right < -MAX_THETA_I) theta_error_integral_right = -MAX_THETA_I;
 
-    // Compute LQI force
-    float force_left  = -(K_GAINS[0] * theta_error_left  + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_left);
-    float force_right = -(K_GAINS[0] * theta_error_right + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_right);
+    float force_left  = -(K_GAINS[0] * theta_error_left  +
+                          K_GAINS[1] * current_theta_dot +
+                          K_I_THETA * theta_error_integral_left);
+
+    float force_right = -(K_GAINS[0] * theta_error_right +
+                          K_GAINS[1] * current_theta_dot +
+                          K_I_THETA * theta_error_integral_right);
 
     if (total_force_out)
         *total_force_out = 0.5f * (force_left + force_right);
 
+    /* -------------------------------------------------------------
+       4. Current conversion (dead-zone unchanged)
+       ------------------------------------------------------------- */
     float current_left  = (force_left  * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
     float current_right = (force_right * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
 
-    // Deadzone compensation
-    if (current_left > 0) current_left  += DZ_LEFT_POS;
-    else if (current_left < 0) current_left  -= DZ_LEFT_NEG;
+    if (current_left  > 0) current_left  += DZ_LEFT_POS;
+    else if (current_left  < 0) current_left  -= DZ_LEFT_NEG;
 
     if (current_right > 0) current_right += DZ_RIGHT_POS;
     else if (current_right < 0) current_right -= DZ_RIGHT_NEG;
 
-    // Output currents
     *current_motor1_out = -current_right;
     *current_motor2_out =  current_left;
 }
-

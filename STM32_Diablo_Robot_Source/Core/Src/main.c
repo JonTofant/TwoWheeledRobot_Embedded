@@ -1323,71 +1323,66 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM3)
-    {
-        // --- Static storage for derivative calculations ---
-        static float last_v = 0.0f;
-        static float last_trigger_time = 0;
-        static uint32_t event_window_start = 0;
-        static uint32_t event_count = 0;
+	if (htim->Instance == TIM3)
+	    {
+	        /* ----- static storage ----- */
+	        static float last_v          = 0.0f;
+	        static float last_sigma_v    = 0.0f;
+	        static uint32_t last_trigger = 0;
+	        static uint32_t ev_start     = 0;
+	        static uint32_t ev_cnt       = 0;
 
-        const uint32_t MIN_TRIGGER_INTERVAL_MS = 10; // minimum time between triggers
-        const float dt = 0.002f; // 2 ms loop
+	        const uint32_t MIN_TRIGGER_MS = 10;
+	        const float    dt             = 0.002f;      // 2 ms loop
 
-        uint32_t now = HAL_GetTick(); // current time in ms
+	        uint32_t now = HAL_GetTick();
 
-        // --- Compute velocity and error ---
-        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
-        float desired_velocity  = 0.0f; // we want robot to stay in place
+	        /* ----- velocity & error ----- */
+	        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
+	        float desired_velocity  = 0.0f;
+	        e_vel = measured_velocity - desired_velocity;
 
-        e_vel = measured_velocity - desired_velocity;
+	        /* ----- acceleration (for outer surface) ----- */
+	        float a_vel = (measured_velocity - last_v) / dt;
+	        last_v = measured_velocity;
 
-        // --- Approximate acceleration ---
-        float a_vel = (measured_velocity - last_v) / dt;
-        last_v = measured_velocity;
+	        /* ----- OUTER sliding surface σ_v ----- */
+	        sigma_v = e_vel + lambda * a_vel;          // same as before
+	        sigma_v_dot = (sigma_v - last_sigma_v) / dt;
+	        last_sigma_v = sigma_v;
 
-        // --- Outer sliding variable (velocity SMC) ---
-        float sigma_v = e_vel + lambda * a_vel;
+	        /* ----- INNER sliding surfaces (one per wheel) ----- */
+	        s_left  = sigma_v + alpha * sigma_v_dot;
+	        s_right = sigma_v + alpha * sigma_v_dot;   // symmetric for a two-wheel robot
 
-        // --- Event trigger check ---
-        if ((fabsf(sigma_v) > event_threshold) &&
-            (now - last_trigger_time >= MIN_TRIGGER_INTERVAL_MS))
-        {
-            isDDSM115Ready   = true;
-            isCYBERGEARReady = true;
+	        /* ----- event trigger (still on |σ_v|) ----- */
+	        if ((fabsf(sigma_v) > event_threshold) &&
+	            (now - last_trigger >= MIN_TRIGGER_MS))
+	        {
+	            isDDSM115Ready   = true;
+	            isCYBERGEARReady = true;
+	            last_trigger = now;
+	            ev_cnt++;
+	        }
 
-            last_trigger_time = now;
-            event_count++;
-        }
+	        /* ----- average trigger rate (1 s window) ----- */
+	        if (now - ev_start >= 1000)
+	        {
+	            avg_trigger_rate_hz = ev_cnt;
+	            ev_cnt = 0;
+	            ev_start = now;
+	        }
 
-        // --- Optional: update average trigger frequency every 1 s ---
-        if (now - event_window_start >= 1000)
-        {
-            avg_trigger_rate_hz = event_count;
-            event_count = 0;
-            event_window_start = now;
-        }
+	        /* ----- Desired wheel angles for the *inner* LQI ----- */
+	        /*   The inner LQI receives a *reference torque* that is
+	            generated from the ASMC law (see calculate_cascaded_motor_currents_smc)   */
+	        sliding_surface_L = s_left;
+	        sliding_surface_R = s_right;
 
-        // --- Compute desired angles for inner LQI using ASMC ---
-        // Dynamic gain (tanh) to reduce chattering
-        sliding_surface_L = sigma_v;
-        sliding_surface_R = sigma_v; // can be right-specific if needed
-
-        float K_left  = K * tanhf(fabsf(sliding_surface_L)/phi);
-        float K_right = K * tanhf(fabsf(sliding_surface_R)/phi);
-
-        // Saturation function (boundary layer)
-        float sat_left  = sliding_surface_L / phi;
-        float sat_right = sliding_surface_R / phi;
-
-        if (sat_left  >  1.0f) sat_left  =  1.0f;
-        if (sat_left  < -1.0f) sat_left  = -1.0f;
-        if (sat_right >  1.0f) sat_right =  1.0f;
-        if (sat_right < -1.0f) sat_right = -1.0f;
-
-        theta_des_l_telemetry = -K_left  * sat_left;
-        theta_des_r_telemetry = -K_right * sat_right;
-    }
+	        /*   (the rest of your code – telemetry, etc. – can stay unchanged)   */
+	        theta_des_l_telemetry = 0.0f;   // will be overwritten by the inner LQI
+	        theta_des_r_telemetry = 0.0f;
+	    }
 
 	if (htim->Instance == TIM4)
 	{

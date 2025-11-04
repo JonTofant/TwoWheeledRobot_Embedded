@@ -34,6 +34,15 @@ extern float K;       // SMC gain (must exceed max expected disturbance)
 extern float phi;     // Boundary layer for chattering reduction
 
 
+/* ----- ASMC gains (tune at runtime) ----- */
+extern float K_sigma;   // main switching gain on inner surface s
+extern float K_s;       // proportional gain on outer surface σ_v
+extern float alpha;     // inner-surface convergence rate (rad/s)
+
+/* ----- Sliding surfaces ----- */
+extern float sigma_v;               // outer surface (velocity SMC)
+extern float s_left,  s_right;      // inner surfaces (one per wheel)
+extern float sigma_v_dot;           // derivative of outer surface (approx.)
 
 // Event based Variables
 extern float event_threshold;        // tunable
