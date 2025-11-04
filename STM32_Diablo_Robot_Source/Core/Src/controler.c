@@ -9,9 +9,9 @@
 #include "controler.h"
 
 //SMC
-float lambda =2.3f;   // Convergence speed parameter
-float K = 0.04f;       // SMC gain (must exceed max expected disturbance)
-float phi = 0.04;     // Boundary layer for chattering reduction
+float lambda =2.0f;   // Convergence speed parameter
+float K = 0.1f;       // SMC gain (must exceed max expected disturbance)
+float phi = 3.5;     // Boundary layer for chattering reduction
 float sliding_surface_L;
 float sliding_surface_R;
 
@@ -22,7 +22,7 @@ volatile float Kd_pitch = 0.0f;
 
 
 // Event based variables
-float event_threshold = 0.1f;        // tunable
+float event_threshold = 1.5f;        // tunable
 float max_error_angle = 1.5f;        // experimental normalization constants
 float max_error_angvel = 100.0f;
 float max_error_vel = 13.0f;
@@ -41,13 +41,13 @@ float e_norm = 0;
 
 
 
-float K_GAINS[2] = {100.0f,   10.0f};
-float K_I_THETA = -18.0f; // Integral gain for theta
+float K_GAINS[2] = {130.0f,   4.0f};
+float K_I_THETA = -12.0f; // Integral gain for theta
 
 
-float Kp_pos_chasis = 1.2f;
-float Kd_pos_chasis = -0.112;
-float Ki_pos_chasis = 0.6f;
+float Kp_pos_chasis = 0.0f;
+float Kd_pos_chasis = -0.0;
+float Ki_pos_chasis = 0.0f;
 
 
 float position_integral_L;
@@ -58,9 +58,9 @@ float Kp_pos = 0.13f;
 float Kd_pos = -0.0112;
 float Ki_pos = 0.25f;
 
-extern float d_e_angle_threshold = 0.5f;   // Threshold for angular error change (rad/s)
-extern float d_e_angvel_threshold = 2.0f;  // Threshold for angular velocity error change (rad/s^2)
-extern float d_e_vel_threshold = 1.0f;     // Threshold for linear velocity error change (m/s^2)
+float d_e_angle_threshold = 0.5f;   // Threshold for angular error change (rad/s)
+float d_e_angvel_threshold = 1.8f;  // Threshold for angular velocity error change (rad/s^2)
+float d_e_vel_threshold = 3.5f;     // Threshold for linear velocity error change (m/s^2)
 
 
  float desired_v_left=0;
@@ -163,26 +163,24 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
     static float theta_error_integral_right = 0.0f;
     static uint32_t last_cycles = 0;
 
-
-    // --- [TIMING] Compute dt in seconds ---
-     uint32_t current_cycles = DWT->CYCCNT;
-     dt = (current_cycles - last_cycles) / (float)SystemCoreClock;
-     last_cycles = current_cycles;
+    // --- [TIMING] Compute dt dynamically ---
+    uint32_t current_cycles = DWT->CYCCNT;
+    dt = (current_cycles - last_cycles) / (float)SystemCoreClock;
+    last_cycles = current_cycles;
 
     // --- [SENSOR INPUT] IMU & Wheel States ---
     float current_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
     float current_theta_dot = gx_esp32;
 
-    float wheel_vel_left  = -DDSM115MotorList[0].x_dot;
-    float wheel_vel_right =  DDSM115MotorList[1].x_dot;
-    float wheel_acc_left  = -DDSM115MotorList[0].x_ddot;
-    float wheel_acc_right =  DDSM115MotorList[1].x_ddot;
-
     ////////////////////////////////////////////////////////////////////////////////
     // -------------------- OUTER LOOP: SLIDING SURFACE -> Theta Desired -------- //
     ////////////////////////////////////////////////////////////////////////////////
 
-    // --- Saturation function for chattering reduction ---
+    // --- Dynamic gain: taper K as sliding surface approaches zero using tanh ---
+    float K_left  = K * tanhf(fabsf(sliding_surface_left)  / phi);
+    float K_right = K * tanhf(fabsf(sliding_surface_right) / phi);
+
+    // --- Saturation function for chattering reduction (boundary layer) ---
     float sat_left  = sliding_surface_left  / phi;
     float sat_right = sliding_surface_right / phi;
 
@@ -191,11 +189,11 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
     if (sat_right >  1.0f) sat_right =  1.0f;
     if (sat_right < -1.0f) sat_right = -1.0f;
 
-    // --- Desired pitch angle for inner loop LQI ---
-    float theta_des_left  = -K * sat_left;
-    float theta_des_right = -K * sat_right;
+    // --- Desired pitch angles for inner loop LQI ---
+    float theta_des_left  = -K_left  * sat_left;
+    float theta_des_right = -K_right * sat_right;
 
-    // --- Clamp Desired Angle to safe limits ---
+    // --- Clamp desired angle to safe limits ---
     const float MAX_THETA_DES = 0.244346095f;  // ≈ 14 degrees
     if (theta_des_left  > MAX_THETA_DES) theta_des_left  = MAX_THETA_DES;
     if (theta_des_left  < -MAX_THETA_DES) theta_des_left  = -MAX_THETA_DES;

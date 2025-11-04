@@ -1323,7 +1323,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance == TIM3)
+	 if (htim->Instance == TIM3)
 	    {
 	        // --- Static storage for derivative calculations ---
 	        static float last_e_angle = 0.0f;
@@ -1333,40 +1333,42 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	        static uint32_t event_window_start = 0;
 	        static uint32_t event_count = 0;
 
-	        const uint32_t MIN_TRIGGER_INTERVAL_MS = 15; // minimum time between triggers
+	        const uint32_t MIN_TRIGGER_INTERVAL_MS = 10; // minimum time between triggers (Zeno effect)
+	        const float dt = 0.002f; // 2 ms loop
 
 	        uint32_t now = HAL_GetTick(); // current time in ms
 
-	        // --- Calculate errors ---
+	        // --- Compute errors ---
 	        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
 	        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
 
-	        e_angle = (roll_esp32 - 0.010328498f) - 0.5f * (theta_des_l_telemetry + theta_des_r_telemetry);
+	        e_angle  = (roll_esp32 - 0.010328498f) - 0.5f * (theta_des_l_telemetry + theta_des_r_telemetry);
 	        e_angvel = gx_esp32; // desired angular velocity = 0
-	        e_vel = measured_velocity - desired_velocity;
-	        // --- Compute sliding surfaces ---
+	        e_vel    = measured_velocity - desired_velocity;
+
+	        // --- Compute sliding surfaces dynamically ---
+	        // You can add additional terms (e.g., velocity) if desired
 	        sliding_surface_L = e_angle + lambda * e_angvel;
-	        sliding_surface_R = e_angle + lambda * e_angvel; // or some right-side version
+	        sliding_surface_R = e_angle + lambda * e_angvel; // for now same; can use right-specific term if needed
 
-	        // --- Compute derivatives ---
-	        float dt = 0.002f; // fixed 2 ms for this callback
-	        float de_angle_dt = (e_angle - last_e_angle) / dt;
+	        // --- Compute derivatives for event detection ---
+	        float de_angle_dt  = (e_angle  - last_e_angle)  / dt;
 	        float de_angvel_dt = (e_angvel - last_e_angvel) / dt;
-	        float de_vel_dt = (e_vel - last_e_vel) / dt;
+	        float de_vel_dt    = (e_vel    - last_e_vel)    / dt;
 
-	        last_e_angle = e_angle;
+	        last_e_angle  = e_angle;
 	        last_e_angvel = e_angvel;
-	        last_e_vel = e_vel;
+	        last_e_vel    = e_vel;
 
-	        // --- Event trigger check ---
+	        // --- Event trigger check (Zeno effect) ---
 	        if ((fabsf(sliding_surface_L) > event_threshold ||
 	             fabsf(sliding_surface_R) > event_threshold ||
-	             fabsf(de_angle_dt) > d_e_angle_threshold ||
+	             fabsf(de_angle_dt)  > d_e_angle_threshold ||
 	             fabsf(de_angvel_dt) > d_e_angvel_threshold ||
-	             fabsf(de_vel_dt) > d_e_vel_threshold) &&
-	             (now - last_trigger_time >= MIN_TRIGGER_INTERVAL_MS))
+	             fabsf(de_vel_dt)    > d_e_vel_threshold) &&
+	            (now - last_trigger_time >= MIN_TRIGGER_INTERVAL_MS))
 	        {
-	            isDDSM115Ready = true;
+	            isDDSM115Ready   = true;
 	            isCYBERGEARReady = true;
 
 	            last_trigger_time = now;
