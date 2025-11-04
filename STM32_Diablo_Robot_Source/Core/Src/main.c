@@ -600,7 +600,7 @@ int main(void)
 
 		 if(!isFallen){
 
-		 calculate_cascaded_motor_currents_smc(sliding_surface_L,sliding_surface_R,desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
+		 calculate_cascaded_motor_currents_smc(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
 		 // SEND CURRENT TO MOTORS
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
@@ -1323,66 +1323,72 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	 if (htim->Instance == TIM3)
-	    {
-	        // --- Static storage for derivative calculations ---
-	        static float last_e_angle = 0.0f;
-	        static float last_e_angvel = 0.0f;
-	        static float last_e_vel = 0.0f;
-	        static uint32_t last_trigger_time = 0;
-	        static uint32_t event_window_start = 0;
-	        static uint32_t event_count = 0;
+    if (htim->Instance == TIM3)
+    {
+        // --- Static storage for derivative calculations ---
+        static float last_v = 0.0f;
+        static float last_trigger_time = 0;
+        static uint32_t event_window_start = 0;
+        static uint32_t event_count = 0;
 
-	        const uint32_t MIN_TRIGGER_INTERVAL_MS = 10; // minimum time between triggers (Zeno effect)
-	        const float dt = 0.002f; // 2 ms loop
+        const uint32_t MIN_TRIGGER_INTERVAL_MS = 10; // minimum time between triggers
+        const float dt = 0.002f; // 2 ms loop
 
-	        uint32_t now = HAL_GetTick(); // current time in ms
+        uint32_t now = HAL_GetTick(); // current time in ms
 
-	        // --- Compute errors ---
-	        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
-	        float desired_velocity  = 0.5f * (desired_v_left + desired_v_right);
+        // --- Compute velocity and error ---
+        float measured_velocity = 0.5f * (-DDSM115MotorList[0].x_dot + DDSM115MotorList[1].x_dot);
+        float desired_velocity  = 0.0f; // we want robot to stay in place
 
-	        e_angle  = (roll_esp32 - 0.010328498f) - 0.5f * (theta_des_l_telemetry + theta_des_r_telemetry);
-	        e_angvel = gx_esp32; // desired angular velocity = 0
-	        e_vel    = measured_velocity - desired_velocity;
+        e_vel = measured_velocity - desired_velocity;
 
-	        // --- Compute sliding surfaces dynamically ---
-	        // You can add additional terms (e.g., velocity) if desired
-	        sliding_surface_L = e_angle + lambda * e_angvel;
-	        sliding_surface_R = e_angle + lambda * e_angvel; // for now same; can use right-specific term if needed
+        // --- Approximate acceleration ---
+        float a_vel = (measured_velocity - last_v) / dt;
+        last_v = measured_velocity;
 
-	        // --- Compute derivatives for event detection ---
-	        float de_angle_dt  = (e_angle  - last_e_angle)  / dt;
-	        float de_angvel_dt = (e_angvel - last_e_angvel) / dt;
-	        float de_vel_dt    = (e_vel    - last_e_vel)    / dt;
+        // --- Outer sliding variable (velocity SMC) ---
+        float sigma_v = e_vel + lambda * a_vel;
 
-	        last_e_angle  = e_angle;
-	        last_e_angvel = e_angvel;
-	        last_e_vel    = e_vel;
+        // --- Event trigger check ---
+        if ((fabsf(sigma_v) > event_threshold) &&
+            (now - last_trigger_time >= MIN_TRIGGER_INTERVAL_MS))
+        {
+            isDDSM115Ready   = true;
+            isCYBERGEARReady = true;
 
-	        // --- Event trigger check (Zeno effect) ---
-	        if ((fabsf(sliding_surface_L) > event_threshold ||
-	             fabsf(sliding_surface_R) > event_threshold ||
-	             fabsf(de_angle_dt)  > d_e_angle_threshold ||
-	             fabsf(de_angvel_dt) > d_e_angvel_threshold ||
-	             fabsf(de_vel_dt)    > d_e_vel_threshold) &&
-	            (now - last_trigger_time >= MIN_TRIGGER_INTERVAL_MS))
-	        {
-	            isDDSM115Ready   = true;
-	            isCYBERGEARReady = true;
+            last_trigger_time = now;
+            event_count++;
+        }
 
-	            last_trigger_time = now;
-	            event_count++;
-	        }
+        // --- Optional: update average trigger frequency every 1 s ---
+        if (now - event_window_start >= 1000)
+        {
+            avg_trigger_rate_hz = event_count;
+            event_count = 0;
+            event_window_start = now;
+        }
 
-	        // --- Optional: update average trigger frequency every 1 s ---
-	        if (now - event_window_start >= 1000)
-	        {
-	            avg_trigger_rate_hz = event_count;
-	            event_count = 0;
-	            event_window_start = now;
-	        }
-	    }
+        // --- Compute desired angles for inner LQI using ASMC ---
+        // Dynamic gain (tanh) to reduce chattering
+        sliding_surface_L = sigma_v;
+        sliding_surface_R = sigma_v; // can be right-specific if needed
+
+        float K_left  = K * tanhf(fabsf(sliding_surface_L)/phi);
+        float K_right = K * tanhf(fabsf(sliding_surface_R)/phi);
+
+        // Saturation function (boundary layer)
+        float sat_left  = sliding_surface_L / phi;
+        float sat_right = sliding_surface_R / phi;
+
+        if (sat_left  >  1.0f) sat_left  =  1.0f;
+        if (sat_left  < -1.0f) sat_left  = -1.0f;
+        if (sat_right >  1.0f) sat_right =  1.0f;
+        if (sat_right < -1.0f) sat_right = -1.0f;
+
+        theta_des_l_telemetry = -K_left  * sat_left;
+        theta_des_r_telemetry = -K_right * sat_right;
+    }
+
 	if (htim->Instance == TIM4)
 	{
 		//isDDSM115Ready = true;

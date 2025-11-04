@@ -20,6 +20,12 @@
 
 extern float sliding_surface_L;
 extern float sliding_surface_R;
+extern float sliding_surface_dot_L;
+extern float sliding_surface_dot_R;
+extern float sigma_L;
+extern float sigma_R;
+extern float alpha_sigma; // convergence rate for sigma -> increases speed to drive s -> 0
+
 
 
 // SMC
@@ -85,7 +91,6 @@ extern float total_force_out;
 void update_pitch_leveling_controller(float current_pitch_rad, float dt);
 
 void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_right,
-                                           float sliding_surface_left, float sliding_surface_right,
                                            float* current_motor1_out,
                                            float* current_motor2_out,
                                            float* total_force_out);

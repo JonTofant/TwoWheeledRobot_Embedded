@@ -1,2 +1,2 @@
-../Core/Src/controler.c:92:6:update_pitch_leveling_controller	40	static
-../Core/Src/controler.c:155:6:calculate_cascaded_motor_currents_smc	112	static
+../Core/Src/controler.c:105:6:update_pitch_leveling_controller	40	static
+../Core/Src/controler.c:168:6:calculate_cascaded_motor_currents_smc	72	static
