@@ -9,7 +9,7 @@
 #include "controler.h"
 
 //SMC
-float lambda =2.0f;   // Convergence speed parameter
+float lambda =5.0f;   // Convergence speed parameter
 float K = 0.1f;       // SMC gain (must exceed max expected disturbance)
 float phi = 3.5;     // Boundary layer for chattering reduction
 float sliding_surface_L;
@@ -38,6 +38,10 @@ float e_vel    = 0;
 
 float e_norm = 0;
 
+float k1 = 4.0f;
+float k2 = 8.0f;
+float epsilon = 0.008f;
+float L = 3.0f;
 
 
 
@@ -136,21 +140,21 @@ void update_pitch_leveling_controller(float current_pitch_rad, float dt)
 
 
 //////////////////////////////////////////////////////////////////////////////
-// -------------------- CASCADED MOTOR CONTROL: SMC OUTER LOOP ------------- //
+// -------------------- CASCADED MOTOR CONTROL: ADAPTIVE STA OUTER LOOP ---- //
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * @brief  Calculates motor currents for a cascaded control of inverted pendulum.
- *         Outer loop is velocity control using SMC sliding surfaces computed externally.
- *         Inner loop is angle tracking via LQI.
+ * @brief Calculates motor currents for a cascaded control of inverted pendulum.
+ * Outer loop is velocity control using adaptive Super-Twisted Sliding Mode Controller (BSTA) with quasi-barrier function.
+ * Inner loop is angle tracking via LQI.
  *
- * @param  x_target_left   Desired linear velocity for left wheel [m/s]
- * @param  x_target_right  Desired linear velocity for right wheel [m/s]
- * @param  sliding_surface_left  Precomputed sliding surface for left wheel (from 2 ms loop)
- * @param  sliding_surface_right Precomputed sliding surface for right wheel (from 2 ms loop)
- * @param  current_motor1_out    Pointer to output current for right motor [A]
- * @param  current_motor2_out    Pointer to output current for left motor [A]
- * @param  total_force_out       Optional pointer to average total force [N]
+ * @param x_target_left Desired linear velocity for left wheel [m/s]
+ * @param x_target_right Desired linear velocity for right wheel [m/s]
+ * @param sliding_surface_left Precomputed sliding surface for left wheel (from 2 ms loop)
+ * @param sliding_surface_right Precomputed sliding surface for right wheel (from 2 ms loop)
+ * @param current_motor1_out Pointer to output current for right motor [A]
+ * @param current_motor2_out Pointer to output current for left motor [A]
+ * @param total_force_out Optional pointer to average total force [N]
  */
 void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_right,
                                            float sliding_surface_left, float sliding_surface_right,
@@ -158,9 +162,11 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
                                            float* current_motor2_out,
                                            float* total_force_out)
 {
-    // --- [STATE] Persistent Integrators for Inner Loop LQI ---
-    static float theta_error_integral_left  = 0.0f;
+    // --- [STATE] Persistent Integrators for Inner Loop LQI and Outer STA ---
+    static float theta_error_integral_left = 0.0f;
     static float theta_error_integral_right = 0.0f;
+    static float v_left = 0.0f;  // Integrator for left STA
+    static float v_right = 0.0f; // Integrator for right STA
     static uint32_t last_cycles = 0;
 
     // --- [TIMING] Compute dt dynamically ---
@@ -169,34 +175,55 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
     last_cycles = current_cycles;
 
     // --- [SENSOR INPUT] IMU & Wheel States ---
-    float current_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
+    float current_theta = roll_esp32 - 0.010328498f; // Corrected offset
     float current_theta_dot = gx_esp32;
 
     ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- OUTER LOOP: SLIDING SURFACE -> Theta Desired -------- //
+    // -------------------- OUTER LOOP: ADAPTIVE STA -> Theta Desired ------------ //
     ////////////////////////////////////////////////////////////////////////////////
 
-    // --- Dynamic gain: taper K as sliding surface approaches zero using tanh ---
-    float K_left  = K * tanhf(fabsf(sliding_surface_left)  / phi);
-    float K_right = K * tanhf(fabsf(sliding_surface_right) / phi);
+    // Process left side
+    float sigma_left = sliding_surface_left;
+    float abs_sigma_left = fabsf(sigma_left);
+    float sign_left = (sigma_left > 0.0f) ? 1.0f : ((sigma_left < 0.0f) ? -1.0f : 0.0f);
+    float k_bf_left = 1.0f;
+    if (abs_sigma_left < epsilon) {
+        float denom = epsilon - abs_sigma_left;
+        if (denom > 1e-6f) {
+            k_bf_left = L * abs_sigma_left / denom;
+        } else {
+            k_bf_left = 100.0f; // Bounded large value to prevent infinity
+        }
+    }
+    float sqrt_abs_left = sqrtf(abs_sigma_left);
+    float u_left = k1 * k_bf_left * sqrt_abs_left * sign_left + v_left;
+    v_left += dt * (k2 * k_bf_left * sign_left);
 
-    // --- Saturation function for chattering reduction (boundary layer) ---
-    float sat_left  = sliding_surface_left  / phi;
-    float sat_right = sliding_surface_right / phi;
+    // Process right side
+    float sigma_right = sliding_surface_right;
+    float abs_sigma_right = fabsf(sigma_right);
+    float sign_right = (sigma_right > 0.0f) ? 1.0f : ((sigma_right < 0.0f) ? -1.0f : 0.0f);
+    float k_bf_right = 1.0f;
+    if (abs_sigma_right < epsilon) {
+        float denom = epsilon - abs_sigma_right;
+        if (denom > 1e-6f) {
+            k_bf_right = L * abs_sigma_right / denom;
+        } else {
+            k_bf_right = 100.0f; // Bounded large value to prevent infinity
+        }
+    }
+    float sqrt_abs_right = sqrtf(abs_sigma_right);
+    float u_right = k1 * k_bf_right * sqrt_abs_right * sign_right + v_right;
+    v_right += dt * (k2 * k_bf_right * sign_right);
 
-    if (sat_left  >  1.0f) sat_left  =  1.0f;
-    if (sat_left  < -1.0f) sat_left  = -1.0f;
-    if (sat_right >  1.0f) sat_right =  1.0f;
-    if (sat_right < -1.0f) sat_right = -1.0f;
-
-    // --- Desired pitch angles for inner loop LQI ---
-    float theta_des_left  = -K_left  * sat_left;
-    float theta_des_right = -K_right * sat_right;
+    // --- Desired pitch angles for inner loop LQI (negative sign to oppose error) ---
+    float theta_des_left = -u_left;
+    float theta_des_right = -u_right;
 
     // --- Clamp desired angle to safe limits ---
-    const float MAX_THETA_DES = 0.244346095f;  // ≈ 14 degrees
-    if (theta_des_left  > MAX_THETA_DES) theta_des_left  = MAX_THETA_DES;
-    if (theta_des_left  < -MAX_THETA_DES) theta_des_left  = -MAX_THETA_DES;
+    const float MAX_THETA_DES = 0.244346095f; // ≈ 14 degrees
+    if (theta_des_left > MAX_THETA_DES) theta_des_left = MAX_THETA_DES;
+    if (theta_des_left < -MAX_THETA_DES) theta_des_left = -MAX_THETA_DES;
     if (theta_des_right > MAX_THETA_DES) theta_des_right = MAX_THETA_DES;
     if (theta_des_right < -MAX_THETA_DES) theta_des_right = -MAX_THETA_DES;
 
@@ -204,22 +231,22 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
     // -------------------- INNER LOOP: ANGLE TRACKING LQI ----------------------- //
     ////////////////////////////////////////////////////////////////////////////////
 
-    float theta_error_left  = current_theta + delta_varphi_l - theta_des_left;
+    float theta_error_left = current_theta + delta_varphi_l - theta_des_left;
     float theta_error_right = current_theta + delta_varphi_r - theta_des_right;
 
     // --- Integrate inner-loop error ---
-    theta_error_integral_left  += theta_error_left  * dt;
+    theta_error_integral_left += theta_error_left * dt;
     theta_error_integral_right += theta_error_right * dt;
 
     // --- Limit integral term to prevent windup ---
     const float MAX_THETA_I = 0.2f;
-    if (theta_error_integral_left  > MAX_THETA_I) theta_error_integral_left  = MAX_THETA_I;
-    if (theta_error_integral_left  < -MAX_THETA_I) theta_error_integral_left  = -MAX_THETA_I;
+    if (theta_error_integral_left > MAX_THETA_I) theta_error_integral_left = MAX_THETA_I;
+    if (theta_error_integral_left < -MAX_THETA_I) theta_error_integral_left = -MAX_THETA_I;
     if (theta_error_integral_right > MAX_THETA_I) theta_error_integral_right = MAX_THETA_I;
     if (theta_error_integral_right < -MAX_THETA_I) theta_error_integral_right = -MAX_THETA_I;
 
     // --- Compute motor forces from LQI ---
-    float force_left  = -(K_GAINS[0] * theta_error_left  + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_left);
+    float force_left = -(K_GAINS[0] * theta_error_left + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_left);
     float force_right = -(K_GAINS[0] * theta_error_right + K_GAINS[1] * current_theta_dot + K_I_THETA * theta_error_integral_right);
 
     // --- Optional: log average total force ---
@@ -228,19 +255,19 @@ void calculate_cascaded_motor_currents_smc(float x_target_left, float x_target_r
     }
 
     // --- Convert force to motor currents ---
-    float current_left  = (force_left  * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
+    float current_left = (force_left * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
     float current_right = (force_right * WHEEL_RADIUS_R) / MOTOR_TORQUE_CONSTANT_KT;
 
     // --- Deadzone Compensation ---
-    if (current_left > 0) current_left  += DZ_LEFT_POS;
-    else if (current_left < 0) current_left  -= DZ_LEFT_NEG;
+    if (current_left > 0) current_left += DZ_LEFT_POS;
+    else if (current_left < 0) current_left -= DZ_LEFT_NEG;
 
     if (current_right > 0) current_right += DZ_RIGHT_POS;
     else if (current_right < 0) current_right -= DZ_RIGHT_NEG;
 
     // --- Final motor outputs ---
-    *current_motor1_out = -current_right;  // Right motor
-    *current_motor2_out =  current_left;   // Left motor
+    *current_motor1_out = -current_right; // Right motor
+    *current_motor2_out = current_left; // Left motor
 }
 
 

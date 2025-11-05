@@ -213,7 +213,6 @@ void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_rad
     // --- 0. Sample time for this motor ---
     uint32_t now = HAL_GetTick() * 1000; // ms -> us
     motor->motor_dt = (motor->last_update_time_us == 0) ? 0.001f : (now - motor->last_update_time_us) / 1e6f;
-    motor->motor_dt = 0.015;
     motor->last_update_time_us = now;
 
     // --- 1. Velocity ---

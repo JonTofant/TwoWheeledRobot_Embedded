@@ -48,6 +48,12 @@ extern float e_angle;
 extern float e_angvel;
 extern float e_vel;
 
+extern float k1;
+extern float k2;
+extern float epsilon;
+extern float L;
+
+
 extern float e_norm;
 
 // LQI gains for the cascade controler
