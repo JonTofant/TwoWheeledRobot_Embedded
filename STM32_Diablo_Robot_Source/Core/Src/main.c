@@ -313,7 +313,7 @@ int main(void)
   {
 
 	  // ----- MAIN CONTROL LOOP -----
-	  // Seperated by flags for auxiliary tasks and a state mac
+	  // Seperated by flags for auxiliary tasks and a state machine
 
 
 	 if (isCANReady) {
@@ -329,18 +329,10 @@ int main(void)
 
 	 if (isCYBERGEARReady){
 
-		 // Checking angle
-
-		 if (roll_esp32 > 0.60 || roll_esp32 < -0.60){
-			 isFallen = true;
-		 }
-		 else if (roll_esp32 > -0.0872664626 && roll_esp32 < 0.0872664626)
-		 {
-		     isFallen = false;
-		 }
 
 
-		 if (isFallen)
+
+		 if (isFallen())
 		 {
 			 if (xPressed == 1) isStartupStrategy = true;
 		 }
@@ -349,35 +341,10 @@ int main(void)
 
 		 if(isStartupStrategy)
 		 {
-			K_GAINS[0] = 180.0f;
-			K_GAINS[1] = 10.0f;
-			 attempt_for_amount_of_samples -=1;
-			 isFallen = false;
-			 if (attempt_for_amount_of_samples <=0 || (roll_esp32 > -0.0872664626 && roll_esp32 < 0.0872664626)){
-
-				 if (roll_esp32 > -0.1872664626 && roll_esp32 < 0.1872664626)
-				 {
-				     isFallen = false;
-				     isStartupStategySuccess = true;
-				     isStartupStrategy = false;
-				     attempt_for_amount_of_samples = 45;
-					    K_GAINS[0] = 100.0f;
-					    K_GAINS[1] = 10.0f;
-
-				 }
-				 else{
-					 isFallen = true;
-					 isStartupStategySuccess = false;
-					 isStartupStrategy = false;
-					 attempt_for_amount_of_samples = 55;
-					    K_GAINS[0] = 100.0f;
-					    K_GAINS[1] = 10.0f;
-				 }
-
-			 }
+			 startup_strategy_control();
 		 }
 
-		 if(isFallen){
+		 if(isFallen()){
 			 DDSM115setCurrent(0x10, 0);
 			 HAL_Delay(2);
 			 DDSM115setCurrent(0x11, 0);
@@ -388,7 +355,7 @@ int main(void)
 
 
 		 	// ROBOT IS STANDING AND OPERATIONAL
-		    if (!isFallen) {
+		    if (!isFallen()) {
 		    	if(isSTATIC){
 		    		float x_L = -DDSM115MotorList[0].x;
 					float x_dot_L = -DDSM115MotorList[0].x_dot;
@@ -499,7 +466,7 @@ int main(void)
 
 	 if (isDDSM115Ready){
 
-		 if(!isFallen){
+		 if(!isFallen() || isStartupStrategy){
 
 		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
 		 // SEND CURRENT TO MOTORS
