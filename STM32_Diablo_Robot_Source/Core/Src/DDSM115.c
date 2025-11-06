@@ -240,8 +240,12 @@ void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_rad
         return;
     }
 
-    // --- 3. Acceleration ---
-    motor->x_ddot = (motor->x_dot - motor->prev_x_dot) / motor->motor_dt;
+    // 3. Acceleration
+    if (motor->motor_dt > 0.0f) { // Avoid division by zero
+        motor->x_ddot = -((motor->x_dot - motor->prev_x_dot) / motor->motor_dt);
+    } else {
+        motor->x_ddot = 0.0f; // Set acceleration to zero if dt is invalid
+    }
 
     // --- 4. Wrap detection ---
     int32_t delta = (int32_t)current_raw_pos - (int32_t)motor->prev_raw_pos;
