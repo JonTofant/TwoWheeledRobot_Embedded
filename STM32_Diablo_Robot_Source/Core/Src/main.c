@@ -329,9 +329,6 @@ int main(void)
 
 	 if (isCYBERGEARReady){
 
-
-
-
 		 if (isFallen())
 		 {
 			 if (xPressed == 1) isStartupStrategy = true;
@@ -357,90 +354,11 @@ int main(void)
 		 	// ROBOT IS STANDING AND OPERATIONAL
 		    if (!isFallen()) {
 		    	if(isSTATIC){
-		    		float x_L = -DDSM115MotorList[0].x;
-					float x_dot_L = -DDSM115MotorList[0].x_dot;
-					float x_ddot_R = -DDSM115MotorList[0].x_ddot;
 
-					float x_R     =  DDSM115MotorList[1].x;
-					float x_dot_R =  DDSM115MotorList[1].x_dot;
-					float x_ddot_L = DDSM115MotorList[1].x_ddot;
-
-					// Calculating x double dot
+		    	posture_controler();
 
 
-
-					float v_L = x_dot_L;
-					float v_R = x_dot_R;
-
-					// Izračun želenega xc z pd regulatorjem
-					// --- [Outer Loop Errors] ---
-					float x_err_L = v_L - desired_v_left;
-					float x_err_R = v_R - desired_v_right;
-
-					// --- [Outer Loop Integration (optional)] ---
-					if (Ki_pos > 0.0f) {
-						position_integral_L += x_err_L * 0.015; // * dt
-						position_integral_R += x_err_R * 0.015; // * dt
-
-						const float MAX_POS_INTEGRAL = 0.2f;
-						if (position_integral_L > MAX_POS_INTEGRAL) position_integral_L = MAX_POS_INTEGRAL;
-						if (position_integral_L < -MAX_POS_INTEGRAL) position_integral_L = -MAX_POS_INTEGRAL;
-						if (position_integral_R > MAX_POS_INTEGRAL) position_integral_R = MAX_POS_INTEGRAL;
-						if (position_integral_R < -MAX_POS_INTEGRAL) position_integral_R = -MAX_POS_INTEGRAL;
-					}
-
-							// --- [Theta Desired from Outer Loop PD] ---
-							xc_des_l = -(Kp_pos_chasis * x_err_L + Kd_pos_chasis * x_ddot_L + Ki_pos_chasis * position_integral_L);
-							xc_des_r = (Kp_pos_chasis * x_err_R + Kd_pos_chasis * x_ddot_R + Ki_pos_chasis * position_integral_R);
-
-							// --- [Clamp Desired Angle] ---
-							const float MAX_POS_DES = 1.0;
-							if (xc_des_l > MAX_POS_DES) xc_des_l = MAX_POS_DES;
-							if (xc_des_l < -MAX_POS_DES) xc_des_l = -MAX_POS_DES;
-							if (xc_des_r > MAX_POS_DES) xc_des_r = MAX_POS_DES;
-							if (xc_des_r < -MAX_POS_DES) xc_des_r = -MAX_POS_DES;
-
-
-							float xc_des_l_translated = xc_des_l + 12.9/2;
-							float xc_des_r_translated = xc_des_r + 12.9/2;
-
-						bool success_right = set_leg_foot_position(
-							&MOTOR_CG_RF,       // The "right" motor of the right leg
-							&MOTOR_CG_RB,       // The "left" motor of the right leg
-							&leg_state_rf,
-							xc_des_r_translated,
-							base_target_y
-						);
-
-						// Call the kinematics for the left leg
-						bool success_left = set_leg_foot_position(
-							&MOTOR_CG_LF,       // The "right" motor of the left leg
-							&MOTOR_CG_LB,       // The "left" motor of the left leg
-							&leg_state_lf,
-							xc_des_l_translated,
-							base_target_y
-						);
-
-						LegGeometryList[0].x_c = xc_des_l_translated;
-						LegGeometryList[0].y_c = -base_target_y;
-
-
-						LegGeometryList[1].x_c = xc_des_r_translated;
-						LegGeometryList[1].y_c = -base_target_y;
-
-
-
-						calculate_L_and_theta(&LegGeometryList[0]);
-						calculate_L_and_theta(&LegGeometryList[1]);
-
-
-
-					delta_varphi_l = -LegGeometryList[0].theta;
-					delta_varphi_r = LegGeometryList[1].theta;
-
-
-
-
+		    	// TODO Add this into a state machine instead of delays
 				 writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
 				 writeParameter(0x7016, &MOTOR_CG_LB.target_angle, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
 				 HAL_Delay(5);
@@ -469,7 +387,9 @@ int main(void)
 		 if(!isFallen() || isStartupStrategy){
 
 		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
-		 // SEND CURRENT TO MOTORS
+
+
+	    // TODO Add this into a state machine instead of delays
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
 		 DDSM115setCurrent(0x11, current_motor1_out);

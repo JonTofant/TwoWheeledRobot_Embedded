@@ -59,4 +59,6 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
                                        float* current_motor2_out,
                                        float* total_force_out);
 
+void posture_controler();
+
 #endif /* INC_CONTROLER_H_ */
