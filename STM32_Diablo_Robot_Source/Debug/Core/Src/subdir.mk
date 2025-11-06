@@ -13,6 +13,7 @@ C_SRCS += \
 ../Core/Src/joystick.c \
 ../Core/Src/kinematics.c \
 ../Core/Src/main.c \
+../Core/Src/state_machine.c \
 ../Core/Src/stm32f4xx_hal_msp.c \
 ../Core/Src/stm32f4xx_it.c \
 ../Core/Src/syscalls.c \
@@ -30,6 +31,7 @@ OBJS += \
 ./Core/Src/joystick.o \
 ./Core/Src/kinematics.o \
 ./Core/Src/main.o \
+./Core/Src/state_machine.o \
 ./Core/Src/stm32f4xx_hal_msp.o \
 ./Core/Src/stm32f4xx_it.o \
 ./Core/Src/syscalls.o \
@@ -47,6 +49,7 @@ C_DEPS += \
 ./Core/Src/joystick.d \
 ./Core/Src/kinematics.d \
 ./Core/Src/main.d \
+./Core/Src/state_machine.d \
 ./Core/Src/stm32f4xx_hal_msp.d \
 ./Core/Src/stm32f4xx_it.d \
 ./Core/Src/syscalls.d \
@@ -63,7 +66,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/DDSM115.cyclo ./Core/Src/DDSM115.d ./Core/Src/DDSM115.o ./Core/Src/DDSM115.su ./Core/Src/StartupStrategy.cyclo ./Core/Src/StartupStrategy.d ./Core/Src/StartupStrategy.o ./Core/Src/StartupStrategy.su ./Core/Src/StateEstimator.cyclo ./Core/Src/StateEstimator.d ./Core/Src/StateEstimator.o ./Core/Src/StateEstimator.su ./Core/Src/controler.cyclo ./Core/Src/controler.d ./Core/Src/controler.o ./Core/Src/controler.su ./Core/Src/cybergear.cyclo ./Core/Src/cybergear.d ./Core/Src/cybergear.o ./Core/Src/cybergear.su ./Core/Src/joystick.cyclo ./Core/Src/joystick.d ./Core/Src/joystick.o ./Core/Src/joystick.su ./Core/Src/kinematics.cyclo ./Core/Src/kinematics.d ./Core/Src/kinematics.o ./Core/Src/kinematics.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32f4xx_hal_msp.cyclo ./Core/Src/stm32f4xx_hal_msp.d ./Core/Src/stm32f4xx_hal_msp.o ./Core/Src/stm32f4xx_hal_msp.su ./Core/Src/stm32f4xx_it.cyclo ./Core/Src/stm32f4xx_it.d ./Core/Src/stm32f4xx_it.o ./Core/Src/stm32f4xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_init.cyclo ./Core/Src/system_init.d ./Core/Src/system_init.o ./Core/Src/system_init.su ./Core/Src/system_stm32f4xx.cyclo ./Core/Src/system_stm32f4xx.d ./Core/Src/system_stm32f4xx.o ./Core/Src/system_stm32f4xx.su ./Core/Src/telemetry.cyclo ./Core/Src/telemetry.d ./Core/Src/telemetry.o ./Core/Src/telemetry.su
+	-$(RM) ./Core/Src/DDSM115.cyclo ./Core/Src/DDSM115.d ./Core/Src/DDSM115.o ./Core/Src/DDSM115.su ./Core/Src/StartupStrategy.cyclo ./Core/Src/StartupStrategy.d ./Core/Src/StartupStrategy.o ./Core/Src/StartupStrategy.su ./Core/Src/StateEstimator.cyclo ./Core/Src/StateEstimator.d ./Core/Src/StateEstimator.o ./Core/Src/StateEstimator.su ./Core/Src/controler.cyclo ./Core/Src/controler.d ./Core/Src/controler.o ./Core/Src/controler.su ./Core/Src/cybergear.cyclo ./Core/Src/cybergear.d ./Core/Src/cybergear.o ./Core/Src/cybergear.su ./Core/Src/joystick.cyclo ./Core/Src/joystick.d ./Core/Src/joystick.o ./Core/Src/joystick.su ./Core/Src/kinematics.cyclo ./Core/Src/kinematics.d ./Core/Src/kinematics.o ./Core/Src/kinematics.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/state_machine.cyclo ./Core/Src/state_machine.d ./Core/Src/state_machine.o ./Core/Src/state_machine.su ./Core/Src/stm32f4xx_hal_msp.cyclo ./Core/Src/stm32f4xx_hal_msp.d ./Core/Src/stm32f4xx_hal_msp.o ./Core/Src/stm32f4xx_hal_msp.su ./Core/Src/stm32f4xx_it.cyclo ./Core/Src/stm32f4xx_it.d ./Core/Src/stm32f4xx_it.o ./Core/Src/stm32f4xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_init.cyclo ./Core/Src/system_init.d ./Core/Src/system_init.o ./Core/Src/system_init.su ./Core/Src/system_stm32f4xx.cyclo ./Core/Src/system_stm32f4xx.d ./Core/Src/system_stm32f4xx.o ./Core/Src/system_stm32f4xx.su ./Core/Src/telemetry.cyclo ./Core/Src/telemetry.d ./Core/Src/telemetry.o ./Core/Src/telemetry.su
 
 .PHONY: clean-Core-2f-Src
 

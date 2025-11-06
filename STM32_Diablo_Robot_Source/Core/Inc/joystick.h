@@ -9,6 +9,9 @@
 #define INC_JOYSTICK_H_
 
 #include "stdint.h"
+#include "controler.h"
+#include "DDSM115.h"
+#include "state_machine.h"
 
 #define UART3_CONTROLLER_PACKET_LEN 11
 extern float scale_speed;
@@ -30,4 +33,7 @@ extern uint8_t startPressed;
 extern float desired_x_dualshock;
 extern float desired_angle_dualshock; // Desired angle from the dualshock controller
 
+void process_joystick_input();
+
 #endif /* INC_JOYSTICK_H_ */
+
