@@ -78,23 +78,15 @@ typedef struct {
 // External declaration of the leg geometry
 extern LegGeometry LegGeometryList[MAX_NUM_LEGS];
 
-// r_eff function prototype
-// Input: theta1, theta2 (in radians), and pointer to LegGeometry struct
-// Output: r_eff (in meters)
-void calculate_r_eff(float theta1, float theta2, LegGeometry* legGeometry);
-void calculate_L_and_L_dot(float theta1, float theta2, LegGeometry* legGeometry, float dt);
-// Function to calculate Xc and Yc
-void calculate_Xc_Yc(float phi1, float phi2, LegGeometry* legGeometry);
-void calculate_L_and_theta(LegGeometry* legGeometry);
-void calculate_L_dot(LegGeometry* legGeometry, float dt);
-void calculate_L_ddot(LegGeometry* legGeometry, float dt);
-void calulate_Theta_dot(LegGeometry* legGeometry, float dt);
 
-static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
+void calculate_L_and_theta(LegGeometry* legGeometry);
+
+
+bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
                                   float L_upper, float L_lower,
                                   float *out_x1, float *out_y1, float *out_x2, float *out_y2);
 
-static void chooseContinuousSolution_c(float prev_x, float prev_y,
+void chooseContinuousSolution_c(float prev_x, float prev_y,
                                        float x1, float y1, float x2, float y2,
                                        float *out_x, float *out_y);
 #endif /* INC_KINEMATICS_H_ */

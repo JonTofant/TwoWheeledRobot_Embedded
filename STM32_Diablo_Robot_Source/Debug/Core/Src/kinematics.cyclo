@@ -2,10 +2,7 @@
 ../Core/Src/kinematics.c:75:6:calculate_L_and_L_dot	2
 ../Core/Src/kinematics.c:94:6:calculate_Xc_Yc	1
 ../Core/Src/kinematics.c:123:6:calculate_L_and_theta	1
-../Core/Src/kinematics.c:146:6:calculate_L_dot	2
-../Core/Src/kinematics.c:157:6:calculate_L_ddot	2
-../Core/Src/kinematics.c:169:6:calulate_Theta_dot	2
-../Core/Src/kinematics.c:182:6:init_leg_state	1
-../Core/Src/kinematics.c:191:6:set_leg_foot_position	7
-../Core/Src/kinematics.c:242:13:solveIKTwoSolutions_c	4
-../Core/Src/kinematics.c:268:13:chooseContinuousSolution_c	2
+../Core/Src/kinematics.c:148:6:init_leg_state	1
+../Core/Src/kinematics.c:157:6:set_leg_foot_position	7
+../Core/Src/kinematics.c:208:6:solveIKTwoSolutions_c	4
+../Core/Src/kinematics.c:234:6:chooseContinuousSolution_c	2

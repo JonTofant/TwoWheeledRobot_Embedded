@@ -22,13 +22,16 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+
 #include "math.h"
 #include "string.h"
 #include <stdbool.h>
+
+// Custom headers
 #include "cybergear.h"
 #include "DDSM115.h"
 #include "kinematics.h"
-#include "watchdog.h"
 #include "system_init.h"
 #include "telemetry.h"
 #include "controler.h"
@@ -48,17 +51,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+// RS485 buffer size
 #define PACKET_SIZE 19
 
-// Mathematical constant 2*pi
-
-
-
-// CyberGear Motor preprocessor macro
-#define MOTOR_CG_LF CyberGearMotorList[0]
-#define MOTOR_CG_LB CyberGearMotorList[1]
-#define MOTOR_CG_RF CyberGearMotorList[2]
-#define MOTOR_CG_RB CyberGearMotorList[3]
 
 
 /* USER CODE END PD */
