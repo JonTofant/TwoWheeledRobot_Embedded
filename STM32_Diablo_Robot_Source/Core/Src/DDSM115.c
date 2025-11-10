@@ -29,8 +29,8 @@ float DZ_LEFT_POS  = 0.04f;
 float DZ_LEFT_NEG  = 0.04f;
 
 DDSM115 DDSM115MotorList[MAX_MOTORS_DDSM115] = {
-	{ .motorID = 0x11, .target_angle = 0.0f, .min_angle = -6.283f, .max_angle = 6.283f, .errorFlag = true, .x =0, .x_dot =0, .x_ddot =0, .prev_x_dot = 0 },
-	{ .motorID = 0x10, .target_angle = 0.0f, .min_angle = -6.283f, .max_angle = 6.283f, .errorFlag = true, .x = 0, .x_dot = 0, .x_ddot = 0, .prev_x_dot = 0}
+	{ .motorID = 0x10, .target_angle = 0.0f, .min_angle = -6.283f, .max_angle = 6.283f, .errorFlag = true, .x =0, .x_dot =0, .x_ddot =0, .prev_x_dot = 0 },
+	{ .motorID = 0x11, .target_angle = 0.0f, .min_angle = -6.283f, .max_angle = 6.283f, .errorFlag = true, .x = 0, .x_dot = 0, .x_ddot = 0, .prev_x_dot = 0}
 };
 
 
