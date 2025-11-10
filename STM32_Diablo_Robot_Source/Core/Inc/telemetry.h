@@ -17,6 +17,17 @@
 extern float theta_des_l_telemetry;
 extern float theta_des_r_telemetry;
 
+extern float vel_err_L_telemetry;
+extern float vel_err_R_telemetry;
+extern float sliding_surface_L_telemetry;
+extern float sliding_surface_R_telemetry;
+extern float controler_output_sta_L_telemetry;
+extern float controler_output_sta_R_telemetry;
+extern float K_L_telemetry;
+extern float K_R_telemetry;
+extern float v_L_telemetry;
+extern float v_R_telemetry;
+
 // This structure defines the data payload for telemetry.
 // All variables sent over UART should be included here.
 typedef struct {

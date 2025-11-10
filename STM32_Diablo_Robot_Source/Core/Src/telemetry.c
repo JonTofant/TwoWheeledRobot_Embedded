@@ -30,6 +30,18 @@ extern float desired_v_right;
 float theta_des_l_telemetry;
 float theta_des_r_telemetry;
 
+float vel_err_L_telemetry;
+float vel_err_R_telemetry;
+float sliding_surface_L_telemetry;
+float sliding_surface_R_telemetry;
+float controler_output_sta_L_telemetry;
+float controler_output_sta_R_telemetry;
+float K_L_telemetry;
+float K_R_telemetry;
+float v_L_telemetry;
+float v_R_telemetry;
+
+
 // Motor macros from main.c for convenience
 #define MOTOR_CG_LF CyberGearMotorList[0]
 #define MOTOR_CG_LB CyberGearMotorList[1]
