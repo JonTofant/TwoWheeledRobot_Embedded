@@ -52,19 +52,6 @@ extern float total_torque_out;
 // Calculated Force F output (optional log)
 extern float total_force_out;
 
-// Tunable parameters
-
-extern float lambda_tune;
-extern float k1_tune;
-extern float k2_tune;
-extern float epsilon_tune;
-extern float L_tune;
-extern float gamma_tune;
-extern float max_K_tune;
-extern float k_tune;
-extern float min_den_tune;
-
-
 void update_pitch_leveling_controller(float current_pitch_rad, float dt);
 
 void calculate_cascaded_motor_currents(float x_target_left, float x_target_right,
