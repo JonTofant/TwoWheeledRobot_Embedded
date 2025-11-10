@@ -1,5 +1,6 @@
-Core/Src/watchdog.o: ../Core/Src/watchdog.c ../Core/Inc/watchdog.h \
- ../Core/Inc/cybergear.h \
+Core/Src/state_machine.o: ../Core/Src/state_machine.c \
+ ../Core/Inc/state_machine.h ../Core/Inc/StateEstimator.h \
+ ../Core/Inc/DDSM115.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -31,10 +32,10 @@ Core/Src/watchdog.o: ../Core/Src/watchdog.c ../Core/Inc/watchdog.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/DDSM115.h ../Core/Inc/kinematics.h ../Core/Inc/cybergear.h
-../Core/Inc/watchdog.h:
-../Core/Inc/cybergear.h:
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
+../Core/Inc/state_machine.h:
+../Core/Inc/StateEstimator.h:
+../Core/Inc/DDSM115.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
@@ -67,6 +68,3 @@ Core/Src/watchdog.o: ../Core/Src/watchdog.c ../Core/Inc/watchdog.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-../Core/Inc/DDSM115.h:
-../Core/Inc/kinematics.h:
-../Core/Inc/cybergear.h:

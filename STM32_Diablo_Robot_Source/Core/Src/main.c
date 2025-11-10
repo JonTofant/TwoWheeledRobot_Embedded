@@ -22,19 +22,23 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+
 #include "math.h"
 #include "string.h"
 #include <stdbool.h>
+
+// Custom headers
 #include "cybergear.h"
 #include "DDSM115.h"
 #include "kinematics.h"
-#include "watchdog.h"
 #include "system_init.h"
 #include "telemetry.h"
 #include "controler.h"
 #include "joystick.h"
 #include "StartupStrategy.h"
 #include "StateEstimator.h"
+#include "state_machine.h"
 
 /* USER CODE END Includes */
 
@@ -48,17 +52,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+// ESP32 buffer size (ROLL PITCH YAW)
 #define PACKET_SIZE 19
 
-// Mathematical constant 2*pi
-
-
-
-// CyberGear Motor preprocessor macro
-#define MOTOR_CG_LF CyberGearMotorList[0]
-#define MOTOR_CG_LB CyberGearMotorList[1]
-#define MOTOR_CG_RF CyberGearMotorList[2]
-#define MOTOR_CG_RB CyberGearMotorList[3]
 
 
 /* USER CODE END PD */
@@ -105,25 +101,11 @@ uint8_t RxSingleByte;
 uint16_t angle_u;
 int16_t velocityDDSM_RPM = 0;
 
-// OPERATIONAL STATES
-volatile bool isCANReady = false;
-volatile bool isDDSM115Ready = false;
-volatile bool isControllerReady = false;
-volatile bool isCYBERGEARReady = false;
-volatile bool isTELEMETRYReady = true;
-volatile bool isFallen = true;
-volatile bool isLOCOMOTION = false;
-volatile bool isSTATIC = true;
-volatile bool isJUMP = false;
-static bool uartSynced = false;
-volatile bool isDEMO = true;
+
 
 
 uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 
-
-
-// Kontinuiteta inverzne kinematike
 
 
 
@@ -153,15 +135,8 @@ volatile uint16_t rxReadIndex = 0;       // Your software read pointer
 
 
 
-
-// (We can make the helper functions "static" as they are only used in this file)
-
-
-
 #define BNO080_PACKET_SIZE 25  // 1 SOF + 6×4-byte floats
 #define UART1_RX_BUFFER_SIZE 128
-
-
 static uint8_t  uart1RxBuffer[UART1_RX_BUFFER_SIZE];
 
 
@@ -337,6 +312,8 @@ int main(void)
   while (1)
   {
 
+	  // ----- MAIN CONTROL LOOP -----
+	  // Seperated by flags for auxiliary tasks and a state machine
 
 
 	 if (isCANReady) {
@@ -344,103 +321,15 @@ int main(void)
 		 }
 
 	 if (uart3_controller_packet_ready) {
+		 process_joystick_input();
 		 uart3_controller_packet_ready = 0;
-
-		 axisLX       = (int16_t)(uart3_controller_buf[1] | (uart3_controller_buf[2] << 8));
-		 throttle     = (uint16_t)(uart3_controller_buf[3] | (uart3_controller_buf[4] << 8));
-		 brake        = (uint16_t)(uart3_controller_buf[5] | (uart3_controller_buf[6] << 8));
-		 xPressed     = uart3_controller_buf[7];
-		 float dpad   = uart3_controller_buf[8];
-		 startPressed = uart3_controller_buf[9];
-
-		 dpadUp   = (dpad == 0x01) ? 1 : 0;
-		 dpadDown = (dpad == 0x02) ? 1 : 0;
-
-		 float delta_time = 0.02f; // 20 ms cycle
-		 float scale_factor = 1.0f / 1020.0f;
-
-		 // === Smooth throttle and brake ===
-		 static float throttle_filtered = 0.0f;
-		 static float brake_filtered = 0.0f;
-		 const float alpha = 0.1f;
-		 const float max_change = 10.0f;
-
-		 float throttle_target = (float)throttle;
-		 float brake_target    = (float)brake;
-
-		 throttle_filtered += alpha * (throttle_target - throttle_filtered);
-		 brake_filtered    += alpha * (brake_target - brake_filtered);
-
-		 float delta_throttle = throttle_filtered - throttle_target;
-		 if (delta_throttle >  max_change) throttle_filtered = throttle_target + max_change;
-		 if (delta_throttle < -max_change) throttle_filtered = throttle_target - max_change;
-
-		 float delta_brake = brake_filtered - brake_target;
-		 if (delta_brake >  max_change) brake_filtered = brake_target + max_change;
-		 if (delta_brake < -max_change) brake_filtered = brake_target - max_change;
-
-		 // === Behavior modes ===
-		 if ((throttle_filtered > 20.0f) || (brake_filtered > 20.0f)) {
-		 	isSTATIC = false;
-		 	isLOCOMOTION = true;
-		 } else {
-		 	isSTATIC = true;
-		 	isLOCOMOTION = false;
-		 }
-
-		 // === Inputs ===
-		 float input = (throttle_filtered - brake_filtered);  // forward/backward
-		 float steering = (float)axisLX / 512.0f;             // [-1, 1]
-		 if (steering > 1.0f) steering = 1.0f;
-		 if (steering < -1.0f) steering = -1.0f;
-
-		 // === Improved differential + pivot steering ===
-		 const float turn_gain      = 0.7f;   // overall rotational strength
-		 const float pivot_gain_max = 450.0f; // max pivot angular velocity contribution
-
-		 // pivot_blend controls how much pivoting remains while moving
-		 float pivot_blend = 1.0f - fminf(fabsf(input) / 400.0f, 1.0f);
-
-		 // scale pivot strength by steering magnitude (so light stick = slow spin)
-		 float steer_mag = fabsf(steering);
-		 float pivot_strength = steer_mag * pivot_gain_max * pivot_blend;
-
-		 // Compute velocities
-		 float v_left  = input + steering * (turn_gain * fabsf(input) + pivot_strength);
-		 float v_right = input - steering * (turn_gain * fabsf(input) + pivot_strength);
-
-		 // === Scale and integrate ===
-		 desired_v_left  = v_left  * scale_factor * delta_time * scale_speed;
-		 desired_v_right = v_right * scale_factor * delta_time * scale_speed;
-
-		 // === D-pad control for body ===
-		 if (dpadUp == 1)   base_target_y -= 0.1f;
-		 if (dpadDown == 1) base_target_y += 0.1f;
-
-		 if (base_target_y <= -24.0f) base_target_y = -24.0f;
-		 if (base_target_y >= -13.0f) base_target_y = -13.0f;
-
-
-
-
 	 }
 
 
 
 	 if (isCYBERGEARReady){
 
-		 // Checking angle
-
-		 if (roll_esp32 > 0.60 || roll_esp32 < -0.60){
-			 isFallen = true;
-		 }
-		 else if (roll_esp32 > -0.0872664626 && roll_esp32 < 0.0872664626)
-		 {
-		     isFallen = false;
-		 }
-
-
-		 if (isFallen)
+		 if (isFallen())
 		 {
 			 if (xPressed == 1) isStartupStrategy = true;
 		 }
@@ -449,35 +338,10 @@ int main(void)
 
 		 if(isStartupStrategy)
 		 {
-			K_GAINS[0] = 180.0f;
-			K_GAINS[1] = 10.0f;
-			 attempt_for_amount_of_samples -=1;
-			 isFallen = false;
-			 if (attempt_for_amount_of_samples <=0 || (roll_esp32 > -0.0872664626 && roll_esp32 < 0.0872664626)){
-
-				 if (roll_esp32 > -0.1872664626 && roll_esp32 < 0.1872664626)
-				 {
-				     isFallen = false;
-				     isStartupStategySuccess = true;
-				     isStartupStrategy = false;
-				     attempt_for_amount_of_samples = 45;
-					    K_GAINS[0] = 100.0f;
-					    K_GAINS[1] = 10.0f;
-
-				 }
-				 else{
-					 isFallen = true;
-					 isStartupStategySuccess = false;
-					 isStartupStrategy = false;
-					 attempt_for_amount_of_samples = 55;
-					    K_GAINS[0] = 100.0f;
-					    K_GAINS[1] = 10.0f;
-				 }
-
-			 }
+			 startup_strategy_control();
 		 }
 
-		 if(isFallen){
+		 if(isFallen()){
 			 DDSM115setCurrent(0x10, 0);
 			 HAL_Delay(2);
 			 DDSM115setCurrent(0x11, 0);
@@ -488,92 +352,13 @@ int main(void)
 
 
 		 	// ROBOT IS STANDING AND OPERATIONAL
-		    if (!isFallen) {
+		    if (!isFallen()) {
 		    	if(isSTATIC){
-		    		float x_L = -DDSM115MotorList[0].x;
-					float x_dot_L = -DDSM115MotorList[0].x_dot;
-					float x_ddot_R = -DDSM115MotorList[0].x_ddot;
 
-					float x_R     =  DDSM115MotorList[1].x;
-					float x_dot_R =  DDSM115MotorList[1].x_dot;
-					float x_ddot_L = DDSM115MotorList[1].x_ddot;
-
-					// Calculating x double dot
+		    	posture_controler();
 
 
-
-					float v_L = x_dot_L;
-					float v_R = x_dot_R;
-
-					// Izračun želenega xc z pd regulatorjem
-					// --- [Outer Loop Errors] ---
-					float x_err_L = v_L - desired_v_left;
-					float x_err_R = v_R - desired_v_right;
-
-					// --- [Outer Loop Integration (optional)] ---
-					if (Ki_pos > 0.0f) {
-						position_integral_L += x_err_L * 0.015; // * dt
-						position_integral_R += x_err_R * 0.015; // * dt
-
-						const float MAX_POS_INTEGRAL = 0.2f;
-						if (position_integral_L > MAX_POS_INTEGRAL) position_integral_L = MAX_POS_INTEGRAL;
-						if (position_integral_L < -MAX_POS_INTEGRAL) position_integral_L = -MAX_POS_INTEGRAL;
-						if (position_integral_R > MAX_POS_INTEGRAL) position_integral_R = MAX_POS_INTEGRAL;
-						if (position_integral_R < -MAX_POS_INTEGRAL) position_integral_R = -MAX_POS_INTEGRAL;
-					}
-
-							// --- [Theta Desired from Outer Loop PD] ---
-							xc_des_l = -(Kp_pos_chasis * x_err_L + Kd_pos_chasis * x_ddot_L + Ki_pos_chasis * position_integral_L);
-							xc_des_r = (Kp_pos_chasis * x_err_R + Kd_pos_chasis * x_ddot_R + Ki_pos_chasis * position_integral_R);
-
-							// --- [Clamp Desired Angle] ---
-							const float MAX_POS_DES = 1.0;
-							if (xc_des_l > MAX_POS_DES) xc_des_l = MAX_POS_DES;
-							if (xc_des_l < -MAX_POS_DES) xc_des_l = -MAX_POS_DES;
-							if (xc_des_r > MAX_POS_DES) xc_des_r = MAX_POS_DES;
-							if (xc_des_r < -MAX_POS_DES) xc_des_r = -MAX_POS_DES;
-
-
-							float xc_des_l_translated = xc_des_l + 12.9/2;
-							float xc_des_r_translated = xc_des_r + 12.9/2;
-
-						bool success_right = set_leg_foot_position(
-							&MOTOR_CG_RF,       // The "right" motor of the right leg
-							&MOTOR_CG_RB,       // The "left" motor of the right leg
-							&leg_state_rf,
-							xc_des_r_translated,
-							base_target_y
-						);
-
-						// Call the kinematics for the left leg
-						bool success_left = set_leg_foot_position(
-							&MOTOR_CG_LF,       // The "right" motor of the left leg
-							&MOTOR_CG_LB,       // The "left" motor of the left leg
-							&leg_state_lf,
-							xc_des_l_translated,
-							base_target_y
-						);
-
-						LegGeometryList[0].x_c = xc_des_l_translated;
-						LegGeometryList[0].y_c = -base_target_y;
-
-
-						LegGeometryList[1].x_c = xc_des_r_translated;
-						LegGeometryList[1].y_c = -base_target_y;
-
-
-
-						calculate_L_and_theta(&LegGeometryList[0]);
-						calculate_L_and_theta(&LegGeometryList[1]);
-
-
-
-					delta_varphi_l = -LegGeometryList[0].theta;
-					delta_varphi_r = LegGeometryList[1].theta;
-
-
-
-
+		    	// TODO Add this into a state machine instead of delays
 				 writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
 				 writeParameter(0x7016, &MOTOR_CG_LB.target_angle, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
 				 HAL_Delay(5);
@@ -599,10 +384,12 @@ int main(void)
 
 	 if (isDDSM115Ready){
 
-		 if(!isFallen){
+		 if(!isFallen() || isStartupStrategy){
 
 		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
-		 // SEND CURRENT TO MOTORS
+
+
+	    // TODO Add this into a state machine instead of delays
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
 		 DDSM115setCurrent(0x11, current_motor1_out);

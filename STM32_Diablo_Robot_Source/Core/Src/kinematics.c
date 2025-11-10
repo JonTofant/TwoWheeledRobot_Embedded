@@ -130,8 +130,8 @@ void calculate_L_and_theta(LegGeometry* legGeometry) {
 
 	// --- Define the origin of the virtual leg ---
 	// This is the midpoint of the base link.
-	const float virtual_leg_base_x = l0 / 2.0f;
-	const float virtual_leg_base_y = 0.0f;
+	//const float virtual_leg_base_x = l0 / 2.0f;
+	//const float virtual_leg_base_y = 0.0f;
 
 	// --- Calculate the vector from the virtual leg's base to the foot ---
 	//float delta_x = x_c - virtual_leg_base_x;
@@ -143,40 +143,6 @@ void calculate_L_and_theta(LegGeometry* legGeometry) {
 	// Calculate the virtual leg angle 'theta' using the correct math
 	legGeometry->theta = atanf((x_c - 0.5f*l0)/y_c);
 }
-void calculate_L_dot(LegGeometry* legGeometry, float dt) {
-	// Calculate the derivative of L, making sure dt is positive.
-	float l = legGeometry->l;
-	float l_prev = legGeometry->l_prev;
-	float l_dot = legGeometry->l_dot;
-	l_dot = (dt > 0.0f) ? (l - l_prev) / dt : 0.0f;
-	// Update l_prev for the next iteration.
-	legGeometry->l_dot = l_dot;
-	legGeometry->l_prev = l;
-}
-
-void calculate_L_ddot(LegGeometry* legGeometry, float dt) {
-	// Calculate the derivative of L, making sure dt is positive.
-	float l_dot = legGeometry->l_dot;
-	float l_dot_prev = legGeometry->l_dot_prev;
-	float l_ddot = legGeometry->l_ddot;
-	l_ddot = (dt > 0.0f) ? (l_dot - l_dot_prev) / dt : 0.0f;
-	// Update l_prev for the next iteration.
-	legGeometry->l_ddot = l_ddot;
-	legGeometry->l_dot_prev = l_dot;
-}
-
-
-void calulate_Theta_dot(LegGeometry* legGeometry, float dt) {
-	// Calculate the derivative of theta, making sure dt is positive.
-	float theta = legGeometry->theta;
-	float theta_prev = legGeometry->theta_prev;
-	float theta_dot = legGeometry->theta_dot;
-	theta_dot = (dt > 0.0f) ? (theta - theta_prev) / dt : 0.0f;
-	// Update l_prev for the next iteration.
-	legGeometry->theta_dot = theta_dot;
-	legGeometry->theta_prev = theta;
-}
-
 
 
 void init_leg_state(LegState* state) {
@@ -239,7 +205,7 @@ bool set_leg_foot_position(CyberGear* motor_right, CyberGear* motor_left, LegSta
 }
 
 
-static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
+bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, float foot_y,
                                   float L_upper, float L_lower,
                                   float *out_x1, float *out_y1, float *out_x2, float *out_y2)
 {
@@ -265,7 +231,7 @@ static bool solveIKTwoSolutions_c(float base_x, float base_y, float foot_x, floa
     return true;
 }
 
-static void chooseContinuousSolution_c(float prev_x, float prev_y,
+void chooseContinuousSolution_c(float prev_x, float prev_y,
                                        float x1, float y1, float x2, float y2,
                                        float *out_x, float *out_y)
 {

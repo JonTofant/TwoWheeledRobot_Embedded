@@ -68,6 +68,12 @@ typedef struct {
 
 
 
+// CyberGear Motor preprocessor macro
+#define MOTOR_CG_LF CyberGearMotorList[0]
+#define MOTOR_CG_LB CyberGearMotorList[1]
+#define MOTOR_CG_RF CyberGearMotorList[2]
+#define MOTOR_CG_RB CyberGearMotorList[3]
+
 // Extern declaration of motor array.
 extern DDSM115 DDSM115MotorList[MAX_MOTORS_DDSM115];
 
