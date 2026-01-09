@@ -355,15 +355,15 @@ int main(void)
 		    if (!isFallen()) {
 		    	if(isSTATIC){
 
-		    	posture_controler();
+		    	//posture_controler();
 
 
 		    	// TODO Add this into a state machine instead of delays
-				 writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
-				 writeParameter(0x7016, &MOTOR_CG_LB.target_angle, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
-				 HAL_Delay(5);
-				 writeParameter(0x7016, &MOTOR_CG_RF.target_angle, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
-				 writeParameter(0x7016, &MOTOR_CG_RB.target_angle, MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
+				 //writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
+				 //writeParameter(0x7016, &MOTOR_CG_LB.target_angle, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
+				 //HAL_Delay(5);
+				 //writeParameter(0x7016, &MOTOR_CG_RF.target_angle, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
+				 //writeParameter(0x7016, &MOTOR_CG_RB.target_angle, MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 				 isCYBERGEARReady = false;
 
 
@@ -390,9 +390,9 @@ int main(void)
 
 
 	    // TODO Add this into a state machine instead of delays
-		 DDSM115setCurrent(0x10, current_motor2_out);
+		 DDSM115setCurrent(0x11, current_motor2_out);
 		 HAL_Delay(2);
-		 DDSM115setCurrent(0x11, current_motor1_out);
+		 DDSM115setCurrent(0x10, current_motor1_out);
 		 }
 		 else{}
 

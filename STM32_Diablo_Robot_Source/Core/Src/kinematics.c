@@ -10,7 +10,7 @@
 
 
 //Inverzna kinematika
-const float L1_C = 12.9f;
+const float L1_C = 10.8f;
 const float L2_C = 10.0f;
 const float L3_C = 20.0f;
 const float PI_C = 3.14159265359f;
@@ -37,7 +37,7 @@ LegState leg_state_lb = {0};
 // Leg geometry definition
 LegGeometry LegGeometryList[MAX_NUM_LEGS] = {
     {
-        .l0 = 12.9f, .l1 = 10.0f, .l2 = 20.0f,
+        .l0 = 10.8f, .l1 = 10.0f, .l2 = 20.0f,
         .l = 0.0f, .l_dot = 0.0f, .r_eff = 0.0f,
         .l_prev = 0.0f, .x_c = 0.0f, .y_c = 0.0f,
         .theta = 0.0f, .l_eq = 0.13f, .l_dot_desired = 0.0f,
@@ -47,7 +47,7 @@ LegGeometry LegGeometryList[MAX_NUM_LEGS] = {
         .J_T = {{0.0f, 0.0f}, {0.0f, 0.0f}}
     },
     {
-        .l0 = 12.9f, .l1 = 10.0f, .l2 = 20.0f,
+        .l0 = 10.8f, .l1 = 10.0f, .l2 = 20.0f,
         .l = 0.0f, .l_dot = 0.0f, .r_eff = 0.0f,
         .l_prev = 0.0f, .x_c = 0.0f, .y_c = 0.0f,
 		.theta_ref = 0.0f, .theta_dot = 0.0f, .theta_prev = 0.0f,

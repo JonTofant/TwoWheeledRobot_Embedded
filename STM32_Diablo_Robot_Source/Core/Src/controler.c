@@ -15,7 +15,7 @@ volatile float Kd_pitch = 0.0f;
 
 
 float K_GAINS[2] = {100.0f,   10.0f};
-float K_I_THETA = -18.0f; // Integral gain for theta
+float K_I_THETA = 0.0f; // Integral gain for theta
 
 
 float Kp_pos_chasis = 1.2f;
@@ -28,13 +28,14 @@ float position_integral_R;
 // Position control gains for fall strategy
  float Kp_pos = 0.13f;
  float Kd_pos = -0.015f;
- float Ki_pos = 0.25f;
+ float Ki_pos = 0.0f;
 
  float desired_v_left=0;
  float desired_v_right=0;
 
+ float initial_x_chasis = 10.8/2;
  //Target chasis position
- float target_x_chasis = 12.9/2;
+ float target_x_chasis = 10.8/2;
  float target_y_chasis = -13.0;
 
 
@@ -120,7 +121,7 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
     last_time_ms = current_time_ms;
 
     // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---
-    float temp_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
+    float temp_theta     = roll_esp32 - 0.0286776461;  // Corrected offset
     float temp_theta_dot = gx_esp32;
 
     // --- [SENSOR INPUT] Per-Motor Wheel States ---
@@ -135,7 +136,7 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
 
 
     ////////////////////////////////////////////////////////////////////////////////
-    // -------------------- OUTER LOOP: POSITION CONTROL -------------------------
+    // -------------------- OUTER LOOP: VELOCITY CONTROL -------------------------
     ////////////////////////////////////////////////////////////////////////////////
 
     // --- [Outer Loop Errors] ---
@@ -259,8 +260,8 @@ void posture_controler()
 			if (xc_des_r < -MAX_POS_DES) xc_des_r = -MAX_POS_DES;
 
 
-			float xc_des_l_translated = xc_des_l + 12.9/2;
-			float xc_des_r_translated = xc_des_r + 12.9/2;
+			float xc_des_l_translated = xc_des_l + initial_x_chasis;
+			float xc_des_r_translated = xc_des_r + initial_x_chasis;
 
 		bool success_right = set_leg_foot_position(
 			&MOTOR_CG_RF,       // The "right" motor of the right leg
