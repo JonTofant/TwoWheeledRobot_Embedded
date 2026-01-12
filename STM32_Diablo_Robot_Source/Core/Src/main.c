@@ -39,6 +39,7 @@
 #include "StartupStrategy.h"
 #include "StateEstimator.h"
 #include "state_machine.h"
+#include "JumpStrategy.h"
 
 /* USER CODE END Includes */
 
@@ -332,6 +333,8 @@ int main(void)
 		 if (isFallen())
 		 {
 			 if (xPressed == 1) isStartupStrategy = true;
+		 }else{
+			 if (xPressed == 1) isJumpStrategy = true;
 		 }
 
 
@@ -346,6 +349,11 @@ int main(void)
 			 HAL_Delay(2);
 			 DDSM115setCurrent(0x11, 0);
 
+		 }
+
+		 if(isJumpStrategy)
+		 {
+			 jump_strategy_control();
 		 }
 
 

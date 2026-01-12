@@ -1,4 +1,5 @@
 "./Core/Src/DDSM115.o"
+"./Core/Src/JumpStrategy.o"
 "./Core/Src/StartupStrategy.o"
 "./Core/Src/StateEstimator.o"
 "./Core/Src/controler.o"

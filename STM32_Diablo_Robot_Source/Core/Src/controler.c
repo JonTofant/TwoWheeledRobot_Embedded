@@ -34,7 +34,7 @@ float position_integral_R;
  float desired_v_right=0;
 
  //Target chasis position
- float target_x_chasis = 12.9/2;
+ float target_x_chasis = 10.8/2;
  float target_y_chasis = -13.0;
 
 
@@ -91,8 +91,8 @@ void update_pitch_leveling_controller(float current_pitch_rad, float dt)
     final_y_right = base_target_y - height_adjustment;
 
     // 7. Final safety clamp to ensure legs stay within physical limits
-    const float LEG_Y_MAX = -13.0f; // Lowest position
-    const float LEG_Y_MIN = -24.0f; // Highest position
+    const float LEG_Y_MAX = -15.0f; // Lowest position
+    const float LEG_Y_MIN = -27.0f; // Highest position
 
     if (final_y_left > LEG_Y_MAX) final_y_left = LEG_Y_MAX;
     if (final_y_left < LEG_Y_MIN) final_y_left = LEG_Y_MIN;
@@ -120,7 +120,7 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
     last_time_ms = current_time_ms;
 
     // --- [SENSOR INPUT] Shared IMU (theta, theta_dot) ---
-    float temp_theta     = roll_esp32 - 0.010328498f;  // Corrected offset
+    float temp_theta     = roll_esp32 - 0.0280328498f;  // Corrected offset
     float temp_theta_dot = gx_esp32;
 
     // --- [SENSOR INPUT] Per-Motor Wheel States ---
@@ -259,8 +259,8 @@ void posture_controler()
 			if (xc_des_r < -MAX_POS_DES) xc_des_r = -MAX_POS_DES;
 
 
-			float xc_des_l_translated = xc_des_l + 12.9/2;
-			float xc_des_r_translated = xc_des_r + 12.9/2;
+			float xc_des_l_translated = xc_des_l + 10.8/2;
+			float xc_des_r_translated = xc_des_r + 10.8/2;
 
 		bool success_right = set_leg_foot_position(
 			&MOTOR_CG_RF,       // The "right" motor of the right leg
