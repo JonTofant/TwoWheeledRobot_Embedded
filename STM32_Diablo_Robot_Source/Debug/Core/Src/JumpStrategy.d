@@ -35,7 +35,8 @@ Core/Src/JumpStrategy.o: ../Core/Src/JumpStrategy.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/StateEstimator.h ../Core/Inc/DDSM115.h \
  ../Core/Inc/telemetry.h ../Core/Inc/kinematics.h \
- ../Core/Inc/state_machine.h ../Core/Inc/controler.h
+ ../Core/Inc/state_machine.h ../Core/Inc/controler.h \
+ ../Core/Inc/cybergear.h
 ../Core/Inc/JumpStrategy.h:
 ../Core/Inc/controler.h:
 ../Core/Inc/cybergear.h:
@@ -77,3 +78,4 @@ Core/Src/JumpStrategy.o: ../Core/Src/JumpStrategy.c \
 ../Core/Inc/kinematics.h:
 ../Core/Inc/state_machine.h:
 ../Core/Inc/controler.h:
+../Core/Inc/cybergear.h:

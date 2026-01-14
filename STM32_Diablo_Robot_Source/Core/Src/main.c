@@ -367,12 +367,22 @@ int main(void)
 
 
 		    	// TODO Add this into a state machine instead of delays
-				 writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
+				 /*writeParameter(0x7016, &MOTOR_CG_LF.target_angle, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
 				 writeParameter(0x7016, &MOTOR_CG_LB.target_angle, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
 				 HAL_Delay(5);
 				 writeParameter(0x7016, &MOTOR_CG_RF.target_angle, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 				 writeParameter(0x7016, &MOTOR_CG_RB.target_angle, MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
+				 */
+
+		    	Motor_SendMITCommand(&MOTOR_CG_LF);
+		    	Motor_SendMITCommand(&MOTOR_CG_LB);
+		    	HAL_Delay(5);
+		    	Motor_SendMITCommand(&MOTOR_CG_RF);
+		    	Motor_SendMITCommand(&MOTOR_CG_RB);
+
+
 				 isCYBERGEARReady = false;
+
 
 
 		    	}
@@ -398,6 +408,8 @@ int main(void)
 
 
 	    // TODO Add this into a state machine instead of delays
+
+
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
 		 DDSM115setCurrent(0x11, current_motor1_out);
@@ -946,7 +958,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
            // Extract current angle from Bytes 0-1
            uint16_t angle_raw = (CAN_received_data[0] << 8) | CAN_received_data[1];
-           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2;
+           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2 + 10*M_PI/180.0f;
            // Convert to degrees
            //angle = angle * 180.0f / 3.14159265359f;
 

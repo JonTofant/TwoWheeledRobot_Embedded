@@ -12,10 +12,12 @@ bool isJumpStrategy = false;
 
 // Parameters
 #include "controler.h"
+#include "cybergear.h"
 
-#define JUMP_EXTEND_Y   -27.0f
-#define JUMP_RETRACT_Y  -15.0f
-#define JUMP_HOLD_CYCLES 1   // number of main loop cycles to hold extended position
+#define JUMP_EXTEND_Y   -24.0f
+#define JUMP_RETRACT_Y  -19.0f
+#define JUMP_HOLD_CYCLES 3
+#define JUMP_FF_TORQUE 10.0f// number of main loop cycles to hold extended position
 
 typedef enum {
     JUMP_IDLE = 0,
@@ -34,6 +36,12 @@ void jump_strategy_control()
         case JUMP_IDLE:
             // Start jump by setting maximum extension
             base_target_y = JUMP_EXTEND_Y;
+            // Set the feed-forward torque for jump
+            CyberGearMotorList[0].desired_torque_ff = JUMP_FF_TORQUE; // Left leg
+            CyberGearMotorList[1].desired_torque_ff = -JUMP_FF_TORQUE; // Right leg
+            CyberGearMotorList[2].desired_torque_ff = JUMP_FF_TORQUE; // Left leg
+            CyberGearMotorList[3].desired_torque_ff = -JUMP_FF_TORQUE; // Right leg
+
             jump_state = JUMP_HOLD;
             jump_counter = 0;
             break;
@@ -50,6 +58,11 @@ void jump_strategy_control()
         case JUMP_RETRACTING:
             // Retract legs back to normal
             base_target_y = JUMP_RETRACT_Y;
+            // Set the feed-forward torque for jump
+            CyberGearMotorList[0].desired_torque_ff = 0.0f; // Left leg
+            CyberGearMotorList[1].desired_torque_ff = 0.0f; // Right leg
+            CyberGearMotorList[2].desired_torque_ff = 0.0f; // Left leg
+            CyberGearMotorList[3].desired_torque_ff = 0.0f; // Right leg
             jump_state = JUMP_IDLE;
             isJumpStrategy = false;  // Jump finished
             break;

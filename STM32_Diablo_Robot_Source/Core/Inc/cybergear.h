@@ -24,12 +24,15 @@ typedef struct {
     uint8_t hostID;
     uint8_t motorID;
     float angle;       // Current target angle (radians)
+    float desired_angle; // Desired angle (radians)
+    float desired_torque_ff; // Desired feed-forward torque (Nm)
     float min_angle;   // Minimum allowed angle
     float max_angle;   // Maximum allowed angle
     float kp;          // Position control gain
     float kd;          // Derivative gain
     bool errorFlag;    // True if error or no valid response
     float velocity;    // Current velocity
+    float desired_velocity; // Desired velocity
     float max_velocity; // Maximum velocity
     float torque;      // Current torque
     float temperature; // Current temperature
@@ -60,7 +63,7 @@ uint16_t float_to_uint(float x, float x_min, float x_max);
 HAL_StatusTypeDef setIqRef(CyberGear* motor, float current);
 // Function for motor stop
 HAL_StatusTypeDef motorStop(CyberGear* motor);
-
+HAL_StatusTypeDef Motor_SendMITCommand(CyberGear* motor);
 
 
 

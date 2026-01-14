@@ -28,13 +28,13 @@ uint8_t CAN_received_data[8];
 // Initialize motors with errorFlag set to true (unverified) and names for clarity.
 CyberGear CyberGearMotorList[MAX_MOTORS] = {
     { .hostID = 0xFE, .motorID = 0x1E, .angle = 1.0f, .min_angle = leftBackMinAngle, .max_angle = leftBackMaxAngle,
-      .kp = 30.0f, .kd = 1.0f, .errorFlag = true, .max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f },
+      .kp = 3.0f, .kd = 0.3f, .errorFlag = true, .max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x1F, .angle = 1.0f, .min_angle = leftFrontMinAngle, .max_angle = leftFrontMaxAngle,
-      .kp = 30.0f, .kd = 1.0f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f },
+      .kp = 3.0f, .kd = 0.3f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x15, .angle = 1.0f, .min_angle = ANGLE_MIN, .max_angle = ANGLE_MAX,
-      .kp = 30.0f, .kd = 1.0f, .errorFlag = true ,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f },
+      .kp = 3.0f, .kd = 0.3f, .errorFlag = true ,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x14, .angle = 1.0f, .min_angle = ANGLE_MIN, .max_angle = ANGLE_MAX,
-      .kp = 30.0f, .kd = 1.0f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f }
+      .kp = 3.0f, .kd = 0.3f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f }
 };
 
 
@@ -285,3 +285,47 @@ HAL_StatusTypeDef motorStop(CyberGear* motor) {
     return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
 }
 
+/**
+ * @brief Sends MIT Mode Control command (Communication Type 1)
+ * @param motor Pointer to motor struct containing target states and gains
+ * @param torque_ff Feed-forward torque in Nm
+ */
+HAL_StatusTypeDef Motor_SendMITCommand(CyberGear* motor) {
+    CAN_TxHeaderTypeDef txHeader;
+    uint32_t txMailbox;
+    uint8_t txData[8];
+
+    // 1. Calculate the 16-bit values
+    uint16_t q_p  = float_to_uint(motor->desired_angle, -4.0f * M_PI, 4.0f * M_PI);
+    uint16_t q_v  = float_to_uint(motor->desired_velocity, -30.0f, 30.0f);
+    uint16_t q_kp = float_to_uint(motor->kp, 0.0f, 500.0f);
+    uint16_t q_kd = float_to_uint(motor->kd, 0.0f, 5.0f);
+    uint16_t q_t  = float_to_uint(motor->desired_torque_ff, -12.0f, 12.0f);
+
+    // 2. Build the Extended ID carefully
+    // Bit 28-24: Comm Mode (1)
+    // Bit 23-8:  Torque (q_t)
+    // Bit 7-0:   Motor ID
+    uint32_t extId = 0;
+    extId |= (uint32_t)0x01 << 24;                 // Mode 1
+    extId |= (uint32_t)(q_t & 0xFFFF) << 8;        // Force 16-bit limit then shift
+    extId |= (uint32_t)(motor->motorID & 0xFF);    // Force 8-bit limit
+
+    txHeader.ExtId = extId;
+    txHeader.IDE   = CAN_ID_EXT;
+    txHeader.RTR   = CAN_RTR_DATA;
+    txHeader.DLC   = 8;
+    txHeader.TransmitGlobalTime = DISABLE;
+
+    // 3. Pack Data - Xiaomi expects Big Endian (MSB first)
+    txData[0] = (uint8_t)(q_p >> 8);
+    txData[1] = (uint8_t)(q_p & 0xFF);
+    txData[2] = (uint8_t)(q_v >> 8);
+    txData[3] = (uint8_t)(q_v & 0xFF);
+    txData[4] = (uint8_t)(q_kp >> 8);
+    txData[5] = (uint8_t)(q_kp & 0xFF);
+    txData[6] = (uint8_t)(q_kd >> 8);
+    txData[7] = (uint8_t)(q_kd & 0xFF);
+
+    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+}

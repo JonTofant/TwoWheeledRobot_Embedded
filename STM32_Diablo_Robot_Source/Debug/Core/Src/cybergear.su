@@ -10,3 +10,4 @@
 ../Core/Src/cybergear.c:220:19:singleParameterRead	56	static
 ../Core/Src/cybergear.c:246:19:setIqRef	16	static
 ../Core/Src/cybergear.c:264:19:motorStop	56	static
+../Core/Src/cybergear.c:293:19:Motor_SendMITCommand	72	static
