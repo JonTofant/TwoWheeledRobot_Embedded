@@ -58,49 +58,37 @@ static uint8_t calculate_checksum(const uint8_t* data, uint16_t len) {
   * @param huart Pointer to a UART_HandleTypeDef structure (e.g., &huart3).
   */
 void Send_Telemetry(UART_HandleTypeDef *huart) {
-    // 1. Check if the UART DMA is ready for a new transmission.
+    // 1. Safety check for DMA
     if (!telemetry_tx_ready) {
-        return; // Skip this cycle if the previous transmission is not yet complete.
+        return;
     }
 
-    // A static variable is used so this large struct is not allocated on the stack.
-    static TelemetryPacket_t telemetry_packet;
-    const uint16_t packet_size = sizeof(TelemetryPacket_t);
+    // Static buffer to stay off the stack
+    static TelemetryPacket_t tx_packet;
 
-    // 2. Mark the transmitter as busy.
+    // 2. FILL THE PAYLOAD (your existing variable assignments)
+    tx_packet.payload.motor_angle_rf = MOTOR_CG_RF.angle;
+    tx_packet.payload.motor_angle_rb = MOTOR_CG_RB.angle;
+    tx_packet.payload.motor_angle_lf = MOTOR_CG_LF.angle;
+    tx_packet.payload.motor_angle_lb = MOTOR_CG_LB.angle;
+
+    tx_packet.payload.roll_angle     = roll_esp32;
+
+    // 3. SET PACKET METADATA (The "Transparent" part)
+    tx_packet.sof = TELEMETRY_SOF;
+    tx_packet.len = sizeof(TelemetryPayload_t); // Automatically calculates payload size
+
+    // 4. CALCULATE CHECKSUM
+    // We calculate over the payload only to match the ESP32 logic
+    tx_packet.checksum = calculate_checksum((uint8_t*)&tx_packet.payload, tx_packet.len);
+
+    // 5. START DMA TRANSMISSION
     telemetry_tx_ready = false;
 
-    // 3. Fill the packet with data from your global variables.
-    telemetry_packet.sof = TELEMETRY_SOF;
+    // The total size is: 1 (SOF) + 1 (LEN) + PayloadSize + 1 (CRC)
+    uint16_t total_frame_size = 1 + 1 + tx_packet.len + 1;
 
-    // Motor Angles
-    telemetry_packet.payload.motor_angle_rf = MOTOR_CG_RF.angle;
-    telemetry_packet.payload.motor_angle_rb = MOTOR_CG_RB.angle;
-    telemetry_packet.payload.motor_angle_lf = MOTOR_CG_LF.angle;
-    telemetry_packet.payload.motor_angle_lb = MOTOR_CG_LB.angle;
-    telemetry_packet.payload.roll_angle = roll_esp32;
-
-    // Controller Output
-    telemetry_packet.payload.pd_output_right_motor = current_motor1_out;
-    telemetry_packet.payload.pd_output_left_motor  = current_motor2_out;
-
-    // Desired angles from cascade controller
-    telemetry_packet.payload.theta_des_l = theta_des_l_telemetry;
-    telemetry_packet.payload.theta_des_r = theta_des_r_telemetry;
-
-    // Desired chassis positions
-    telemetry_packet.payload.xc_des_l = xc_des_l;
-    telemetry_packet.payload.xc_des_r = xc_des_r;
-
-    // Desired wheel positions
-    telemetry_packet.payload.desired_x_left = desired_v_left;
-    telemetry_packet.payload.desired_x_right = desired_v_right;
-
-    // 4. Calculate the checksum over the payload part of the packet.
-    telemetry_packet.checksum = calculate_checksum((uint8_t*)&telemetry_packet.payload, sizeof(TelemetryPayload_t));
-
-    // 5. Start the DMA transmission.
-    HAL_UART_Transmit_DMA(huart, (uint8_t*)&telemetry_packet, packet_size);
+    HAL_UART_Transmit_DMA(huart, (uint8_t*)&tx_packet, total_frame_size);
 }
 
 /**

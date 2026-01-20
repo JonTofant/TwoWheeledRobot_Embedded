@@ -17,56 +17,60 @@
 extern float theta_des_l_telemetry;
 extern float theta_des_r_telemetry;
 
-// This structure defines the data payload for telemetry.
-// All variables sent over UART should be included here.
-typedef struct {
-    // Motor Angles
-    float motor_angle_rf;
-    float motor_angle_rb;
-    float motor_angle_lf;
-    float motor_angle_lb;
-    float roll_angle;
+// (packed) -> Pack the payload to ensure floats are tightly grouped with no gaps
+typedef struct __attribute__((packed)) {
+// ALL OF THE DDSM115 STATES
+	float DDSM115_motor_velocity_right;
+	float DDSM115_motor_velocity_left;
+	float DDSM115_current_right;
+	float DDSM115_current_left;
 
-    // Controller Output (DDSM115 motor currents)
-    float pd_output_right_motor;
-    float pd_output_left_motor;
+	// CYBERGEAR MOTOR ANGLES
+	float motor_angle_rf;
+	float motor_angle_rb;
+	float motor_angle_lf;
+	float motor_angle_lb;
+	float motor_desired_current_injection_rf;
+	float motor_desired_current_injection_rb;
+	float motor_desired_current_injection_lf;
+	float motor_desired_current_injection_lb;
+	float motor_Kp;
+	float motor_Kd;
 
-    // Cascade Controller Desired Angles
-    float theta_des_l;
-    float theta_des_r;
 
-    // Desired Chassis Positions
-    float xc_des_l;
-    float xc_des_r;
+	// ESP32 ROLL ANGLE
+	float roll_angle;
 
-    // Desired Wheel Positions
-    float desired_x_left;
-    float desired_x_right;
+	// PD CONTROLLER OUTPUTS
+	float pd_output_right_motor;
+	float pd_output_left_motor;
+
+	// DESIRED THETA VALUES
+	float theta_des_r;
+	float theta_des_l;
+
+	// DESIRED XC VALUES
+	float xc_des_r;
+	float xc_des_l;
+
+	// DESIRED VELOCITIES
+	float desired_velocity_right;
+	float desired_velocity_left;
 } TelemetryPayload_t;
 
 // This structure defines the full packet, including SOF and checksum.
 // The __attribute__((packed)) is important to prevent the compiler from adding padding bytes.
 typedef struct __attribute__((packed)) {
-    uint8_t sof;
+    uint8_t sof;        // Always 0xAA
+    uint8_t len;        // Number of bytes in the payload (sizeof TelemetryPayload_t)
     TelemetryPayload_t payload;
-    uint8_t checksum;
+    uint8_t checksum;   // Sum of payload bytes
 } TelemetryPacket_t;
 
 
-/**
-  * @brief Populates and sends a telemetry packet over the specified UART using DMA.
-  * @param huart Pointer to a UART_HandleTypeDef structure that contains
-  *              the configuration information for the specified UART (e.g., &huart3).
-  * @retval None
-  */
+
 void Send_Telemetry(UART_HandleTypeDef *huart);
 
-/**
-  * @brief Callback function to be called from the main HAL_UART_TxCpltCallback.
-  * @brief This function signals that the UART DMA transfer is complete.
-  * @param huart Pointer to a UART_HandleTypeDef structure.
-  * @retval None
-  */
 void Telemetry_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 
 

@@ -19,7 +19,12 @@ uint16_t brake;
 uint8_t xPressed;
 uint8_t dpadUp;
 uint8_t dpadDown;
+uint8_t dpadLeft;
+uint8_t dpadRight;
 uint8_t startPressed;
+uint8_t sharePressed;
+uint8_t PSButtonPressed;
+uint8_t MicButtonPressed;
 
 float desired_x_dualshock = 0.0f;
 float desired_angle_dualshock = 0.0f; // Desired angle from the dualshock controller
@@ -30,78 +35,93 @@ float scale_speed = 35;
 
 void process_joystick_input()
 {
-	 axisLX       = (int16_t)(uart3_controller_buf[1] | (uart3_controller_buf[2] << 8));
-	 throttle     = (uint16_t)(uart3_controller_buf[3] | (uart3_controller_buf[4] << 8));
-	 brake        = (uint16_t)(uart3_controller_buf[5] | (uart3_controller_buf[6] << 8));
-	 xPressed     = uart3_controller_buf[7];
-	 float dpad   = uart3_controller_buf[8];
-	 startPressed = uart3_controller_buf[9];
+    // === 1. Calculate Checksum for Safety ===
+    // Sum bytes 1 through 9 (all data bytes excluding SOF and the Checksum itself)
+    uint8_t calculated_checksum = 0;
+    for (int i = 1; i <= 9; i++) {
+        calculated_checksum += uart3_controller_buf[i];
+    }
 
-	 dpadUp   = (dpad == 0x01) ? 1 : 0;
-	 dpadDown = (dpad == 0x02) ? 1 : 0;
+    // Compare with the received checksum (Byte 10)
+    if (calculated_checksum != uart3_controller_buf[10]) {
+        // Optional: Increment an error counter here for debugging
+        return; // DATA CORRUPTED: Exit early without updating robot state
+    }
 
-	 float delta_time = 0.02f; // 20 ms cycle
-	 float scale_factor = 1.0f / 1020.0f;
+    // === 2. Unpack Validated Data ===
+    axisLX       = (int16_t)(uart3_controller_buf[1] | (uart3_controller_buf[2] << 8));
+    throttle     = (uint16_t)(uart3_controller_buf[3] | (uart3_controller_buf[4] << 8));
+    brake        = (uint16_t)(uart3_controller_buf[5] | (uart3_controller_buf[6] << 8));
+    xPressed     = uart3_controller_buf[7];
+    uint8_t dpad_raw = uart3_controller_buf[8]; // Changed to uint8_t for cleaner bit comparison
+    uint8_t misc_raw = uart3_controller_buf[9]; // Changed to uint8_t for cleaner bit comparison
 
-	 // === Smooth throttle and brake ===
-	 static float throttle_filtered = 0.0f;
-	 static float brake_filtered = 0.0f;
-	 const float alpha = 0.1f;
-	 const float max_change = 10.0f;
+    dpadUp   = (dpad_raw == 0x01) ? 1 : 0;
+    dpadDown = (dpad_raw == 0x02) ? 1 : 0;
+    dpadLeft = (dpad_raw == 0x08) ? 1 : 0;
+    dpadRight= (dpad_raw == 0x04) ? 1 : 0;
 
-	 float throttle_target = (float)throttle;
-	 float brake_target    = (float)brake;
+    startPressed = (misc_raw == 0x04) ? 1 : 0;
+    sharePressed = (misc_raw == 0x02) ? 1 : 0;
+    PSButtonPressed = (misc_raw == 0x01) ? 1 : 0;
+    MicButtonPressed = (misc_raw == 0x08) ? 1 : 0;
 
-	 throttle_filtered += alpha * (throttle_target - throttle_filtered);
-	 brake_filtered    += alpha * (brake_target - brake_filtered);
+    // === 3. Motion Logic (remains the same) ===
+    float delta_time = 0.02f; // 20 ms cycle
+    float scale_factor = 1.0f / 1020.0f;
 
-	 float delta_throttle = throttle_filtered - throttle_target;
-	 if (delta_throttle >  max_change) throttle_filtered = throttle_target + max_change;
-	 if (delta_throttle < -max_change) throttle_filtered = throttle_target - max_change;
+    static float throttle_filtered = 0.0f;
+    static float brake_filtered = 0.0f;
+    const float alpha = 0.1f;
+    const float max_change = 10.0f;
 
-	 float delta_brake = brake_filtered - brake_target;
-	 if (delta_brake >  max_change) brake_filtered = brake_target + max_change;
-	 if (delta_brake < -max_change) brake_filtered = brake_target - max_change;
+    float throttle_target = (float)throttle;
+    float brake_target    = (float)brake;
 
-	 // === Behavior modes ===
-	 if ((throttle_filtered > 20.0f) || (brake_filtered > 20.0f)) {
-	 	isSTATIC = false;
-	 	isLOCOMOTION = true;
-	 } else {
-	 	isSTATIC = true;
-	 	isLOCOMOTION = false;
-	 }
+    throttle_filtered += alpha * (throttle_target - throttle_filtered);
+    brake_filtered    += alpha * (brake_target - brake_filtered);
 
-	 // === Inputs ===
-	 float input = (throttle_filtered - brake_filtered);  // forward/backward
-	 float steering = (float)axisLX / 512.0f;             // [-1, 1]
-	 if (steering > 1.0f) steering = 1.0f;
-	 if (steering < -1.0f) steering = -1.0f;
+    // Rate limiting
+    float delta_throttle = throttle_filtered - throttle_target;
+    if (delta_throttle >  max_change) throttle_filtered = throttle_target + max_change;
+    if (delta_throttle < -max_change) throttle_filtered = throttle_target - max_change;
 
-	 // === Improved differential + pivot steering ===
-	 const float turn_gain      = 0.7f;   // overall rotational strength
-	 const float pivot_gain_max = 450.0f; // max pivot angular velocity contribution
+    float delta_brake = brake_filtered - brake_target;
+    if (delta_brake >  max_change) brake_filtered = brake_target + max_change;
+    if (delta_brake < -max_change) brake_filtered = brake_target - max_change;
 
-	 // pivot_blend controls how much pivoting remains while moving
-	 float pivot_blend = 1.0f - fminf(fabsf(input) / 400.0f, 1.0f);
+    // Behavior modes
+    if ((throttle_filtered > 20.0f) || (brake_filtered > 20.0f)) {
+        isSTATIC = false;
+        isLOCOMOTION = true;
+    } else {
+        isSTATIC = true;
+        isLOCOMOTION = false;
+    }
 
-	 // scale pivot strength by steering magnitude (so light stick = slow spin)
-	 float steer_mag = fabsf(steering);
-	 float pivot_strength = steer_mag * pivot_gain_max * pivot_blend;
+    // Inputs
+    float input = (throttle_filtered - brake_filtered);
+    float steering = (float)axisLX / 512.0f;
+    if (steering > 1.0f) steering = 1.0f;
+    if (steering < -1.0f) steering = -1.0f;
 
-	 // Compute velocities
-	 float v_left  = input + steering * (turn_gain * fabsf(input) + pivot_strength);
-	 float v_right = input - steering * (turn_gain * fabsf(input) + pivot_strength);
+    const float turn_gain      = 0.7f;
+    const float pivot_gain_max = 450.0f;
+    float pivot_blend = 1.0f - fminf(fabsf(input) / 400.0f, 1.0f);
+    float steer_mag = fabsf(steering);
+    float pivot_strength = steer_mag * pivot_gain_max * pivot_blend;
 
-	 // === Scale and integrate ===
-	 desired_v_left  = v_left  * scale_factor * delta_time * scale_speed;
-	 desired_v_right = v_right * scale_factor * delta_time * scale_speed;
+    float v_left  = input + steering * (turn_gain * fabsf(input) + pivot_strength);
+    float v_right = input - steering * (turn_gain * fabsf(input) + pivot_strength);
 
-	 // === D-pad control for body ===
-	 if (dpadUp == 1)   base_target_y -= 0.1f;
-	 if (dpadDown == 1) base_target_y += 0.1f;
+    desired_v_left  = v_left  * scale_factor * delta_time * scale_speed;
+    desired_v_right = v_right * scale_factor * delta_time * scale_speed;
 
-	 if (base_target_y <= -24.0f) base_target_y = -24.0f;
-	 if (base_target_y >= -13.0f) base_target_y = -13.0f;
+    // D-pad body control
+    if (dpadUp == 1)   base_target_y -= 0.1f;
+    if (dpadDown == 1) base_target_y += 0.1f;
+
+    if (base_target_y <= -24.0f) base_target_y = -24.0f;
+    if (base_target_y >= -13.0f) base_target_y = -13.0f;
 }
 
