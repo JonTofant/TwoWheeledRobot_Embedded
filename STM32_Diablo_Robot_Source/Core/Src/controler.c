@@ -297,3 +297,65 @@ void posture_controler()
 	delta_varphi_r = LegGeometryList[1].theta;
 
 }
+
+void disable_controler(){
+	Kp_pitch = 0.0f;
+	Ki_pitch = 0.0f;
+	Kd_pitch = 0.0f;
+
+	K_GAINS[0] = 0.0f;
+	K_GAINS[1] = 0.0f;
+	K_I_THETA = 0.0f;
+
+	Kp_pos_chasis = 0.0f;
+	Kd_pos_chasis = 0.0f;
+	Ki_pos_chasis = 0.0f;
+
+	position_integral_L = 0.0f;
+	position_integral_R = 0.0f;
+
+	Kp_pos = 0.0f;
+	Kd_pos = 0.0f;
+	Ki_pos = 0.0f;
+
+	current_motor1_out= 0.0f;
+	current_motor2_out= 0.0f;
+	total_torque_out= 0.0f;
+	total_force_out = 0.0f;
+}
+
+void controler_defaults(){
+	Kp_pitch = 0.0f;
+	Ki_pitch = 0.0f;
+	Kd_pitch = 0.0f;
+
+	K_GAINS[0] = 100.0f;
+	K_GAINS[1] = 10.0f;
+	K_I_THETA = -18.0f;
+
+	Kp_pos_chasis = 1.2f;
+	Kd_pos_chasis = -0.15f;
+	Ki_pos_chasis = 0.6f;
+
+	position_integral_L = 0.0f;
+	position_integral_R = 0.0f;
+
+	Kp_pos = 0.13f;
+	Kd_pos = -0.015f;
+	Ki_pos = 0.25f;
+
+	current_motor1_out= 0.0f;
+	current_motor2_out= 0.0f;
+	total_torque_out= 0.0f;
+	total_force_out = 0.0f;
+}
+
+void MIT_controler_gain_schedule_Jump(){
+	CyberGearMotorList[0].kp = 4.0f;
+	CyberGearMotorList[0].kd = 0.2f;
+}
+void MIT_controler_gain_schedule_Normal(){
+	CyberGearMotorList[0].kp = 2.5f;
+	CyberGearMotorList[0].kd = 0.7f;
+
+}

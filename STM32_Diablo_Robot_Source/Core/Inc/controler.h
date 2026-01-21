@@ -61,4 +61,8 @@ void calculate_cascaded_motor_currents(float x_target_left, float x_target_right
 
 void posture_controler();
 
+void disable_controler();
+void controler_defaults();
+void MIT_controler_gain_schedule_Jump();
+void MIT_controler_gain_schedule_Normal();
 #endif /* INC_CONTROLER_H_ */

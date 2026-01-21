@@ -17,7 +17,7 @@ bool isJumpStrategy = false;
 #define JUMP_EXTEND_Y   -24.0f
 #define JUMP_RETRACT_Y  -19.0f
 #define JUMP_HOLD_CYCLES 3
-#define JUMP_FF_TORQUE 10.0f// number of main loop cycles to hold extended position
+#define JUMP_FF_TORQUE 12.0f// number of main loop cycles to hold extended position
 
 typedef enum {
     JUMP_IDLE = 0,
@@ -41,7 +41,8 @@ void jump_strategy_control()
             CyberGearMotorList[1].desired_torque_ff = -JUMP_FF_TORQUE; // Right leg
             CyberGearMotorList[2].desired_torque_ff = JUMP_FF_TORQUE; // Left leg
             CyberGearMotorList[3].desired_torque_ff = -JUMP_FF_TORQUE; // Right leg
-
+            disable_controler(); // Disable other controllers during jump
+            MIT_controler_gain_schedule_Jump(); // Set gains for jump
             jump_state = JUMP_HOLD;
             jump_counter = 0;
             break;
@@ -58,6 +59,8 @@ void jump_strategy_control()
         case JUMP_RETRACTING:
             // Retract legs back to normal
             base_target_y = JUMP_RETRACT_Y;
+            controler_defaults(); // Re-enable normal controllers
+            MIT_controler_gain_schedule_Normal(); // Restore normal gains
             // Set the feed-forward torque for jump
             CyberGearMotorList[0].desired_torque_ff = 0.0f; // Left leg
             CyberGearMotorList[1].desired_torque_ff = 0.0f; // Right leg

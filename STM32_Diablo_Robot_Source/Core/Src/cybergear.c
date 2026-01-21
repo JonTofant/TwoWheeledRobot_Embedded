@@ -28,13 +28,13 @@ uint8_t CAN_received_data[8];
 // Initialize motors with errorFlag set to true (unverified) and names for clarity.
 CyberGear CyberGearMotorList[MAX_MOTORS] = {
     { .hostID = 0xFE, .motorID = 0x1E, .angle = 1.0f, .min_angle = leftBackMinAngle, .max_angle = leftBackMaxAngle,
-      .kp = 3.0f, .kd = 0.3f, .errorFlag = true, .max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
+      .kp = 3.0f, .kd = 0.5f, .errorFlag = true, .max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x1F, .angle = 1.0f, .min_angle = leftFrontMinAngle, .max_angle = leftFrontMaxAngle,
-      .kp = 3.0f, .kd = 0.3f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
+      .kp = 3.0f, .kd = 0.5f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x15, .angle = 1.0f, .min_angle = ANGLE_MIN, .max_angle = ANGLE_MAX,
-      .kp = 3.0f, .kd = 0.3f, .errorFlag = true ,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
+      .kp = 3.0f, .kd = 0.5f, .errorFlag = true ,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x14, .angle = 1.0f, .min_angle = ANGLE_MIN, .max_angle = ANGLE_MAX,
-      .kp = 3.0f, .kd = 0.3f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f }
+      .kp = 3.0f, .kd = 0.5f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f }
 };
 
 

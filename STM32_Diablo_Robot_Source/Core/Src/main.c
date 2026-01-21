@@ -410,6 +410,9 @@ int main(void)
 
 		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
 
+		 //current_motor1_out = 0.0f;
+		 //current_motor2_out = 0.0f;
+
 		 DDSM115setCurrent(0x10, current_motor2_out);
 		 HAL_Delay(2);
 		 DDSM115setCurrent(0x11, current_motor1_out);

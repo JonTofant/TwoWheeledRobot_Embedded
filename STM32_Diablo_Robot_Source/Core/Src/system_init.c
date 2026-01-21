@@ -46,6 +46,8 @@ void System_Init(void)
 	  setMechanicalZero(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
 	  HAL_Delay(50);
 
+	  // DDSM115 change ID
+	  //DDSM115ChangeID(0xAA, 0x10); // Change ID of first motor to 0x10
 
 	  //2) Put motor in position mode
 	  	  // TODO change this into a function
@@ -58,8 +60,6 @@ void System_Init(void)
 	  	  HAL_Delay(50);
 	  	  writeParameter(0x7005, &runMode, MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
 	  	  HAL_Delay(50);
-
-
 
 	  	  writeParameter(0x7017, &MOTOR_CG_LF.max_velocity, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
 	  	  HAL_Delay(50);
