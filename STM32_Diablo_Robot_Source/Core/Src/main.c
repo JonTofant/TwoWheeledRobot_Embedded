@@ -960,7 +960,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
            // Extract current angle from Bytes 0-1
            uint16_t angle_raw = (CAN_received_data[0] << 8) | CAN_received_data[1];
-           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2 /*+ 10*M_PI/180.0f*/;
+           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2 - 10*M_PI/180.0f;
            // Convert to degrees
            //angle = angle * 180.0f / 3.14159265359f;
 

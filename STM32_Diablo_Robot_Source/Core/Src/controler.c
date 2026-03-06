@@ -355,7 +355,7 @@ void MIT_controler_gain_schedule_Jump(){
 	CyberGearMotorList[0].kd = 0.2f;
 }
 void MIT_controler_gain_schedule_Normal(){
-	CyberGearMotorList[0].kp = 2.5f;
-	CyberGearMotorList[0].kd = 0.7f;
+	CyberGearMotorList[0].kp = 3.5f;
+	CyberGearMotorList[0].kd = 0.1f;
 
 }
