@@ -198,8 +198,8 @@ bool set_leg_foot_position(CyberGear* motor_right, CyberGear* motor_left, LegSta
     float physical_angle_left  = -(calculated_alpha2_rad + PI_C);
 
     // --- Assign to motors ---
-    motor_right->desired_angle = physical_angle_right;
-    motor_left->desired_angle = physical_angle_left;
+    motor_right->desired_angle = 0.0f;
+    motor_left->desired_angle = 0.0f;
 
     return true;
 }

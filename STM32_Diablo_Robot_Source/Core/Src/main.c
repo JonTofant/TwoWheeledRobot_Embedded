@@ -288,6 +288,7 @@ int main(void)
   	init_leg_state(&leg_state_lb);
 
 
+
   	// Testing of inverse kinematics
 
 
@@ -360,12 +361,41 @@ int main(void)
 
 
 		 	// ROBOT IS STANDING AND OPERATIONAL
-		    if (!isFallen()) {
+		    if (1) {
 		    	if(isSTATIC){
 
-		    	posture_controler();
 
+			  	  MOTOR_CG_LF.target_angle = 0.0;
 
+			  	  MOTOR_CG_LB.target_angle = -0.0;
+
+			  	  MOTOR_CG_RF.target_angle = -0.0;
+
+			  	  MOTOR_CG_RB.target_angle = 0.0;
+
+			  	  MOTOR_CG_LF.desired_velocity = 0.0;
+
+			  	  MOTOR_CG_LB.desired_velocity = -0.0;
+
+			  	  MOTOR_CG_RF.desired_velocity = -0.0;
+
+			  	  MOTOR_CG_RB.desired_velocity = 0.0;
+
+			  	  MOTOR_CG_LF.desired_angle = 0.0;
+
+			  	  MOTOR_CG_LB.desired_angle = -0.0;
+
+			  	  MOTOR_CG_RF.desired_angle = -0.0;
+
+			  	  MOTOR_CG_RB.desired_angle = 0.0;
+
+			  	  MOTOR_CG_LF.desired_torque_ff = 0.0;
+
+			  	  MOTOR_CG_LB.desired_torque_ff = -0.0;
+
+			  	  MOTOR_CG_RF.desired_torque_ff = -0.0;
+
+			  	  MOTOR_CG_RB.desired_torque_ff = 0.0;
 		    	Motor_SendMITCommand(&MOTOR_CG_LF);
 		    	Motor_SendMITCommand(&MOTOR_CG_LB);
 		    	HAL_Delay(5);
@@ -382,7 +412,42 @@ int main(void)
 		    	else if(isLOCOMOTION){
 		    		// For now the same thing happens as in static
 
-			    	posture_controler();
+
+			  	  MOTOR_CG_LF.target_angle = 0.0;
+
+			  	  MOTOR_CG_LB.target_angle = -0.0;
+
+			  	  MOTOR_CG_RF.target_angle = -0.0;
+
+			  	  MOTOR_CG_RB.target_angle = 0.0;
+
+			  	  MOTOR_CG_LF.desired_velocity = 0.0;
+
+			  	  MOTOR_CG_LB.desired_velocity = -0.0;
+
+			  	  MOTOR_CG_RF.desired_velocity = -0.0;
+
+			  	  MOTOR_CG_RB.desired_velocity = 0.0;
+
+			  	  MOTOR_CG_LF.desired_angle = 0.0;
+
+			  	  MOTOR_CG_LB.desired_angle = -0.0;
+
+			  	  MOTOR_CG_RF.desired_angle = -0.0;
+
+			  	  MOTOR_CG_RB.desired_angle = 0.0;
+
+			  	  MOTOR_CG_LF.desired_torque_ff = 0.0;
+
+			  	  MOTOR_CG_LB.desired_torque_ff = -0.0;
+
+			  	  MOTOR_CG_RF.desired_torque_ff = -0.0;
+
+			  	  MOTOR_CG_RB.desired_torque_ff = 0.0;
+
+
+
+
 
 
 			    	Motor_SendMITCommand(&MOTOR_CG_LF);
