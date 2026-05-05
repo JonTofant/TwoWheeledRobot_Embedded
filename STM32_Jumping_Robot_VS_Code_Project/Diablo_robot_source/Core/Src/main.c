@@ -22,25 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
-
-#include "math.h"
-#include "string.h"
-#include <stdbool.h>
-
-// Custom headers
-#include "cybergear.h"
-#include "DDSM115.h"
-#include "kinematics.h"
-#include "system_init.h"
-#include "telemetry.h"
-#include "controler.h"
-#include "joystick.h"
-#include "StartupStrategy.h"
-#include "StateEstimator.h"
-#include "state_machine.h"
-#include "JumpStrategy.h"
-
+#include "robot_app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,11 +34,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-// ESP32 buffer size (ROLL PITCH YAW)
-#define PACKET_SIZE 19
-
-
 
 /* USER CODE END PD */
 
@@ -87,29 +64,6 @@ DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
 
-// Transcieve header
-CAN_TxHeaderTypeDef pTxHeader;
-
-// Receive header
-CAN_RxHeaderTypeDef pRxHeader;
-
-// Filter for receiving all extended frames
-CAN_FilterTypeDef sFilterConfig;
-
-
-
-uint8_t RxSingleByte;
-uint16_t angle_u;
-int16_t velocityDDSM_RPM = 0;
-
-
-
-
-uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
-
-
-
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -126,23 +80,6 @@ static void MX_USART6_UART_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
-uint16_t getDMACurrentIndex(void);
-volatile uint16_t rxReadIndex = 0;       // Your software read pointer
-
-
-
-
-
-
-#define BNO080_PACKET_SIZE 25  // 1 SOF + 6×4-byte floats
-#define UART1_RX_BUFFER_SIZE 128
-static uint8_t  uart1RxBuffer[UART1_RX_BUFFER_SIZE];
-
-
-
-
 
 /* USER CODE END PFP */
 
@@ -191,119 +128,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-
-
-  // Kick off DMA+Idle for USART1
-  HAL_UARTEx_ReceiveToIdle_IT(&huart1,
-                             uart1RxBuffer,
-                             UART1_RX_BUFFER_SIZE);
-
-
-
-
-  // Enable UART DMA for uart4
-  HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
-
-
-  // ------ PRECISE SAMPLE TIME MEASUREMENTS ------
-
-  // Enable TRC (Trace control) - needed to use DWT
-  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-
-  // Reset the cycle counter
-  DWT->CYCCNT = 0;
-
-  // Enable the cycle counter
-  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-
-  //------------------------------------------------
-
-
-// SEND QUERY TO DDSM115
-  uint8_t cmd[10] = {0};
-  cmd[0] = 0xAA;  // Motor ID
-  cmd[1] = 0x64;
-  cmd[2] = 0x00;  // High byte
-  cmd[3] = 0x00;  // Low byte
-  cmd[4] = 0x00;
-  cmd[5] = 0x00;
-  cmd[6] = 0x00;
-  cmd[7] = 0x00;
-  cmd[8] = 0x00;
-  cmd[9] = compute_crc8(cmd, 9);
-  // Set GPIO pin to transmit mode
-
-  HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
-  HAL_UART_Transmit(&huart5, cmd, 10, HAL_MAX_DELAY);
-  HAL_Delay(10);  // Allow time for the command to be processed
-  // Set GPIO pin to receive mode
-  HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
-
-
-
-
-  // CAN
-  // 1) Configure the CAN filter to accept *all* extended frames
-  CAN_FilterTypeDef sFilterConfig;
-  sFilterConfig.FilterBank = 0;
-  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  sFilterConfig.FilterIdHigh = 0x0000;
-  sFilterConfig.FilterIdLow  = 0x0000;
-  sFilterConfig.FilterMaskIdHigh = 0x0000;
-  sFilterConfig.FilterMaskIdLow  = 0x0000;
-  sFilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-  sFilterConfig.FilterActivation = ENABLE;
-  sFilterConfig.SlaveStartFilterBank = 14;
-  HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig);
-
-
-
-  // 2) Start CAN
-  HAL_CAN_Start(&hcan1);
-
-
-
-  // 3) Optionally enable Rx interrupt
-  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
-
-
-  HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-
-
-
-
-
-  	  // HAL delay to allow the system to stabilize
-  	  HAL_Delay(3000);
-
-
-
-  	  System_Init();
-
-  	init_leg_state(&leg_state_rf);
-  	init_leg_state(&leg_state_lf);
-  	init_leg_state(&leg_state_rb);
-  	init_leg_state(&leg_state_lb);
-
-
-  	// Testing of inverse kinematics
-
-
-
-		  // Enable Timer 3 interupt
-		  HAL_TIM_Base_Start_IT(&htim3);
-		  // Enable Timer 4 interupt
-		  HAL_TIM_Base_Start_IT(&htim4);
-
-		  // 6) (Re-)enable the line just in case
-		  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-
-		  HAL_UART_Receive_IT(&huart3, &uart3_controller_byte, 1);  // Start receiving
-
-
-
+  Robot_AppStart();
 
   /* USER CODE END 2 */
 
@@ -312,119 +137,7 @@ int main(void)
 
   while (1)
   {
-
-	  // ----- MAIN CONTROL LOOP -----
-	  // Seperated by flags for auxiliary tasks and a state machine
-
-
-	 if (isCANReady) {
-		 isCANReady = false;
-		 }
-
-	 if (uart3_controller_packet_ready) {
-		 process_joystick_input();
-		 uart3_controller_packet_ready = 0;
-	 }
-
-
-
-	 if (isCYBERGEARReady){
-
-		 if (isFallen())
-		 {
-			 if (startPressed == 1) isStartupStrategy = true;
-		 }else{
-			 if (xPressed == 1) isJumpStrategy = true;
-		 }
-
-
-
-		 if(isStartupStrategy)
-		 {
-			 startup_strategy_control();
-		 }
-
-		 if(isFallen()){
-			 DDSM115setCurrent(0x10, 0);
-			 HAL_Delay(2);
-			 DDSM115setCurrent(0x11, 0);
-
-		 }
-
-		 if(isJumpStrategy)
-		 {
-			 jump_strategy_control();
-		 }
-
-
-
-
-		 	// ROBOT IS STANDING AND OPERATIONAL
-		    if (!isFallen()) {
-		    	if(isSTATIC){
-
-		    	posture_controler();
-
-
-		    	Motor_SendMITCommand(&MOTOR_CG_LF);
-		    	Motor_SendMITCommand(&MOTOR_CG_LB);
-		    	HAL_Delay(5);
-		    	Motor_SendMITCommand(&MOTOR_CG_RF);
-		    	Motor_SendMITCommand(&MOTOR_CG_RB);
-
-
-				 isCYBERGEARReady = false;
-
-
-
-		    	}
-		    	// THE ROBOT IS IN LOCOMOTION STATE
-		    	else if(isLOCOMOTION){
-		    		// For now the same thing happens as in static
-
-			    	posture_controler();
-
-
-			    	Motor_SendMITCommand(&MOTOR_CG_LF);
-			    	Motor_SendMITCommand(&MOTOR_CG_LB);
-			    	HAL_Delay(5);
-			    	Motor_SendMITCommand(&MOTOR_CG_RF);
-			    	Motor_SendMITCommand(&MOTOR_CG_RB);
-
-
-					 isCYBERGEARReady = false;
-		    	}
-
-		    }
-		    else{
-
-		   	 isCYBERGEARReady = false;
-
-		    }
-	 }
-
-
-	 if (isDDSM115Ready){
-
-		 if(!isFallen() || isStartupStrategy){
-
-		 calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
-
-		 //current_motor1_out = 0.0f;
-		 //current_motor2_out = 0.0f;
-
-		 DDSM115setCurrent(0x10, current_motor2_out);
-		 HAL_Delay(2);
-		 DDSM115setCurrent(0x11, current_motor1_out);
-		 }
-		 else{}
-
-		 isDDSM115Ready = false;
-	 }
-	 if (isTELEMETRYReady){
-		 Send_Telemetry(&huart3);
-	 }
-
+    Robot_AppRunOnce();
 
     /* USER CODE END WHILE */
 
@@ -935,257 +648,29 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-    HAL_StatusTypeDef status;
-    status = HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &pRxHeader, CAN_received_data);
-    if (status != HAL_OK)
-    {
-        // Error reading the message
-        return;
-    }
-
-    uint32_t extId = pRxHeader.ExtId;
-    uint8_t type   = (extId >> 24) & 0x1F;   // bits28..24
-    uint8_t motorID= (extId >> 8) & 0xFFFF;  // Correct: Extracts bits 23–8
-				   // bits7..0
-
-
-
-
-    // Check what type we received
-    if (type == 2) {  // Feedback message from motor
-
-
-           // Extract current angle from Bytes 0-1
-           uint16_t angle_raw = (CAN_received_data[0] << 8) | CAN_received_data[1];
-           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2 - 10*M_PI/180.0f;
-           // Convert to degrees
-           //angle = angle * 180.0f / 3.14159265359f;
-
-
-           // Extract angular velocity from Bytes 2-3
-           uint16_t velocity_raw = (CAN_received_data[2] << 8) | CAN_received_data[3];
-           float velocity = ((float)velocity_raw / 65535.0f) * (-30.0f - 30.0f) + 30.0f; // -30 to 30 rad/s
-
-           // Extract torque from Bytes 4-5
-           uint16_t torque_raw = (CAN_received_data[4] << 8) | CAN_received_data[5];
-           float torque = ((float)torque_raw / 65535.0f) * (-12.0f - 12.0f) + 12.0f; // -12Nm to 12Nm
-
-           // Extract temperature from Bytes 6-7
-           uint16_t temp_raw = (CAN_received_data[6] << 8) | CAN_received_data[7];
-           float temperature = (float)temp_raw / 10.0f; // Temp in Celsius
-
-           // Find matching motor in motorList and update its values
-           for (int i = 0; i < MAX_MOTORS; i++) {
-               if (CyberGearMotorList[i].motorID == motorID) {
-            	   CyberGearMotorList[i].angle = angle;
-            	   CyberGearMotorList[i].velocity = velocity;
-            	   CyberGearMotorList[i].torque = torque;
-            	   CyberGearMotorList[i].temperature = temperature;
-            	   //CyberGearMotorList[i].errorFlag = false;
-            	   CyberGearMotorList[i].update_flag = true;
-
-
-                   break;  // No need to check further once a match is found
-               }
-           }
-           // Call watchdog function
-           //watchdog(&CyberGearMotorList, &DDSM115MotorList, &LegGeometryList, &sampleTime);
-
-
-       }
-    else if (type == 17){
-
-
-
-
-    }
-    else if (type == 21)
-    {
-        // This is typically the fault/error frame
-        // Byte0..3 might be a fault code
-
-
-        // Optionally parse the fault code in received_data[0..3]
-        // For example:
-        /*uint32_t fault = (CAN_received_data[0])
-                       | (CAN_received_data[1] << 8)
-                       | (CAN_received_data[2] << 16)
-                       | (CAN_received_data[3] << 24);*/
-    }
-    else if (type == 0)
-    {
-        // Possibly a "Get Device ID" response
-        // The data bytes may contain the 64-bit unique ID
-    }
-    else
-    {
-        // Some other type
-
-    }
+  Robot_AppCanRxFifo0Pending(hcan);
 }
-
-
-
-
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(huart->Instance == USART2){
-
-	}
-	if(huart->Instance == UART4){
-		//HAL_UART_Transmit(&huart2, &RxSingleByte, 1, 10);
-
-	}
-
-	 if (huart->Instance == USART3) {
-	        if (uart3_controller_index == 0) {
-	            if (uart3_controller_byte == 0xAA) {
-	                uart3_controller_buf[uart3_controller_index++] = uart3_controller_byte;
-	            }
-	            // Else ignore random bytes
-	        } else {
-	            uart3_controller_buf[uart3_controller_index++] = uart3_controller_byte;
-	            if (uart3_controller_index >= UART3_CONTROLLER_PACKET_LEN) {
-	                uart3_controller_index = 0;
-	                uart3_controller_packet_ready = 1;
-	            }
-	        }
-	        HAL_UART_Receive_IT(&huart3, &uart3_controller_byte, 1);  // Re-arm
-	    }
+  Robot_AppUartRxComplete(huart);
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-	   if (huart->Instance == UART5)
-	    {
-	        uint8_t motor_id = RS485_RxBuffer[0];
-
-	        for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
-	            if (DDSM115MotorList[i].motorID == motor_id) {
-	            	update_ddsm115_state(&DDSM115MotorList[i], RS485_RxBuffer, 0.0505f);
-	                break;
-	            }
-	        }
-
-	        // Restart reception for next frame
-	        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
-	    }
-    if (huart->Instance == USART1)
-    {
-        // Size = number of bytes received into uart1RxBuffer[]
-        uint16_t bytes = Size;
-        uint16_t idx   = 0;
-
-        // Process as many full packets as we have
-        while (idx + PACKET_SIZE <= bytes)
-        {
-            if (uart1RxBuffer[idx] == 0xAA)
-            {
-                // Sync on first packet only
-                if (!uartSynced)
-                {
-                    uartSynced = true;
-                    // shift this good packet to buffer start if desired:
-                    memmove(uart1RxBuffer,
-                            uart1RxBuffer + idx,
-                            PACKET_SIZE);
-                    idx = 0;       // start parsing from buffer[0]
-                    bytes = PACKET_SIZE;
-                }
-
-                // Parse the six floats (little-endian) at idx+1..idx+24
-                float *f   = (float*)(uart1RxBuffer + idx + 1);
-                yaw_esp32   = f[0];
-                pitch_esp32 = f[1];
-                roll_esp32  = f[2];
-                gx_esp32    = f[3];
-                gy_esp32    = f[4];
-                gz_esp32    = f[5];
-
-                // Advance past this packet
-                idx += PACKET_SIZE;
-            }
-            else
-            {
-                // No SOF here, skip one byte
-                idx++;
-            }
-        }
-
-
-
-        // re-arm for next Idle
-        HAL_UARTEx_ReceiveToIdle_IT(&huart1,
-                                   uart1RxBuffer,
-                                   UART1_RX_BUFFER_SIZE);
-    }
-
-
-
-
-
+  Robot_AppUartRxEvent(huart, Size);
 }
-
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance == TIM3)
-	{
-		// Every 10ms (100Hz)
-		// Set the flag for CAN transmission
-		//isCANReady = true;
-	}
-	if (htim->Instance == TIM4)
-	{
-		isDDSM115Ready = true;
-		isCYBERGEARReady = true;
-		isTELEMETRYReady = true;
-
-	}
+  Robot_AppTimerElapsed(htim);
 }
-
-
-
-
-
-
-
-
-
-
-
-/**
-  * @brief Updates continuous base ANGLE (phi) and ANGULAR VELOCITY (phi_dot)
-  *        AND linear position (x) and linear velocity (x_dot) based on DDSM115 feedback.
-  *        Handles position wrap-around. Only processes data from motor 0x10.
-  * @param Buffer: Pointer to the received RS485 data buffer.
-  * @param current_phi_rad: Pointer to global variable storing continuous angular position (rad).
-  * @param current_phi_dot_rad_s: Pointer to global variable storing angular velocity (rad/s).
-  * @param current_x: Pointer to global variable storing linear position (m).
-  * @param current_x_dot: Pointer to global variable storing linear velocity (m/s).
-  * @retval None (Results are stored in the global variables via pointers).
-  */
-
-
-
-
-
-
-
-
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-    // Check if the callback is from our telemetry UART.
-    if (huart->Instance == USART3) {
-        // The transmission is complete, so we set the flag to true,
-        // allowing the next call to Send_Telemetry() to proceed.
-        Telemetry_UART_TxCpltCallback(huart);
-    }
+  Robot_AppUartTxComplete(huart);
 }
 
 /* USER CODE END 4 */
@@ -1221,3 +706,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+

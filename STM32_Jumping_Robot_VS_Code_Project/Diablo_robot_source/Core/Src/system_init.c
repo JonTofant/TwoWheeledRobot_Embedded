@@ -5,151 +5,61 @@
  *      Author: tofan
  */
 
-
 #include "system_init.h"
-#include "cybergear.h"
-#include "controler.h"
 
-#define MOTOR_CG_LB CyberGearMotorList[0] // Phi 2
-#define MOTOR_CG_LF CyberGearMotorList[1] // Phi 1
-#define MOTOR_CG_RF CyberGearMotorList[2]
-#define MOTOR__CG_RB CyberGearMotorList[3]
-// Function that initializes the system
+#include "controler.h"
+#include "cybergear.h"
+
+#define STARTUP_MOTOR_CG_LB CyberGearMotorList[0]
+#define STARTUP_MOTOR_CG_LF CyberGearMotorList[1]
+#define STARTUP_MOTOR_CG_RF CyberGearMotorList[2]
+#define STARTUP_MOTOR_CG_RB CyberGearMotorList[3]
+
+static void EnableCybergearMotor(CyberGear *motor);
+static void ZeroCybergearMotor(CyberGear *motor);
+static void SetInitialCybergearTargets(void);
+static void SetDriveMotorsToCurrentMode(void);
+
 void System_Init(void)
 {
-	// Set the cybergear motor to angle mode
-	  // 2) Enable motor
-	  motorEnable(MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
-	  HAL_Delay(50);
+    EnableCybergearMotor(&STARTUP_MOTOR_CG_LF);
+    EnableCybergearMotor(&STARTUP_MOTOR_CG_LB);
+    EnableCybergearMotor(&STARTUP_MOTOR_CG_RF);
+    EnableCybergearMotor(&STARTUP_MOTOR_CG_RB);
 
-	  motorEnable(MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
+    ZeroCybergearMotor(&STARTUP_MOTOR_CG_LF);
+    ZeroCybergearMotor(&STARTUP_MOTOR_CG_LB);
+    ZeroCybergearMotor(&STARTUP_MOTOR_CG_RF);
+    ZeroCybergearMotor(&STARTUP_MOTOR_CG_RB);
 
-	  HAL_Delay(50);
+    SetInitialCybergearTargets();
+    SetDriveMotorsToCurrentMode();
+    MIT_controler_gain_schedule_Normal();
+}
 
-	  motorEnable(MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
-	  HAL_Delay(50);
+static void EnableCybergearMotor(CyberGear *motor)
+{
+    motorEnable(motor->hostID, motor->motorID);
+    HAL_Delay(50);
+}
 
-	  motorEnable(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
-	  HAL_Delay(50);
+static void ZeroCybergearMotor(CyberGear *motor)
+{
+    setMechanicalZero(motor->hostID, motor->motorID);
+    HAL_Delay(50);
+}
 
+static void SetInitialCybergearTargets(void)
+{
+    STARTUP_MOTOR_CG_LF.target_angle = 0.0f;
+    STARTUP_MOTOR_CG_LB.target_angle = -0.0f;
+    STARTUP_MOTOR_CG_RF.target_angle = -0.0f;
+    STARTUP_MOTOR_CG_RB.target_angle = 0.0f;
+}
 
-
-	  // Zero the motor
-	  setMechanicalZero(MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
-	  HAL_Delay(50);
-
-	  setMechanicalZero(MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
-	  HAL_Delay(50);
-
-	  setMechanicalZero(MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
-	  HAL_Delay(50);
-
-	  setMechanicalZero(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
-	  HAL_Delay(50);
-
-	  // DDSM115 change ID
-	  //DDSM115ChangeID(0xAA, 0x10); // Change ID of first motor to 0x10
-
-	  //2) Put motor in position mode
-	  	  // TODO change this into a function
-	  	  /*uint8_t runMode = 1; // 1 => position mode, 3 => current mode
-	  	  writeParameter(0x7005, &runMode, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
-	  	  HAL_Delay(50);
-	  	  writeParameter(0x7005, &runMode, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
-	  	  HAL_Delay(50);
-	  	  writeParameter(0x7005, &runMode, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
-	  	  HAL_Delay(50);
-	  	  writeParameter(0x7005, &runMode, MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
-	  	  HAL_Delay(50);
-
-	  	  writeParameter(0x7017, &MOTOR_CG_LF.max_velocity, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
-	  	  HAL_Delay(50);
-
-	  	  writeParameter(0x7017, &MOTOR_CG_LB.max_velocity, MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
-	  	  HAL_Delay(50);
-
-	  	  writeParameter(0x7017, &MOTOR_CG_RF.max_velocity, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
-	  	  HAL_Delay(50);
-
-	  	  writeParameter(0x7017, &MOTOR__CG_RB.max_velocity, MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
-	  	  HAL_Delay(50);
-*/
-
-
-	  	  // ------------------DEMO INICIALIZACIJA----------------
-
-	  	  // Set the angle for both for one motor to 50deg and the other to -50deg
-
-	  	  // Decide target angle for each motor
-	  	/*  MOTOR_CG_LF.target_angle = 0.785398163f;
-
-	  	  MOTOR_CG_LB.target_angle = -0.785398163f;
-
-	  	  MOTOR_CG_RF.target_angle = -0.785398163f;
-
-	  	  MOTOR__CG_RB.target_angle = 0.785398163f;*/
-
-	  	  // DEBUG MODE
-	  	  /*
-	  	  MOTOR_CG_LF.target_angle = 0.523598776f;
-
-	  	  MOTOR_CG_LB.target_angle = -0.523598776f;
-
-	  	  MOTOR_CG_RF.target_angle = -0.523598776f;
-
-	  	  MOTOR__CG_RB.target_angle = 0.523598776f;
-	  	  */
-	  	  MOTOR_CG_LF.target_angle = 0.0;
-
-	  	  MOTOR_CG_LB.target_angle = -0.0;
-
-	  	  MOTOR_CG_RF.target_angle = -0.0;
-
-	  	  MOTOR__CG_RB.target_angle = 0.0;
-
-
-	  	  // Send the target angle to each motor
-	  	//Motor_SendMITCommand(&MOTOR_CG_LF, 1.0);
-	  	//HAL_Delay(70);
-	  	//Motor_SendMITCommand(&MOTOR_CG_LB, 1.0);
-	  	//HAL_Delay(70);
-	  	//Motor_SendMITCommand(&MOTOR_CG_RF, 1.0);
-	  	//HAL_Delay(70);
-	  	//Motor_SendMITCommand(&MOTOR__CG_RB, 1.0);
-	  	//HAL_Delay(70);
-
-	  	/*
-	  	  Motor_SendAngle(&MOTOR_CG_LF);
-	  	  HAL_Delay(70);
-	  	  Motor_SendAngle(&MOTOR_CG_LB);
-	  	  HAL_Delay(70);
-	  	  Motor_SendAngle(&MOTOR_CG_RF);
-	  	  HAL_Delay(70);
-	  	  Motor_SendAngle(&MOTOR__CG_RB);
-	  	  HAL_Delay(70);
-*/
-	  	  /* Ta Mechanical zero ne dela nic
-		  // Zero the motor
-		  setMechanicalZero(MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
-		  HAL_Delay(50);
-
-		  setMechanicalZero(MOTOR_CG_LB.hostID, MOTOR_CG_LB.motorID);
-		  HAL_Delay(50);
-
-		  setMechanicalZero(MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
-		  HAL_Delay(50);
-
-		  setMechanicalZero(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
-		  HAL_Delay(50);
-
-		  HAL_Delay(3000);*/
-
-	  	  // Set DDSM115 motor to current mode
-	  	  DDMS115setMode(0x10, 0x01);  // 0x01 => current mode
-	  	  HAL_Delay(10);
-	  	  DDMS115setMode(0x11, 0x01);  // 0x01 => current mode
-
-	  	  MIT_controler_gain_schedule_Normal();
-
-
+static void SetDriveMotorsToCurrentMode(void)
+{
+    DDMS115setMode(0x10, 0x01);
+    HAL_Delay(10);
+    DDMS115setMode(0x11, 0x01);
 }

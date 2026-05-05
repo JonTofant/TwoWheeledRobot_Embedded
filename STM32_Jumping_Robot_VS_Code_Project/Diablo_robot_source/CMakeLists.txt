@@ -31,6 +31,7 @@ target_link_options(${BUILD_UNIT_0_NAME} PRIVATE
 # Add sources to executable/library
 target_sources(${BUILD_UNIT_0_NAME} PRIVATE
   # User defined sources
+  Core/Src/robot_app.c
 )
 
 # Add include directories
