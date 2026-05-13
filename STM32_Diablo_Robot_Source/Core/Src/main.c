@@ -383,6 +383,12 @@ int main(void)
 		    	posture_controler();
 
 
+		    	MOTOR_CG_LF.desired_angle = 0.75f;
+		    	MOTOR_CG_LB.desired_angle = -0.75f;
+		    	MOTOR_CG_RF.desired_angle = 0.75f;
+		    	MOTOR_CG_RB.desired_angle = -0.75f;
+
+
 		    	Motor_SendMITCommand(&MOTOR_CG_LF);
 		    	Motor_SendMITCommand(&MOTOR_CG_LB);
 		    	HAL_Delay(5);
@@ -424,8 +430,8 @@ int main(void)
 	 if (sendUart2Data){
 
 
-		 sprintf(NN_buffer, "%d%d%.2f%.2f%.2f%.2f%.2f%.2f%.2f%.2f\r\n",
-				 0xAA, 0x55, yaw_esp32, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32, DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot);
+		 sprintf(NN_buffer, "%d%d%.2f%.2f%.2f%.2f%.2f%.2f%.2f\r\n",
+				 0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32, DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot);
 		 sendUart2Data = 0;
 		 HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
 
@@ -436,9 +442,9 @@ int main(void)
 		 //current_motor1_out = 0.0f;
 		 //current_motor2_out = 0.0f;
 
-		 DDSM115setCurrent(0x10, ddsm_NN_current_command[0]);
+		 DDSM115setCurrent(0x10, -1* ddsm_NN_current_command[0]);
 		 HAL_Delay(2);
-		 DDSM115setCurrent(0x11, ddsm_NN_current_command[1]);
+		 DDSM115setCurrent(0x11, -1* ddsm_NN_current_command[1]);
 		 }
 		 else{}
 
