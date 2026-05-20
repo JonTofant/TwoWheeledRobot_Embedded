@@ -442,9 +442,9 @@ int main(void)
 		 //current_motor1_out = 0.0f;
 		 //current_motor2_out = 0.0f;
 
-		 DDSM115setCurrent(0x10, -1* ddsm_NN_current_command[0]);
+		 DDSM115setCurrent(0x11, -1* ddsm_NN_current_command[0]);
 		 HAL_Delay(2);
-		 DDSM115setCurrent(0x11, -1* ddsm_NN_current_command[1]);
+		 DDSM115setCurrent(0x10, -1* ddsm_NN_current_command[1]);
 		 }
 		 else{}
 

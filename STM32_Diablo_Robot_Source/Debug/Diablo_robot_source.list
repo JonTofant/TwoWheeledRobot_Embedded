@@ -4860,22 +4860,22 @@ int main(void)
 		 //current_motor1_out = 0.0f;
 		 //current_motor2_out = 0.0f;
 
-		 DDSM115setCurrent(0x10, -1* ddsm_NN_current_command[0]);
+		 DDSM115setCurrent(0x11, -1* ddsm_NN_current_command[0]);
  8002c66:	4b1e      	ldr	r3, [pc, #120]	@ (8002ce0 <main+0x49c>)
  8002c68:	edd3 7a00 	vldr	s15, [r3]
  8002c6c:	eef1 7a67 	vneg.f32	s15, s15
  8002c70:	eeb0 0a67 	vmov.f32	s0, s15
- 8002c74:	2010      	movs	r0, #16
+ 8002c74:	2011      	movs	r0, #17
  8002c76:	f7fe fa09 	bl	800108c <DDSM115setCurrent>
 		 HAL_Delay(2);
  8002c7a:	2002      	movs	r0, #2
  8002c7c:	f001 fee8 	bl	8004a50 <HAL_Delay>
-		 DDSM115setCurrent(0x11, -1* ddsm_NN_current_command[1]);
+		 DDSM115setCurrent(0x10, -1* ddsm_NN_current_command[1]);
  8002c80:	4b17      	ldr	r3, [pc, #92]	@ (8002ce0 <main+0x49c>)
  8002c82:	edd3 7a01 	vldr	s15, [r3, #4]
  8002c86:	eef1 7a67 	vneg.f32	s15, s15
  8002c8a:	eeb0 0a67 	vmov.f32	s0, s15
- 8002c8e:	2011      	movs	r0, #17
+ 8002c8e:	2010      	movs	r0, #16
  8002c90:	f7fe f9fc 	bl	800108c <DDSM115setCurrent>
 		 }
 		 else{}
