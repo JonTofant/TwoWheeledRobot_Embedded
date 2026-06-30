@@ -20,6 +20,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_crc.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h \
@@ -34,6 +35,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h \
+ ../X-CUBE-AI/App/app_x-cube-ai.h ../Middlewares/ST/AI/Inc/ai_platform.h \
  ../Core/Inc/cybergear.h ../Core/Inc/DDSM115.h ../Core/Inc/kinematics.h \
  ../Core/Inc/cybergear.h ../Core/Inc/system_init.h ../Core/Inc/main.h \
  ../Core/Inc/DDSM115.h ../Core/Inc/telemetry.h ../Core/Inc/controler.h \
@@ -41,7 +43,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/kinematics.h ../Core/Inc/joystick.h ../Core/Inc/controler.h \
  ../Core/Inc/state_machine.h ../Core/Inc/StartupStrategy.h \
  ../Core/Inc/StateEstimator.h ../Core/Inc/state_machine.h \
- ../Core/Inc/JumpStrategy.h
+ ../Core/Inc/JumpStrategy.h ../X-CUBE-AI/App/ann.h \
+ ../X-CUBE-AI/App/ann_config.h ../X-CUBE-AI/App/ann_data.h \
+ ../X-CUBE-AI/App/ann_data_params.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -64,6 +68,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h:
+../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_crc.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h:
@@ -78,6 +83,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h:
+../X-CUBE-AI/App/app_x-cube-ai.h:
+../Middlewares/ST/AI/Inc/ai_platform.h:
 ../Core/Inc/cybergear.h:
 ../Core/Inc/DDSM115.h:
 ../Core/Inc/kinematics.h:
@@ -97,3 +104,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/StateEstimator.h:
 ../Core/Inc/state_machine.h:
 ../Core/Inc/JumpStrategy.h:
+../X-CUBE-AI/App/ann.h:
+../X-CUBE-AI/App/ann_config.h:
+../X-CUBE-AI/App/ann_data.h:
+../X-CUBE-AI/App/ann_data_params.h:

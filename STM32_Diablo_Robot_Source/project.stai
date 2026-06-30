@@ -1,0 +1,15 @@
+{
+  "toolchain": "STM32CubeIDE",
+  "variant": "ApplicationTemplate",
+  "fromMx": true,
+  "isGenerated": true,
+  "name": "Diablo_robot_source",
+  "createdAt": 1782205467170,
+  "lastModified": 1782205467180,
+  "lastAccessed": 1782205467179,
+  "type": "MxProject",
+  "mcu": "STM32F446RET6",
+  "board": "NUCLEO-F446RE",
+  "ioc": "",
+  "generator": "STM32CubeMX1"
+}

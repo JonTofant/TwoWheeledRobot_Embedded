@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "app_x-cube-ai.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -39,6 +40,9 @@
 #include "StateEstimator.h"
 #include "state_machine.h"
 #include "JumpStrategy.h"
+
+#include "ann.h"
+#include "ann_data.h"
 
 /* USER CODE END Includes */
 
@@ -66,6 +70,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
+
+CRC_HandleTypeDef hcrc;
 
 I2C_HandleTypeDef hi2c3;
 
@@ -105,13 +111,18 @@ uint8_t RxSingleByte;
 uint16_t angle_u;
 int16_t velocityDDSM_RPM = 0;
 
-
-
-
 uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 
+// ===== ANN globals =====
+static ai_handle ann_network = AI_HANDLE_NULL;
+AI_ALIGNED(4) static ai_u8 ann_activations[AI_ANN_DATA_ACTIVATIONS_SIZE];
+AI_ALIGNED(4) static ai_float ann_in_data[AI_ANN_IN_1_SIZE];
+AI_ALIGNED(4) static ai_float ann_out_data[AI_ANN_OUT_1_SIZE];
+static ai_buffer ann_input[AI_ANN_IN_NUM];
+static ai_buffer ann_output[AI_ANN_OUT_NUM];
 
-
+static float prev_action_left  = 0.0f;
+static float prev_action_right = 0.0f;
 
 /* USER CODE END PV */
 
@@ -130,6 +141,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
@@ -152,7 +164,8 @@ float ddsm_NN_current_command[2] = {0};
 
 char NN_buffer[80] = {0};
 
-
+void ANN_Init(void);
+void ANN_Run(void);
 
 
 /* USER CODE END PFP */
@@ -186,7 +199,12 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  /*for (int i = 0; i < 10; i++) {
+	  // Right after MX_GPIO_Init();
+	  HAL_GPIO_TogglePin(GPIOA, LED_BUILTIN_Pin);
+	  HAL_Delay(200);
+	  HAL_GPIO_TogglePin(GPIOA, LED_BUILTIN_Pin);
+  }*/
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -203,8 +221,16 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
+  MX_CRC_Init();
+  //MX_X_CUBE_AI_Init();
   /* USER CODE BEGIN 2 */
 
+  ANN_Init();
+
+  /*char boot[60];
+  sprintf(boot, "BOOT OK - NN init done\r\n");
+  HAL_UART_Transmit(&huart3, (uint8_t*)boot, strlen(boot), 100);
+  HAL_Delay(100);*/
 
   // Kick off DMA+Idle for USART1
   HAL_UARTEx_ReceiveToIdle_IT(&huart1,
@@ -427,13 +453,15 @@ int main(void)
 	 }
 
 
-	 if (sendUart2Data){
+	/* if (sendUart2Data){
 
 
 		 sprintf(NN_buffer, "%d%d%.2f%.2f%.2f%.2f%.2f%.2f%.2f\r\n",
 				 0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32, DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot);
 		 sendUart2Data = 0;
 		 HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
+
+
 
 		 if(!isFallen() || isStartupStrategy){
 
@@ -449,7 +477,35 @@ int main(void)
 		 else{}
 
 		 isDDSM115Ready = false;
+	 }*/
+
+	 //ANN UPDATED SENDING FUNCTION
+	 if (sendUart2Data) {
+	     sendUart2Data = 0;
+
+	     // Optional: keep telemetry to ESP32 for debugging
+	     /*sprintf(NN_buffer, "%d%d%.2f%.2f%.2f%.2f%.2f %.2f %.2f\r\n",
+	             0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32,
+	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot);*/
+	     sprintf(NN_buffer, "%d%d %.2f %.2f %.2f %.2f %.2f %.2f %.2f | NN: %.3f %.3f\r\n",
+	             0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32,
+	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot,
+	             ann_out_data[0], ann_out_data[1]);
+	     HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
+	     //HAL_UART_Transmit(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer), 100);
+	     // Run policy locally
+	     ANN_Run();
+
+	     if (!isFallen() || isStartupStrategy) {
+	         DDSM115setCurrent(0x11, 1 * ddsm_NN_current_command[0]);
+	         HAL_Delay(5);
+	         DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
+	     }
+
+	     isDDSM115Ready = false;
 	 }
+
+
 	 if (isTELEMETRYReady){
 		 Send_Telemetry(&huart3);
 	 }
@@ -457,6 +513,7 @@ int main(void)
 
     /* USER CODE END WHILE */
 
+  //MX_X_CUBE_AI_Process();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -543,6 +600,32 @@ static void MX_CAN1_Init(void)
   /* USER CODE BEGIN CAN1_Init 2 */
 
   /* USER CODE END CAN1_Init 2 */
+
+}
+
+/**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
 
 }
 
@@ -1263,7 +1346,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if (htim->Instance == TIM2) {
 		sendUart2Data = 1;
+		//HAL_GPIO_TogglePin(GPIOA, LED_BUILTIN_Pin);  // ← visible blink
 	}
+
 
 }
 
@@ -1289,14 +1374,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   * @retval None (Results are stored in the global variables via pointers).
   */
 
-
-
-
-
-
-
-
-
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     // Check if the callback is from our telemetry UART.
@@ -1305,6 +1382,56 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
         // allowing the next call to Send_Telemetry() to proceed.
         Telemetry_UART_TxCpltCallback(huart);
     }
+}
+
+
+// ===== ANN INIT =====
+void ANN_Init(void)
+{
+    const ai_handle act_addr[] = { ann_activations };
+    ai_error err = ai_ann_create_and_init(&ann_network, act_addr, NULL);
+    if (err.type != AI_ERROR_NONE) {
+        Error_Handler();
+    }
+    ann_input[0]  = ai_ann_inputs_get(ann_network, NULL)[0];
+    ann_output[0] = ai_ann_outputs_get(ann_network, NULL)[0];
+    ann_input[0].data  = AI_HANDLE_PTR(ann_in_data);
+    ann_output[0].data = AI_HANDLE_PTR(ann_out_data);
+}
+
+// ===== ANN INFERENCE =====
+void ANN_Run(void)
+{
+    // Fill 9 inputs
+    ann_in_data[1] = pitch_esp32;
+    ann_in_data[0] = roll_esp32;
+    //ann_in_data[0] = pitch_esp32; //original
+    //ann_in_data[1] = roll_esp32; //original
+    ann_in_data[2] = gx_esp32;
+    ann_in_data[3] = gy_esp32;
+    ann_in_data[4] = gz_esp32;
+    ann_in_data[5] = (float)DDSM115MotorList[0].x_dot;
+    ann_in_data[6] = (float)DDSM115MotorList[1].x_dot;
+    ann_in_data[7] = prev_action_left;
+    ann_in_data[8] = prev_action_right;
+
+    ai_i32 n_batch = ai_ann_run(ann_network, ann_input, ann_output);
+    if (n_batch != 1) return;
+
+    float raw_left  = ann_out_data[0];
+    float raw_right = ann_out_data[1];
+
+    if (raw_left  >  1.0f) raw_left  =  1.0f;
+    if (raw_left  < -1.0f) raw_left  = -1.0f;
+    if (raw_right >  1.0f) raw_right =  1.0f;
+    if (raw_right < -1.0f) raw_right = -1.0f;
+
+    prev_action_left  = raw_left;
+    prev_action_right = raw_right;
+
+    const float ACTION_SCALE = 1.5f;
+    ddsm_NN_current_command[0] = raw_left  * ACTION_SCALE;
+    ddsm_NN_current_command[1] = raw_right * ACTION_SCALE;
 }
 
 /* USER CODE END 4 */
