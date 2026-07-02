@@ -1,0 +1,2 @@
+Generate Project
+Copying previous project files from C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-4 to C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-4\.ai\generate\backup

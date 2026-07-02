@@ -1,0 +1,28 @@
+{
+  "args": {
+    "model": "C:\\Users\\jon\\Downloads\\policy_current3.onnx",
+    "valinput": "",
+    "valoutput": "",
+    "batch-size": 10,
+    "mode": "host",
+    "name": "network",
+    "verbosity": 1,
+    "c-api": "st-ai",
+    "optimization": "balanced",
+    "target": "stm32f4",
+    "memory-pool": "C:\\Users\\jon\\OneDrive - Univerza v Mariboru\\Dokumenti\\GitHub\\BipedRobot\\STM32_Diablo_Robot_Source\\.ai\\run\\run-6\\.ai\\mempools.json"
+  },
+  "mempools": [
+    {
+      "name": "RAM",
+      "size": 131072,
+      "offset": 536870912,
+      "driver": "RAM",
+      "max": 131072,
+      "mode_available": []
+    }
+  ],
+  "exportWeightsAsBin": false,
+  "copyWeightsToRam": false,
+  "automaticFlash": true
+}

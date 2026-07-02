@@ -1,10 +1,10 @@
 {
   "args": {
-    "model": "C:\\Users\\jon\\Downloads\\policy_current_longer_training.onnx",
+    "model": "C:\\Users\\jon\\Downloads\\policy_current3.onnx",
     "valinput": "",
     "valoutput": "",
     "batch-size": 10,
-    "mode": "target",
+    "mode": "host",
     "name": "network",
     "verbosity": 1,
     "c-api": "st-ai",

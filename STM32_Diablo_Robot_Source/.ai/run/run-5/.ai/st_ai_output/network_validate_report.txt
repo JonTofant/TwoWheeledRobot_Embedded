@@ -1,0 +1,263 @@
+ST Edge AI Core v4.0.1-20581 7ed50de05
+Created date          : 2026-07-02 14:38:37
+Parameters            : validate --model C:\Users\jon\Downloads\policy_current_position.onnx --batch-size 10 --mode host --name network --verbosity 1 --c-api st-ai --optimization balanced --target stm32f4 --memory-pool C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\mempools.json --save-csv --workspace C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_ws --output C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_output
+
+Exec/report summary (validate)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\jon\Downloads\policy_current_position.onnx                                                                                 
+type               :   onnx                                                                                                                                
+c_name             :   network                                                                                                                             
+compression        :   lossless                                                                                                                            
+options            :   allocate-inputs, allocate-outputs, multi-heaps, use-lite-runtime, use-st-ai                                                         
+optimization       :   balanced                                                                                                                            
+target/series      :   stm32f4                                                                                                                             
+memory pool        :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\mempools.json   
+workspace dir      :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_ws        
+output dir         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_output    
+model_fmt          :   float                                                                                                                               
+model_name         :   policy_current_position                                                                                                             
+model_hash         :   0x7aeb7f53f43d0c7dffc3dc6d2ad90cbb                                                                                                  
+params #           :   1,411 items (5.51 KiB)                                                                                                              
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+input 1/1          :   'obs', f32(1x8), 32 Bytes, activations                                                                                              
+output 1/1         :   'current_a', f32(1x2), 8 Bytes, activations                                                                                         
+macc               :   1,498                                                                                                                               
+weights (ro)       :   5,656 B (5.52 KiB) (1 segment) / +12(+0.2%) vs float model                                                                          
+activations (rw)   :   256 B (256 B) (1 segment) *                                                                                                         
+ram (total)        :   256 B (256 B) = 256 + 0 + 0                                                                                                         
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+(*) 'input'/'output' buffers are allocated in the activations buffer
+ 
+ Memory-pools summary (activations/ domain)
+ --------------- ---- ---------------------- --------- 
+ name            id   used                   buffer#   
+ --------------- ---- ---------------------- --------- 
+ RAM             0    256 B (0.2%)           8         
+ weights_array   1    5.52 KiB (565600.0%)   8         
+ --------------- ---- ---------------------- --------- 
+
+Model name - policy_current_position
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+m_id   layer (type,original)                                 oshape        param/size       macc                     connected to   | c_size          c_macc            c_type             
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+1      actor_0_weight (Placeholder, Gemm)                    [b:32,c:8]    256/1,024                                                | +128(+12.5%)    +288(+100.0%)     Dense_[0]          
+       actor_0_bias (Placeholder, Gemm)                      [b:32]        32/128                                                   | -128(-100.0%)                     
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+3      actor_2_weight (Placeholder, Gemm)                    [b:32,c:32]   1,024/4,096                                              | +128(+3.1%)     +1,056(+100.0%)   Dense_[2]          
+       actor_2_bias (Placeholder, Gemm)                      [b:32]        32/128                                                   | -128(-100.0%)                     
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+5      actor_4_weight (Placeholder, Gemm)                    [b:2,c:32]    64/256                                                   | +8(+3.1%)       +66(+100.0%)      Dense_[4]          
+       actor_4_bias (Placeholder, Gemm)                      [b:2]         2/8                                                      | -8(-100.0%)                       
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+7      i_max_a (Placeholder, Mul)                            []            1/4                                                      | +12(+300.0%)    +4(+100.0%)       ScaleBias_[o][6]   
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+0      obs (Input, )                                         [b:1,c:8]                                                              |                                   
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+1      _actor_actor_0_Gemm_output_0 (Gemm, Gemm)             [b:1,c:32]                      288                              obs   |                 -288(-100.0%)     
+                                                                                                                   actor_0_weight   | 
+                                                                                                                     actor_0_bias   | 
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+2      _actor_actor_1_Relu_output_0 (Nonlinearity, Relu)     [b:1,c:32]                       32     _actor_actor_0_Gemm_output_0   |                                   Nonlinearity_[1]   
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+3      _actor_actor_2_Gemm_output_0 (Gemm, Gemm)             [b:1,c:32]                    1,056     _actor_actor_1_Relu_output_0   |                 -1,056(-100.0%)   
+                                                                                                                   actor_2_weight   | 
+                                                                                                                     actor_2_bias   | 
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+4      _actor_actor_1_1_Relu_output_0 (Nonlinearity, Relu)   [b:1,c:32]                       32     _actor_actor_2_Gemm_output_0   |                                   Nonlinearity_[3]   
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+5      actions (Gemm, Gemm)                                  [b:1,c:2]                        66   _actor_actor_1_1_Relu_output_0   |                 -66(-100.0%)      
+                                                                                                                   actor_4_weight   | 
+                                                                                                                     actor_4_bias   | 
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+6      actions_tanh (Nonlinearity, Tanh)                     [b:1,c:2]                        20                          actions   |                                   Nonlinearity_[5]   
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+7      current_a (Eltwise, Mul)                              [b:1,c:2]                         2                     actions_tanh   |                 -2(-100.0%)       
+                                                                                                                          i_max_a   | 
+------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
+model/c-model: macc=1,496/1,498 +2(+0.1%) weights=5,644/5,656 +12(+0.2%) activations=--/256 io=--/0
+
+
+
+Generated C-graph summary
+------------------------------------------------------------------------------------------------------------------------
+model name            : policy_current_position
+c-name                : network
+c-node #              : 7
+c-array #             : 16
+activations size      : 256 (1 segment)
+weights size          : 5656 (1 segment)
+macc                  : 1498
+inputs                : ['obs_output']
+outputs               : ['current_a_output']
+
+C-Arrays (16)
+------ --------------------------------------- ----------- ----------------- ------------- --------- 
+c_id   name (*_array)                          item/size   domain/mem-pool   c-type        comment   
+------ --------------------------------------- ----------- ----------------- ------------- --------- 
+0      _actor_actor_0_Gemm_output_0_bias       32/128      weights/weights   const float             
+1      _actor_actor_0_Gemm_output_0_output     32/128      activations/RAM   float                   
+2      _actor_actor_0_Gemm_output_0_weights    256/1024    weights/weights   const float             
+3      _actor_actor_1_1_Relu_output_0_output   32/128      activations/RAM   float                   
+4      _actor_actor_1_Relu_output_0_output     32/128      activations/RAM   float                   
+5      _actor_actor_2_Gemm_output_0_bias       32/128      weights/weights   const float             
+6      _actor_actor_2_Gemm_output_0_output     32/128      activations/RAM   float                   
+7      _actor_actor_2_Gemm_output_0_weights    1024/4096   weights/weights   const float             
+8      actions_bias                            2/8         weights/weights   const float             
+9      actions_output                          2/8         activations/RAM   float                   
+10     actions_tanh_output                     2/8         activations/RAM   float                   
+11     actions_weights                         64/256      weights/weights   const float             
+12     current_a_bias                          2/8         weights/weights   const float             
+13     current_a_output                        2/8         activations/RAM   float         /output   
+14     current_a_scale                         2/8         weights/weights   const float             
+15     obs_output                              8/32        activations/RAM   float         /input    
+------ --------------------------------------- ----------- ----------------- ------------- --------- 
+
+C-Layers (7)
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+c_id   name (*_layer)                   id   layer_type      macc   rom    tensors                                    shape (array id)   
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+0      _actor_actor_0_Gemm_output_0     1    Dense           288    1152   I: obs_output                              f32(1x8) (15)      
+                                                                           W: _actor_actor_0_Gemm_output_0_weights    f32(32x8) (2)      
+                                                                           W: _actor_actor_0_Gemm_output_0_bias       f32(32) (0)        
+                                                                           O: _actor_actor_0_Gemm_output_0_output     f32(1x32) (1)      
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+1      _actor_actor_1_Relu_output_0     2    Nonlinearity    32     0      I: _actor_actor_0_Gemm_output_0_output     f32(1x32) (1)      
+                                                                           O: _actor_actor_1_Relu_output_0_output     f32(1x32) (4)      
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+2      _actor_actor_2_Gemm_output_0     3    Dense           1056   4224   I: _actor_actor_1_Relu_output_0_output     f32(1x32) (4)      
+                                                                           W: _actor_actor_2_Gemm_output_0_weights    f32(32x32) (7)     
+                                                                           W: _actor_actor_2_Gemm_output_0_bias       f32(32) (5)        
+                                                                           O: _actor_actor_2_Gemm_output_0_output     f32(1x32) (6)      
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+3      _actor_actor_1_1_Relu_output_0   4    Nonlinearity    32     0      I: _actor_actor_2_Gemm_output_0_output     f32(1x32) (6)      
+                                                                           O: _actor_actor_1_1_Relu_output_0_output   f32(1x32) (3)      
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+4      actions                          5    Dense           66     264    I: _actor_actor_1_1_Relu_output_0_output   f32(1x32) (3)      
+                                                                           W: actions_weights                         f32(2x32) (11)     
+                                                                           W: actions_bias                            f32(2) (8)         
+                                                                           O: actions_output                          f32(1x2) (9)       
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+5      actions_tanh                     6    Nonlinearity    20     0      I: actions_output                          f32(1x2) (9)       
+                                                                           O: actions_tanh_output                     f32(1x2) (10)      
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+6      current_a                        7    ScaleBias       4      16     I: actions_tanh_output                     f32(1x2) (10)      
+                                                                           W: current_a_scale                         f32(2) (14)        
+                                                                           W: current_a_bias                          f32(2) (12)        
+                                                                           O: current_a_output                        f32(1x2) (13)      
+------ -------------------------------- ---- --------------- ------ ------ ------------------------------------------ ------------------ 
+ 
+Setting validation data...
+ generating random data, size=10, seed=42, range=(0, 1)
+   I[1]: (10, 1, 1, 8)/float32, min/max=[0.005522, 0.986887], mean/std=[0.465890, 0.303777]
+ no output/reference samples are provided
+ 
+Running the ST.AI c-model (AI RUNNER)...(name=network, mode=HOST)
+
+ DLL Driver v2.0 - Direct Python binding (C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_ws\inspector_network\workspace\lib\libai_network.dll) ['network']
+  
+  Summary 'network' - ['network']
+  -----------------------------------------------------------------------------------------------
+  I[1/1] 'input_1'    :   f32[1,8], 32 Bytes, in activations buffer                              
+  O[1/1] 'output_1'   :   f32[1,2], 8 Bytes, in activations buffer                               
+  n_nodes             :   7                                                                      
+  activations         :   256                                                                    
+  weights             :   5656                                                                   
+  macc                :   1498                                                                   
+  hash                :   0x7aeb7f53f43d0c7dffc3dc6d2ad90cbb                                     
+  compile_datetime    :   Jul  2 2026 14:38:34                                                   
+  -----------------------------------------------------------------------------------------------
+  protocol            :   DLL Driver v2.0 - Direct Python binding                                
+  tools               :   ST.AI (st-ai api) v4.0.1                                               
+  runtime lib         :   v12.0.1                                                                
+  capabilities        :   IO_ONLY, PER_LAYER, PER_LAYER_WITH_DATA                                
+  device.desc         :   AMD64, Intel64 Family 6 Model 158 Stepping 10, GenuineIntel, Windows   
+  -----------------------------------------------------------------------------------------------
+ 
+ NOTE: The duration and execution time per layer are just indications. They depend on the host machine's workload.
+
+  
+  ST.AI Profiling results v2.0 - "network"
+  ------------------------------------------------------------
+  nb sample(s)   :   10                                       
+  duration       :   0.007 ms by sample (0.001/0.037/0.010)   
+  macc           :   1498                                     
+  ------------------------------------------------------------
+  
+  Statistic per tensor
+  --------------------------------------------------------------------------------
+  tensor   #    type[shape]:size        min     max     mean      std  name       
+  --------------------------------------------------------------------------------
+  I.0      10   f32[1,8]:32           0.006   0.987    0.466    0.304  input_1    
+  O.0      10   f32[1,2]:8           -0.570   1.741    0.698    0.706  output_1   
+  --------------------------------------------------------------------------------
+ 
+Saving validation data...
+ output directory: C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_output
+ creating C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-5\.ai\st_ai_output\network_val_io.npz
+ m_outputs_1: (10, 2)/float64, min/max=[-0.570489, 1.741238], mean/std=[0.698039, 0.706386], current_a
+ c_outputs_1: (10, 1, 1, 2)/float32, min/max=[-0.570489, 1.741238], mean/std=[0.698039, 0.706386], current_a
+
+ 
+Computing the metrics...
+
+ Cross accuracy report #1 (reference vs C-model)
+ ----------------------------------------------------------------------------------------------------
+ notes: - data type is different: r/float64 instead p/float32
+        - ACC metric is not computed ("--classifier" option can be used to force it)
+        - the output of the reference model is used as ground truth/reference value
+        - 10 samples (2 items per sample)
+
+  acc=n.a. rmse=0.000000102 mae=0.000000076 l2r=0.000000103 mean=0.000000 std=0.000000 snr=139.783421 nse=1.000000 cos=1.000000 
+
+
+Number of operations per c-layer
+------- ------ ------------------------------------------------ ------- -------------- 
+c_id    m_id   name (type)                                          #op           type 
+------- ------ ------------------------------------------------ ------- -------------- 
+0       1      _actor_actor_0_Gemm_output_0 (Dense)                 288   smul_f32_f32 
+1       2      _actor_actor_1_Relu_output_0 (Nonlinearity)           32     op_f32_f32 
+2       3      _actor_actor_2_Gemm_output_0 (Dense)               1,056   smul_f32_f32 
+3       4      _actor_actor_1_1_Relu_output_0 (Nonlinearity)         32     op_f32_f32 
+4       5      actions (Dense)                                       66   smul_f32_f32 
+5       6      actions_tanh (Nonlinearity)                           20     op_f32_f32 
+6       7      current_a (ScaleBias)                                  4   smul_f32_f32 
+------- ------ ------------------------------------------------ ------- -------------- 
+total                                                             1,498 
+
+Number of operation types
+---------------- ------- ----------- 
+operation type         #           % 
+---------------- ------- ----------- 
+smul_f32_f32       1,414       94.4% 
+op_f32_f32            84        5.6% 
+
+Complexity report (model)
+------ -------------------------------- ------------------------- ------------------------- ------ -------- ------------------ 
+m_id   name                             c_macc                    c_rom                     c_id   c_dur    l2r (X-CROSS)      
+------ -------------------------------- ------------------------- ------------------------- ------ -------- ------------------ 
+1      actor_0_weight                   |||||             19.2%   |||||             20.4%   [0]     19.2%                      
+3      actor_2_weight                   ||||||||||||||||  70.5%   ||||||||||||||||  74.7%   [2]     34.6%                      
+5      actor_4_weight                   |                  4.4%   |                  4.7%   [4]      3.8%                      
+7      i_max_a                          |                  0.3%   |                  0.3%   [6]      0.0%   1.02524865e-07 *   
+2      _actor_actor_1_Relu_output_0     |                  2.1%   |                  0.0%   [1]      3.8%                      
+4      _actor_actor_1_1_Relu_output_0   |                  2.1%   |                  0.0%   [3]      7.7%                      
+6      actions_tanh                     |                  1.3%   |                  0.0%   [5]     30.8%                      
+------ -------------------------------- ------------------------- ------------------------- ------ -------- ------------------ 
+macc=1,498 weights=5,656 act=256 ram_io=0
+
+Evaluation report (summary)
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+Output       acc    rmse          mae           l2r           mean       std        snr          nse        cos        tensor                                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+X-cross #1   n.a.   0.000000102   0.000000076   0.000000103   0.000000   0.000000   139.783421   1.000000   1.000000   'current_a', 10 x f32(1x2), m_id=[7]   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ acc  : Accuracy (class, axis=-1)
+ rmse : Root Mean Squared Error
+ mae  : Mean Absolute Error
+ l2r  : L2 relative error
+ mean : Mean error
+ std  : Standard deviation error
+ snr  : Signal-to-Noise Ratio (SNR), bigger is better
+ nse  : Nash-Sutcliffe efficiency criteria, bigger is better, best=1, range=(-inf, 1]
+ cos  : COsine Similarity, bigger is better, best=1, range=(0, 1]

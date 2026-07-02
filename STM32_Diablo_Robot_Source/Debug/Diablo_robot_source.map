@@ -514,7 +514,7 @@ Discarded input sections
  .debug_macro   0x00000000       0x12 ./AI/App/app_x-cube-ai.o
  .debug_macro   0x00000000       0x7c ./AI/App/app_x-cube-ai.o
  .debug_line    0x00000000      0xc90 ./AI/App/app_x-cube-ai.o
- .debug_str     0x00000000    0xda372 ./AI/App/app_x-cube-ai.o
+ .debug_str     0x00000000    0xda36b ./AI/App/app_x-cube-ai.o
  .comment       0x00000000       0x44 ./AI/App/app_x-cube-ai.o
  .debug_frame   0x00000000      0x1a4 ./AI/App/app_x-cube-ai.o
  .ARM.attributes
@@ -9539,72 +9539,72 @@ LOAD C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.ext
  .debug_line    0x0001d9a2     0x1a16 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
  .debug_line    0x0001f3b8     0x25fe ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
 
-.debug_str      0x00000000    0xe9d9d
- .debug_str     0x00000000    0xe9d9d ./AI/App/network.o
-                              0x150a5 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./AI/App/network_data.o
+.debug_str      0x00000000    0xe9d96
+ .debug_str     0x00000000    0xe9d96 ./AI/App/network.o
+                              0x1509e (size before relaxing)
+ .debug_str     0x000e9d96        0x0 ./AI/App/network_data.o
                                0x468a (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./AI/App/user_init.o
-                               0x879e (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/DDSM115.o
+ .debug_str     0x000e9d96        0x0 ./AI/App/user_init.o
+                               0x8797 (size before relaxing)
+ .debug_str     0x000e9d96        0x0 ./Core/Src/DDSM115.o
                               0xd4fdc (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/JumpStrategy.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/JumpStrategy.o
                               0xd2dc2 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/StartupStrategy.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/StartupStrategy.o
                               0xd2bb1 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/StateEstimator.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/StateEstimator.o
                               0xd24b9 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/controler.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/controler.o
                               0xd32f2 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/cybergear.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/cybergear.o
                               0xd4d68 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/joystick.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/joystick.o
                               0xd2ded (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/kinematics.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/kinematics.o
                               0xd2807 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/main.o
-                              0xdc237 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/state_machine.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/main.o
+                              0xdc230 (size before relaxing)
+ .debug_str     0x000e9d96        0x0 ./Core/Src/state_machine.o
                               0xd24e4 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/stm32f4xx_hal_msp.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/stm32f4xx_hal_msp.o
                               0xd237c (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/stm32f4xx_it.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/stm32f4xx_it.o
                               0xd193e (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/sysmem.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/sysmem.o
                                0x77b4 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/system_init.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/system_init.o
                               0xd49c4 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/system_stm32f4xx.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/system_stm32f4xx.o
                               0xceb2e (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Src/telemetry.o
+ .debug_str     0x000e9d96        0x0 ./Core/Src/telemetry.o
                               0xd160b (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Core/Startup/startup_stm32f446retx.o
+ .debug_str     0x000e9d96        0x0 ./Core/Startup/startup_stm32f446retx.o
                                  0xac (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
                               0xcf6f3 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_can.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_can.o
                               0xcf203 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
                               0xcf44a (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o
                               0xceb37 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
                               0xcef23 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.o
                               0xceca9 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.o
                               0xcfb2c (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.o
                               0xcef67 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.o
                               0xcef9a (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.o
                               0xcf3c7 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.o
                               0xcfe93 (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.o
                               0xcf69f (size before relaxing)
- .debug_str     0x000e9d9d        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
+ .debug_str     0x000e9d96        0x0 ./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.o
                               0xcf51e (size before relaxing)
 
 .comment        0x00000000       0x86
