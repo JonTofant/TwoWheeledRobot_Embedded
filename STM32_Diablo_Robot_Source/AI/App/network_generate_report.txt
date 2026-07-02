@@ -1,10 +1,10 @@
 ST Edge AI Core v4.0.1-20581 7ed50de05
-Created date          : 2026-07-02 14:38:50
-Parameters            : generate --model C:\Users\jon\Downloads\policy_current_position.onnx --batch-size 10 --mode host --name network --verbosity 1 --c-api st-ai --optimization balanced --target stm32f4 --memory-pool C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\mempools.json --workspace C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_ws --output C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output
+Created date          : 2026-07-02 15:38:21
+Parameters            : generate --model C:\Users\jon\Downloads\policy_current3.onnx --batch-size 10 --mode host --name network --verbosity 1 --c-api st-ai --optimization balanced --target stm32f4 --memory-pool C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\mempools.json --workspace C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_ws --output C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output
 
 Exec/report summary (generate)
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
-model file         :   C:\Users\jon\Downloads\policy_current_position.onnx                                                                                 
+model file         :   C:\Users\jon\Downloads\policy_current3.onnx                                                                                         
 type               :   onnx                                                                                                                                
 c_name             :   network                                                                                                                             
 compression        :   lossless                                                                                                                            
@@ -12,11 +12,11 @@ options            :   allocate-inputs, allocate-outputs, multi-heaps, use-lite-
 optimization       :   balanced                                                                                                                            
 target/series      :   stm32f4                                                                                                                             
 memory pool        :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\mempools.json                 
-workspace dir      :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_ws       
-output dir         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output   
+workspace dir      :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_ws       
+output dir         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output   
 model_fmt          :   float                                                                                                                               
-model_name         :   policy_current_position                                                                                                             
-model_hash         :   0x7aeb7f53f43d0c7dffc3dc6d2ad90cbb                                                                                                  
+model_name         :   policy_current3                                                                                                                     
+model_hash         :   0x09d0fca1726551aaa0158bd5e0c1142a                                                                                                  
 params #           :   1,411 items (5.51 KiB)                                                                                                              
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 input 1/1          :   'obs', f32(1x8), 32 Bytes, activations                                                                                              
@@ -36,7 +36,7 @@ ram (total)        :   256 B (256 B) = 256 + 0 + 0
  weights_array   1    5.52 KiB (565600.0%)   8         
  --------------- ---- ---------------------- --------- 
 
-Model name - policy_current_position
+Model name - policy_current3
 ------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
 m_id   layer (type,original)                                 oshape        param/size       macc                     connected to   | c_size          c_macc            c_type             
 ------ ----------------------------------------------------- ------------- ------------- ------- -------------------------------- --- --------------- ----------------- ------------------ 
@@ -80,7 +80,7 @@ model/c-model: macc=1,496/1,498 +2(+0.1%) weights=5,644/5,656 +12(+0.2%) activat
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name            : policy_current_position
+model name            : policy_current3
 c-name                : network
 c-node #              : 7
 c-array #             : 16
@@ -216,8 +216,8 @@ macc=1,498 weights=5,656 act=256 ram_io=0
 
 Generated files (5)
 ----------------------------------------------------------------------------------------------------------------------------------------------------- 
-C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output\network_data.h      
-C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output\network_data.c      
-C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output\network.h           
-C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output\network.c           
-C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-6\st_ai_output\network_details.h   
+C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output\network_data.h      
+C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output\network_data.c      
+C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output\network.h           
+C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output\network.c           
+C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\generate-7\st_ai_output\network_details.h   

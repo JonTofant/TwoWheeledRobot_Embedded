@@ -139,6 +139,49 @@ static float prev_action_right = 0.0f;
 #define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
 #define STM32_TEST_CURRENT_LIMIT_A (0.5f)
 
+// ===== Bench metrics for STM Studio (metrics_per_run_template.csv columns) =====
+// All "MET_" variables are updated once per 15ms control tick (see MET_Update()).
+// From STM Studio: write MET_reset = 1 to zero the accumulators and start timing a
+// new run; the firmware clears it back to 0 automatically on the next tick.
+// Read the MET_ values off the STM Studio watch after the run/scenario finishes
+// and copy them into the matching CSV columns (initial_theta_deg, max_abs_theta_deg,
+// rms_theta_deg, rms_I_A, t_rec_s, x_final_m).
+#define MET_RAD2DEG                (180.0f / 3.14159265358979323846f)
+#define MET_SAMPLE_DT_S            (0.015f)  // 15ms TIM4 tick
+#define MET_THETA_DISTURBED_DEG    (2.0f)    // |theta| above this counts as "disturbed"
+#define MET_THETA_SETTLED_DEG      (1.5f)    // |theta| must stay below this to count as recovered
+#define MET_SETTLE_HOLD_S          (0.3f)    // how long it must stay settled before t_rec_s freezes
+
+volatile uint8_t MET_reset             = 0;     // write 1 to start a new run
+volatile float   MET_theta_deg         = 0.0f;  // instantaneous pitch (deg), for live viewing
+volatile float   MET_theta_init_deg    = 0.0f;  // -> initial_theta_deg
+volatile float   MET_theta_max_abs_deg = 0.0f;  // -> max_abs_theta_deg
+volatile float   MET_theta_rms_deg     = 0.0f;  // -> rms_theta_deg
+volatile float   MET_I_rms_A           = 0.0f;  // -> rms_I_A
+volatile float   MET_t_rec_s           = 0.0f;  // -> t_rec_s
+volatile float   MET_x_final_m         = 0.0f;  // -> x_final_m (keeps updating; last value before you stop = final)
+volatile float   MET_run_time_s        = 0.0f;  // elapsed time since MET_reset (context, not a CSV column)
+
+// ===== Per-tick telemetry for STM Studio (timeseries_log_template.csv columns) =====
+// All "LOG_" variables are updated once per 15ms control tick (see LOG_Update()).
+// Start the STM Studio recording the instant you let go of the robot (or, for
+// undisturbed_balance, whenever you want t=0 to be) - that recorded sample becomes
+// t_s = 0, and LOG_theta_deg from that first sample is your initial_theta_deg.
+// obs_0..obs_7 are the exact 8 floats fed to the network (ann_in_data, normalized) -
+// adjust LOG_Update() if your training env logged obs in a different order/units.
+// action_L/R are the network's raw output (pre sign-flip, pre safety clamp);
+// I_L/R_cmd_A and I_L/R_meas_A are both the same commanded current actually sent to
+// the DDSM115 (post sign-flip and clamping) - there's no separate current feedback
+// from the drive, so "measured" just mirrors "commanded".
+volatile float   LOG_theta_deg      = 0.0f;  // instantaneous pitch (deg); first recorded sample -> initial_theta_deg
+volatile float   LOG_obs[8]         = {0};   // -> obs_0..obs_7
+volatile float   LOG_action_L       = 0.0f;  // -> action_L (raw network output)
+volatile float   LOG_action_R       = 0.0f;  // -> action_R (raw network output)
+volatile float   LOG_I_L_cmd_A      = 0.0f;  // -> I_L_cmd_A
+volatile float   LOG_I_R_cmd_A      = 0.0f;  // -> I_R_cmd_A
+volatile float   LOG_I_L_meas_A     = 0.0f;  // -> I_L_meas_A
+volatile float   LOG_I_R_meas_A     = 0.0f;  // -> I_R_meas_A
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -183,6 +226,8 @@ void ANN_Init(void);
 void ANN_Run(void);
 static float clamp_float(float value, float min_value, float max_value);
 static float wrap_pi(float angle_rad);
+static void MET_Update(void);
+static void LOG_Update(void);
 
 
 /* USER CODE END PFP */
@@ -511,6 +556,10 @@ int main(void)
 	         HAL_Delay(5);
 	         DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
 	     }
+
+	     // Bench metrics/telemetry for STM Studio (see MET_/LOG_ globals above), same 15ms tick.
+	     MET_Update();
+	     LOG_Update();
 	 }
 
 	 // Debug telemetry to ESP32, on the slower 100ms tick so UART2/DMA
@@ -1552,6 +1601,124 @@ static float wrap_pi(float angle_rad)
         angle_rad += 6.28318531f;
     }
     return angle_rad;
+}
+
+// Updates all MET_* bench-metric variables from the current cycle's sensor/command
+// values. Call once per 15ms control tick. See the MET_ globals above for what each
+// one means and which metrics_per_run_template.csv column it maps to.
+static void MET_Update(void)
+{
+    static bool  running         = false; // true once MET_reset has fired at least once
+    static bool  have_init_theta = false;
+    static float sum_theta_sq    = 0.0f;
+    static float sum_I_sq        = 0.0f;
+    static uint32_t sample_count = 0;
+    static float x_ref_m         = 0.0f;
+    static bool  disturbed       = false;
+    static bool  recovered       = false;
+    static float settle_timer_s  = 0.0f;
+
+    if (MET_reset) {
+        MET_reset = 0;
+
+        have_init_theta = false;
+        sum_theta_sq    = 0.0f;
+        sum_I_sq        = 0.0f;
+        sample_count    = 0;
+        disturbed       = false;
+        recovered       = false;
+        settle_timer_s  = 0.0f;
+        x_ref_m = WHEEL_RADIUS_R * 0.5f *
+                  (WHEEL_POS_SIGN_LEFT  * DDSM115MotorList[0].phi_rad +
+                   WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad);
+
+        MET_theta_init_deg    = 0.0f;
+        MET_theta_max_abs_deg = 0.0f;
+        MET_theta_rms_deg     = 0.0f;
+        MET_I_rms_A           = 0.0f;
+        MET_t_rec_s           = 0.0f;
+        MET_x_final_m         = 0.0f;
+        MET_run_time_s        = 0.0f;
+
+        running = true;
+    }
+
+    if (!running) {
+        return; // wait for the first MET_reset before accumulating anything
+    }
+
+    float theta_deg = (PITCH_SIGN * roll_esp32) * MET_RAD2DEG;
+    float abs_theta_deg = fabsf(theta_deg);
+    MET_theta_deg = theta_deg;
+
+    if (!have_init_theta) {
+        MET_theta_init_deg = theta_deg;
+        have_init_theta = true;
+    }
+
+    if (abs_theta_deg > MET_theta_max_abs_deg) {
+        MET_theta_max_abs_deg = abs_theta_deg;
+    }
+
+    float x_m = WHEEL_RADIUS_R * 0.5f *
+                (WHEEL_POS_SIGN_LEFT  * DDSM115MotorList[0].phi_rad +
+                 WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad) - x_ref_m;
+    MET_x_final_m = x_m;
+
+    float i_avg_A = 0.5f * (fabsf(ddsm_NN_current_command[0]) + fabsf(ddsm_NN_current_command[1]));
+
+    sample_count++;
+    sum_theta_sq += theta_deg * theta_deg;
+    sum_I_sq     += i_avg_A * i_avg_A;
+    MET_theta_rms_deg = sqrtf(sum_theta_sq / (float)sample_count);
+    MET_I_rms_A       = sqrtf(sum_I_sq     / (float)sample_count);
+
+    MET_run_time_s += MET_SAMPLE_DT_S;
+
+    // Recovery time: latch the elapsed time once |theta| has gone above the
+    // "disturbed" threshold and then stayed below the (lower) "settled"
+    // threshold continuously for MET_SETTLE_HOLD_S. Stays at 0 if the run
+    // never leaves the disturbed threshold (e.g. undisturbed_balance).
+    if (!recovered) {
+        if (abs_theta_deg > MET_THETA_DISTURBED_DEG) {
+            disturbed = true;
+            settle_timer_s = 0.0f;
+        }
+        if (disturbed) {
+            MET_t_rec_s = MET_run_time_s;
+            if (abs_theta_deg < MET_THETA_SETTLED_DEG) {
+                settle_timer_s += MET_SAMPLE_DT_S;
+                if (settle_timer_s >= MET_SETTLE_HOLD_S) {
+                    recovered = true; // MET_t_rec_s is now frozen
+                }
+            } else {
+                settle_timer_s = 0.0f;
+            }
+        }
+    }
+}
+
+// Updates all LOG_* per-tick telemetry variables. Call once per 15ms control tick,
+// after ANN_Run() so ann_in_data/ann_out_data/ddsm_NN_current_command reflect this
+// cycle's values. See the LOG_ globals above for the timeseries_log_template.csv
+// column mapping.
+static void LOG_Update(void)
+{
+    LOG_theta_deg = (PITCH_SIGN * roll_esp32) * MET_RAD2DEG;
+
+    for (int i = 0; i < 8; i++) {
+        LOG_obs[i] = ann_in_data[i];
+    }
+
+    LOG_action_L = ann_out_data[0];
+    LOG_action_R = ann_out_data[1];
+
+    LOG_I_L_cmd_A = ddsm_NN_current_command[0];
+    LOG_I_R_cmd_A = ddsm_NN_current_command[1];
+
+    // No current feedback from the DDSM115 drives - mirror the commanded value.
+    LOG_I_L_meas_A = ddsm_NN_current_command[0];
+    LOG_I_R_meas_A = ddsm_NN_current_command[1];
 }
 
 /* USER CODE END 4 */
