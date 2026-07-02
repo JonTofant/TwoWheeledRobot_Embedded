@@ -1,0 +1,461 @@
+Generate Project
+Copying previous project files from C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3 to C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\generate\backup
+Calculating memory footprint...
+Generating project for board NUCLEO-F446RE...
+Executing process: C:\Users\jon\AppData\Local\Programs\STM32CubeMX\jre\bin\java.exe -jar C:\Users\jon\AppData\Local\Programs\STM32CubeMX\STM32CubeMX.exe -q -s
+Executed command: config load "C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\run-3.ioc"
+Executed command: project toolchain "STM32CubeIDE"
+Executed command: project set heapsize 0x800
+Executed command: project set stacksize 0x2000
+Executed command: set gpio parameters PA3 GPIO_PuPd GPIO_PULLUP
+Executed command: set pin PA3 USART2_RX
+Executed command: set pin PA2 USART2_TX
+Executed command: set mode USART2 Asynchronous
+Executed command: config save
+Executed command: set ip parameters USART2 BaudRate 115200
+Executed command: set gpio parameters PA3 GPIO_PuPd GPIO_PULLUP
+C:\Users\jon\STM32Cube\Repository\STM32Cube_FW_F4_V1.28.3 already exists... Skipping installation...
+Generate project and exit.
+ If stuck here, please check STM32CubeMX opened dialog or Firmware Package.
+Executed command: config save
+Executed command: project toolchainlocation "."
+Executed command: project generate
+Adjusting memory area RAM for pool RAM perfect match of 131072 bytes
+Generating code...
+>>> C:\ST\STEdgeAI\4.0\Utilities\windows\stedgeai.exe generate --model C:\Users\jon\Downloads\policy_current_longer_training.onnx --batch-size 10 --mode target --name network --verbosity 1 --c-api st-ai --optimization balanced --target stm32f4 --workspace C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_ws --output C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output --memory-pool C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\mempools.json
+ST Edge AI Core v4.0.1-20581 7ed50de05
+
+Creating c (debug) info json file C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_c_info.json
+
+ Exec/report summary (generate)
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------
+ model file         :   C:\Users\jon\Downloads\policy_current_longer_training.onnx                                                                          
+ type               :   onnx                                                                                                                                
+ c_name             :   network                                                                                                                             
+ compression        :   lossless                                                                                                                            
+ options            :   allocate-inputs, allocate-outputs, multi-heaps, use-lite-runtime, use-st-ai                                                         
+ optimization       :   balanced                                                                                                                            
+ target/series      :   stm32f4                                                                                                                             
+ memory pool        :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\mempools.json   
+ workspace dir      :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_ws        
+ output dir         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output    
+ model_fmt          :   float                                                                                                                               
+ model_name         :   policy_current_longer_training                                                                                                      
+ model_hash         :   0x87e593f44347b2c6071d5c6de25b56f8                                                                                                  
+ params #           :   1,411 items (5.51 KiB)                                                                                                              
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------
+ input 1/1          :   'obs', f32(1x8), 32 Bytes, activations                                                                                              
+ output 1/1         :   'current_a', f32(1x2), 8 Bytes, activations                                                                                         
+ macc               :   1,498                                                                                                                               
+ weights (ro)       :   5,656 B (5.52 KiB) (1 segment) / +12(+0.2%) vs float model                                                                          
+ activations (rw)   :   256 B (256 B) (1 segment) *                                                                                                         
+ ram (total)        :   256 B (256 B) = 256 + 0 + 0                                                                                                         
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------
+ (*) 'input'/'output' buffers are allocated in the activations buffer
+  Memory-pools summary (activations/ domain)
+  --------------- ---- ---------------------- --------- 
+  name            id   used                   buffer#   
+  --------------- ---- ---------------------- --------- 
+  RAM             0    256 B (0.2%)           8         
+  weights_array   1    5.52 KiB (565600.0%)   8         
+  --------------- ---- ---------------------- ---------
+
+Computing AI RT data/code size (target=stm32f4)..
+
+ Requested memory size by section - "stm32f4" target
+
+ ------------------------------ ------- -------- ------ -----
+ module                            text   rodata   data   bss
+ ------------------------------ ------- -------- ------ -----
+
+ network.o                        1,194       48      0     0
+ NetworkRuntime1201_CM4_GCC.a       960        0      0     0
+
+ lib (toolchain)*                   880       12      0     0
+ ------------------------------ ------- -------- ------ -----
+ RT total**                       3,034       60      0     0
+
+ ------------------------------ ------- -------- ------ -----
+ weights                              0    5,656      0     0
+ activations                          0        0      0   256
+
+ states                               0        0      0     0
+ io                                   0        0      0     0
+
+ ------------------------------ ------- -------- ------ -----
+ TOTAL                            3,034    5,716      0   256
+ ------------------------------ ------- -------- ------ -----
+ *  toolchain objects (libm/libgcc*)
+ ** RT AI runtime objects (kernels+infrastructure)
+  Summary - "stm32f4" target
+  --------------------------------------------------
+
+               FLASH (ro)      %*   RAM (rw)      %
+  --------------------------------------------------
+  RT total          3,094   35.4%          0   0.0%
+  --------------------------------------------------
+
+  TOTAL             8,750                256
+  --------------------------------------------------
+  *  rt/total
+
+ Generated files (5)
+
+ ----------------------------------------------------------------------------------------------------------------------------------------------------
+ C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_data.h
+ C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_data.c
+
+ C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network.h
+ C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network.c
+ C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_details.h
+
+Creating txt report file C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_generate_report.txt
+
+elapsed time (GENERATE): 5.446s
+
+Compiling template bsp_ai.h.hbs...
+Compiling template app_config.h.hbs...
+Compiling template user_init.h.hbs...
+Compiling template user_init.c.hbs...
+Compiling template app_x-cube-ai.h.hbs...
+Compiling template app_x-cube-ai.c.hbs...
+Compiling template weights.h.hbs...
+Compiling template weights.c.hbs...
+Removing USART Init from main.c
+Removing static from USART Init in main.c
+Adding include line #include "app_x-cube-ai.h" to main.c
+Adding init function call STM32CubeAI_Studio_AI_Init(); to main.c
+Adding process function call STM32CubeAI_Studio_AI_Process(); to main.c
+Generate project done
+Create.
+
+Opening 'run-3'.
+
+10:12:39 **** Build of configuration Release for project run-3 ****
+
+make -j12 all 
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/aiPbIO.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/aiPbIO.d" -MT"Middlewares/ST/AI/Validation/Src/aiPbIO.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/aiPbIO.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/aiPbMemRWServices.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/aiPbMemRWServices.d" -MT"Middlewares/ST/AI/Validation/Src/aiPbMemRWServices.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/aiPbMemRWServices.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/aiPbMgr.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/aiPbMgr.d" -MT"Middlewares/ST/AI/Validation/Src/aiPbMgr.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/aiPbMgr.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/aiValidation_ST_AI.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/aiValidation_ST_AI.d" -MT"Middlewares/ST/AI/Validation/Src/aiValidation_ST_AI.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/aiValidation_ST_AI.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/pb_common.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/pb_common.d" -MT"Middlewares/ST/AI/Validation/Src/pb_common.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/pb_common.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/pb_decode.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/pb_decode.d" -MT"Middlewares/ST/AI/Validation/Src/pb_decode.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/pb_decode.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/pb_encode.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/pb_encode.d" -MT"Middlewares/ST/AI/Validation/Src/pb_encode.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/pb_encode.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Validation/Src/stm32msg.pb.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Validation/Src/stm32msg.pb.d" -MT"Middlewares/ST/AI/Validation/Src/stm32msg.pb.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Validation/Src/stm32msg.pb.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Misc/Src/aiTestHelper_ST_AI.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Misc/Src/aiTestHelper_ST_AI.d" -MT"Middlewares/ST/AI/Misc/Src/aiTestHelper_ST_AI.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Misc/Src/aiTestHelper_ST_AI.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Misc/Src/aiTestUtility.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Misc/Src/aiTestUtility.d" -MT"Middlewares/ST/AI/Misc/Src/aiTestUtility.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Misc/Src/aiTestUtility.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Misc/Src/ai_device_adaptor.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Misc/Src/ai_device_adaptor.d" -MT"Middlewares/ST/AI/Misc/Src/ai_device_adaptor.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Misc/Src/ai_device_adaptor.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Misc/Src/lc_print.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Misc/Src/lc_print.d" -MT"Middlewares/ST/AI/Misc/Src/lc_print.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Misc/Src/lc_print.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Middlewares/ST/AI/Misc/Src/syscalls.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Middlewares/ST/AI/Misc/Src/syscalls.d" -MT"Middlewares/ST/AI/Misc/Src/syscalls.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Middlewares/ST/AI/Misc/Src/syscalls.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_cortex.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_cortex.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_cortex.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma_ex.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma_ex.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma_ex.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_exti.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_exti.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_exti.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ex.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ex.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ex.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ramfunc.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ramfunc.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ramfunc.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_gpio.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_gpio.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_gpio.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr_ex.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr_ex.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr_ex.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc_ex.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc_ex.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc_ex.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_uart.d" -MT"Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_uart.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_uart.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Core/Src/system_stm32f4xx.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Drivers/CMSIS/system_stm32f4xx.d" -MT"Drivers/CMSIS/system_stm32f4xx.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Drivers/CMSIS/system_stm32f4xx.o"
+
+arm-none-eabi-gcc -mcpu=cortex-m4 -c -x assembler-with-cpp -MMD -MP -MF"Application/User/Startup/startup_stm32f446retx.d" -MT"Application/User/Startup/startup_stm32f446retx.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Application/User/Startup/startup_stm32f446retx.o" "../Application/User/Startup/startup_stm32f446retx.s"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Application/User/Core/main.d" -MT"Application/User/Core/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Application/User/Core/main.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Core/Src/stm32f4xx_hal_msp.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Application/User/Core/stm32f4xx_hal_msp.d" -MT"Application/User/Core/stm32f4xx_hal_msp.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Application/User/Core/stm32f4xx_hal_msp.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/Core/Src/stm32f4xx_it.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Application/User/Core/stm32f4xx_it.d" -MT"Application/User/Core/stm32f4xx_it.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Application/User/Core/stm32f4xx_it.o"
+
+arm-none-eabi-gcc "../Application/User/Core/syscalls.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Application/User/Core/syscalls.d" -MT"Application/User/Core/syscalls.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Application/User/Core/syscalls.o"
+
+arm-none-eabi-gcc "../Application/User/Core/sysmem.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Application/User/Core/sysmem.d" -MT"Application/User/Core/sysmem.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Application/User/Core/sysmem.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/AI/App/app_x-cube-ai.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"AI/App/app_x-cube-ai.d" -MT"AI/App/app_x-cube-ai.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "AI/App/app_x-cube-ai.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/AI/App/network.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"AI/App/network.d" -MT"AI/App/network.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "AI/App/network.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/AI/App/network_data.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"AI/App/network_data.d" -MT"AI/App/network_data.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "AI/App/network_data.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/AI/App/network_weights.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"AI/App/network_weights.d" -MT"AI/App/network_weights.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "AI/App/network_weights.o"
+
+arm-none-eabi-gcc "C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Diablo_Robot_Source/.ai/run/run-3/AI/App/user_init.c" -mcpu=cortex-m4 -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F446xx -DHAVE_NETWORK_INFO -c -I../../Core/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc -I../../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../../Drivers/CMSIS/Include -I../../Middlewares/ST/AI/Inc -I../../Middlewares/ST/AI/Misc/Inc -I../../Middlewares/ST/AI/Validation/Inc -I../../Middlewares/ST/AI/Misc/Src -I../../Middlewares/ST/AI/Validation/Src -I../../AI/App -Os -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"AI/App/user_init.d" -MT"AI/App/user_init.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "AI/App/user_init.o"
+
+arm-none-eabi-gcc -o "run-3.elf" @"objects.list"  -l:NetworkRuntime1201_CM4_GCC.a -mcpu=cortex-m4 -T"C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\STM32CubeIDE\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="run-3.map" -Wl,--gc-sections -static -L../../Middlewares/ST/AI/Lib/NetworkRuntime1201_CM4_GCC.a --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+
+Finished building target: run-3.elf
+
+arm-none-eabi-size  run-3.elf 
+
+arm-none-eabi-objdump -h -S run-3.elf  > "run-3.list"
+
+   text	   data	    bss	    dec	    hex	filename
+
+  37664	    368	  12184	  50216	   c428	run-3.elf
+
+Finished building: default.size.stdout
+
+Finished building: run-3.list
+
+
+10:12:46 Build Finished. 0 errors, 0 warnings. (took 7s.123ms)
+
+
+      -------------------------------------------------------------------
+
+                       STM32CubeProgrammer v2.22.0                  
+      -------------------------------------------------------------------
+
+
+ST-LINK SN  : 066BFF555557838667163622
+
+ST-LINK FW  : V2J46M31
+
+Board       : NUCLEO-F446RE
+
+Voltage     : 3.26V
+
+SWD freq    : 4000 KHz
+Connect mode: Under Reset
+
+Reset mode  : Hardware reset
+
+Device ID   : 0x421
+
+Revision ID : Rev A
+
+Device name : STM32F446xx
+
+NVM size  : 512 KBytes
+
+Device type : MCU
+Device CPU  : Cortex-M4
+
+BL Version  : 0x90
+
+Opening and parsing file: run-3.elf
+
+
+Memory Programming ...
+  File          : run-3.elf
+
+  Size          : 37.14 KB 
+
+  Address       : 0x08000000
+
+
+
+Erasing memory corresponding to segment 0:
+
+Erasing internal memory sectors [0 2]
+
+Download in Progress:
+
+
+
+File download complete
+
+Time elapsed during download operation: 00:00:01.176
+
+
+RUNNING Program ... 
+  Address:      : 0x8000000
+
+Application is running, Please Hold on...
+Start operation achieved successfully
+
+Flashing completed
+Device is ready on port COM3
+>>> C:\ST\STEdgeAI\4.0\Utilities\windows\stedgeai.exe validate --model C:\Users\jon\Downloads\policy_current_longer_training.onnx --batch-size 10 --mode target --name network --verbosity 1 --c-api st-ai --optimization balanced --target stm32f4 --workspace C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_ws --output C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output --memory-pool C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\mempools.json --desc serial:COM3:115200 --save-csv
+ST Edge AI Core v4.0.1-20581 7ed50de05
+
+Setting validation data...
+
+ generating random data, size=10, seed=42, range=(0, 1)
+
+   I[1]: (10, 1, 1, 8)/float32, min/max=[0.005522, 0.986887], mean/std=[0.465890, 0.303777]
+
+ no output/reference samples are provided
+
+Creating c (debug) info json file C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_c_info_valid.json
+
+ Exec/report summary (validate)
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------
+ model file         :   C:\Users\jon\Downloads\policy_current_longer_training.onnx                                                                          
+ type               :   onnx                                                                                                                                
+ c_name             :   network                                                                                                                             
+ compression        :   lossless                                                                                                                            
+ options            :   allocate-inputs, allocate-outputs, multi-heaps, use-lite-runtime, use-st-ai                                                         
+ optimization       :   balanced                                                                                                                            
+ target/series      :   stm32f4                                                                                                                             
+ memory pool        :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\mempools.json   
+ workspace dir      :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_ws        
+ output dir         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output    
+ model_fmt          :   float                                                                                                                               
+ model_name         :   policy_current_longer_training                                                                                                      
+ model_hash         :   0x87e593f44347b2c6071d5c6de25b56f8                                                                                                  
+ params #           :   1,411 items (5.51 KiB)                                                                                                              
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------
+ input 1/1          :   'obs', f32(1x8), 32 Bytes, activations                                                                                              
+ output 1/1         :   'current_a', f32(1x2), 8 Bytes, activations                                                                                         
+ macc               :   1,498                                                                                                                               
+ weights (ro)       :   5,656 B (5.52 KiB) (1 segment) / +12(+0.2%) vs float model                                                                          
+ activations (rw)   :   256 B (256 B) (1 segment) *                                                                                                         
+ ram (total)        :   256 B (256 B) = 256 + 0 + 0                                                                                                         
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------
+ (*) 'input'/'output' buffers are allocated in the activations buffer
+  Memory-pools summary (activations/ domain)
+  --------------- ---- ---------------------- --------- 
+  name            id   used                   buffer#   
+  --------------- ---- ---------------------- --------- 
+  RAM             0    256 B (0.2%)           8         
+  weights_array   1    5.52 KiB (565600.0%)   8         
+  --------------- ---- ---------------------- ---------
+
+Running the ONNX model...
+
+Running the ST.AI c-model (AI RUNNER)...(name=network, mode=TARGET)
+
+ Proto-buffer driver v2.1 (msg v3.2) (Serial driver v1.0 - COM3:115200) ['network']
+
+  Summary 'network' - ['network']
+
+  -------------------------------------------------------------------------------------------------
+  I[1/1] 'input_1'    :   f32[1,8], 32 Bytes, activations
+
+  O[1/1] 'output_1'   :   f32[1,2], 8 Bytes, activations
+  n_nodes             :   7
+  activations         :   256
+  weights             :   5656
+
+  macc                :   1498
+  hash                :   0x87e593f44347b2c6071d5c6de25b56f8
+
+  compile_datetime    :   Jul  2 2026 10:12:44
+  -------------------------------------------------------------------------------------------------
+  protocol            :   Proto-buffer driver v2.1 (msg v3.2) (Serial driver v1.0 - COM3:115200)
+
+  tools               :   ST.AI (st-ai api) v4.0.1
+  runtime lib         :   v12.0.1-92efada9 compiled with GCC 13.3.1 (GCC)
+  capabilities        :   IO_ONLY, PER_LAYER, PER_LAYER_WITH_DATA
+
+  device.desc         :   stm32 family - 0x421 - STM32F446 @180/180MHz
+  device.attrs        :   fpu,art_lat=5,art_prefetch,art_icache,art_dcache
+  -------------------------------------------------------------------------------------------------
+
+  ST.AI Profiling results v2.0 - "network"
+
+  ----------------------------------------------------------------------------
+  nb sample(s)                   :   10
+  duration                       :   0.092 ms by sample (0.092/0.093/0.000)
+  macc                           :   1498
+
+  cycles/MACC                    :   11.11
+  CPU cycles                     :   [16,645]
+  network initialize time (ms)   :   0.003
+  ----------------------------------------------------------------------------
+
+   Inference time per node
+
+   ----------------------------------------------------------------------------------------------------------
+   c_id    m_id   type                                 dur (ms)        %     cumul  CPU cycles   name
+   ----------------------------------------------------------------------------------------------------------
+
+   0       1      Dense (0x104) - Dense                   0.022   23.54%    23.54%  [  3,919 ]   ai_node_0
+   1       2      NL (0x107) - Nonlinearity (relu)        0.003    2.75%    26.29%  [    457 ]   ai_node_1
+   2       3      Dense (0x104) - Dense                   0.056   60.77%    87.06%  [ 10,115 ]   ai_node_2
+   3       4      NL (0x107) - Nonlinearity (relu)        0.003    2.78%    89.84%  [    463 ]   ai_node_3
+   4       5      Dense (0x104) - Dense                   0.005    5.17%    95.01%  [    861 ]   ai_node_4
+   5       6      NL (0x107) - Nonlinearity (tanh)        0.004    3.79%    98.80%  [    630 ]   ai_node_5
+
+   6       7      BN (0x102) - ScaleBias                  0.001    1.20%   100.00%  [    200 ]   ai_node_6
+   ----------------------------------------------------------------------------------------------------------
+   total                                                  0.092                     [ 16,645 ]
+   ----------------------------------------------------------------------------------------------------------
+
+   Statistic per tensor
+   --------------------------------------------------------------------------------
+   tensor   #    type[shape]:size        min     max     mean      std  name
+
+   --------------------------------------------------------------------------------
+   I.0      10   f32[1,8]:32           0.006   0.987    0.466    0.304  input_1
+   O.0      10   f32[1,2]:8           -0.590   1.127    0.231    0.462  output_1
+   --------------------------------------------------------------------------------
+
+Saving validation data...
+
+ output directory: C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output
+
+ creating C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_val_io.npz
+
+ m_outputs_1: (10, 2)/float64, min/max=[-0.589704, 1.127290], mean/std=[0.230795, 0.461903], current_a
+
+ c_outputs_1: (10, 1, 1, 2)/float32, min/max=[-0.589704, 1.127290], mean/std=[0.230795, 0.461903], current_a
+
+Computing the metrics...
+
+ Cross accuracy report #1 (reference vs C-model)
+
+ ----------------------------------------------------------------------------------------------------
+ notes: - data type is different: r/float64 instead p/float32
+        - ACC metric is not computed ("--classifier" option can be used to force it)
+        - the output of the reference model is used as ground truth/reference value
+        - 10 samples (2 items per sample)
+
+  acc=n.a. rmse=0.000000091 mae=0.000000068 l2r=0.000000176 mean=0.000000 std=0.000000 snr=135.111771 nse=1.000000 cos=1.000000
+
+ Evaluation report (summary)
+
+ --------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Output       acc    rmse          mae           l2r           mean       std        snr          nse        cos        tensor
+ --------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ X-cross #1   n.a.   0.000000091   0.000000068   0.000000176   0.000000   0.000000   135.111771   1.000000   1.000000   'current_a', 10 x f32(1x2), m_id=[7]
+ --------------------------------------------------------------------------------------------------------------------------------------------------------------
+  acc  : Accuracy (class, axis=-1)
+  rmse : Root Mean Squared Error
+
+  mae  : Mean Absolute Error
+  l2r  : L2 relative error
+  mean : Mean error
+  std  : Standard deviation error
+  snr  : Signal-to-Noise Ratio (SNR), bigger is better
+
+  nse  : Nash-Sutcliffe efficiency criteria, bigger is better, best=1, range=(-inf, 1]
+  cos  : COsine Similarity, bigger is better, best=1, range=(0, 1]
+Creating txt report file C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\.ai\st_ai_output\network_validate_report.txt
+
+elapsed time (VALIDATE): 6.068s
+

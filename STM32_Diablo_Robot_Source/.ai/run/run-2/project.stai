@@ -1,0 +1,16 @@
+{
+  "toolchain": "STM32CubeIDE",
+  "variant": "Validation",
+  "fromMx": true,
+  "isGenerated": true,
+  "name": "run-2",
+  "createdAt": 1782205467170,
+  "lastModified": 1782823530209,
+  "lastAccessed": 1782823530179,
+  "type": "MxProject",
+  "mcu": "STM32F446RET6",
+  "board": "NUCLEO-F446RE",
+  "ioc": "",
+  "generator": "STM32CubeMX1",
+  "path": "C:\\Users\\jon\\OneDrive - Univerza v Mariboru\\Dokumenti\\GitHub\\BipedRobot\\STM32_Diablo_Robot_Source"
+}

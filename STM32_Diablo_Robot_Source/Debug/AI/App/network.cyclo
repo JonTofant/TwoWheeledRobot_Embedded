@@ -1,0 +1,17 @@
+../AI/App/network.c:240:6:_stai_network_check	13
+../AI/App/network.c:272:18:stai_network_init	3
+../AI/App/network.c:314:18:stai_network_deinit	5
+../AI/App/network.c:347:18:stai_network_run	35
+../AI/App/network.c:479:11:stai_network_get_context_size	1
+../AI/App/network.c:502:18:stai_network_get_activations	11
+../AI/App/network.c:517:18:stai_network_get_weights	11
+../AI/App/network.c:531:18:stai_network_get_inputs	11
+../AI/App/network.c:545:18:stai_network_get_outputs	11
+../AI/App/network.c:559:18:stai_network_get_error	5
+../AI/App/network.c:570:18:stai_network_get_states	9
+../AI/App/network.c:587:18:stai_network_set_activations	23
+../AI/App/network.c:617:18:stai_network_set_weights	23
+../AI/App/network.c:641:18:stai_network_set_inputs	23
+../AI/App/network.c:668:18:stai_network_set_outputs	23
+../AI/App/network.c:695:18:stai_network_set_states	5
+../AI/App/network.c:709:18:stai_network_set_callback	5

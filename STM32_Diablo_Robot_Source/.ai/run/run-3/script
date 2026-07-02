@@ -1,0 +1,13 @@
+config load "C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\.ai\run\run-3\run-3.ioc"
+project toolchain STM32CubeIDE
+
+project toolchain "STM32CubeIDE"
+project set heapsize 0x800
+project set stacksize 0x2000
+set gpio parameters PA3 GPIO_PuPd GPIO_PULLUP
+set pin PA3 USART2_RX
+set pin PA2 USART2_TX
+set mode USART2 Asynchronous
+config save
+set ip parameters USART2 BaudRate 115200
+set gpio parameters PA3 GPIO_PuPd GPIO_PULLUP

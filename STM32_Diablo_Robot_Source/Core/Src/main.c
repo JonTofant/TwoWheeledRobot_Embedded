@@ -41,9 +41,6 @@
 #include "state_machine.h"
 #include "JumpStrategy.h"
 
-#include "ann.h"
-#include "ann_data.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,6 +55,10 @@
 
 // ESP32 buffer size (ROLL PITCH YAW)
 #define PACKET_SIZE 19
+
+// Set to 1 to re-enable the UART2 debug telemetry print to the ESP32.
+// Disabled by default to save loop time for the 15ms ANN/DDSM115 update.
+#define ENABLE_UART2_DEBUG_TELEMETRY 0
 
 
 
@@ -113,16 +114,30 @@ int16_t velocityDDSM_RPM = 0;
 
 uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 
-// ===== ANN globals =====
-static ai_handle ann_network = AI_HANDLE_NULL;
-AI_ALIGNED(4) static ai_u8 ann_activations[AI_ANN_DATA_ACTIVATIONS_SIZE];
-AI_ALIGNED(4) static ai_float ann_in_data[AI_ANN_IN_1_SIZE];
-AI_ALIGNED(4) static ai_float ann_out_data[AI_ANN_OUT_1_SIZE];
-static ai_buffer ann_input[AI_ANN_IN_NUM];
-static ai_buffer ann_output[AI_ANN_OUT_NUM];
+// ===== AI network globals =====
+STAI_NETWORK_CONTEXT_DECLARE(ann_network_context, STAI_NETWORK_CONTEXT_SIZE)
+STAI_ALIGNED(32) static uint8_t ann_activations[STAI_NETWORK_ACTIVATION_1_SIZE_BYTES];
+STAI_ALIGNED(4) static float ann_in_data[STAI_NETWORK_IN_1_SIZE];
+STAI_ALIGNED(4) static float ann_out_data[STAI_NETWORK_OUT_1_SIZE];
+static stai_ptr ann_input[STAI_NETWORK_IN_NUM] = { (stai_ptr)ann_in_data };
+static stai_ptr ann_output[STAI_NETWORK_OUT_NUM] = { (stai_ptr)ann_out_data };
 
 static float prev_action_left  = 0.0f;
 static float prev_action_right = 0.0f;
+
+#define WHEEL_POS_SIGN_LEFT        (-1.0f)
+#define WHEEL_POS_SIGN_RIGHT       (+1.0f)
+#define WHEEL_VEL_SIGN_LEFT        (-1.0f)
+#define WHEEL_VEL_SIGN_RIGHT       (+1.0f)
+
+#define PITCH_SIGN                 (+1.0f)
+#define PITCH_RATE_SIGN            (+1.0f)
+#define YAW_SIGN                   (-1.0f)
+#define YAW_RATE_SIGN              (-1.0f)
+
+#define DDSM_CURRENT_SIGN_LEFT     (+1.0f)
+#define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
+#define STM32_TEST_CURRENT_LIMIT_A (0.5f)
 
 /* USER CODE END PV */
 
@@ -166,6 +181,8 @@ char NN_buffer[80] = {0};
 
 void ANN_Init(void);
 void ANN_Run(void);
+static float clamp_float(float value, float min_value, float max_value);
+static float wrap_pi(float angle_rad);
 
 
 /* USER CODE END PFP */
@@ -409,10 +426,10 @@ int main(void)
 		    	posture_controler();
 
 
-		    	MOTOR_CG_LF.desired_angle = 0.75f;
-		    	MOTOR_CG_LB.desired_angle = -0.75f;
-		    	MOTOR_CG_RF.desired_angle = 0.75f;
-		    	MOTOR_CG_RB.desired_angle = -0.75f;
+		    	MOTOR_CG_LF.desired_angle = 0.0f;
+		    	MOTOR_CG_LB.desired_angle = -0.0f;
+		    	MOTOR_CG_RF.desired_angle = 0.0f;
+		    	MOTOR_CG_RB.desired_angle = -0.0f;
 
 
 		    	Motor_SendMITCommand(&MOTOR_CG_LF);
@@ -480,19 +497,12 @@ int main(void)
 	 }*/
 
 	 //ANN UPDATED SENDING FUNCTION
-	 if (sendUart2Data) {
-	     sendUart2Data = 0;
+	 // Now gated on the 15ms TIM4 tick (isDDSM115Ready) instead of the 100ms
+	 // TIM2 tick (sendUart2Data), so the policy and the DDSM115 current
+	 // commands run at ~66.7Hz instead of 10Hz.
+	 if (isDDSM115Ready) {
+	     isDDSM115Ready = false;
 
-	     // Optional: keep telemetry to ESP32 for debugging
-	     /*sprintf(NN_buffer, "%d%d%.2f%.2f%.2f%.2f%.2f %.2f %.2f\r\n",
-	             0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32,
-	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot);*/
-	     sprintf(NN_buffer, "%d%d %.2f %.2f %.2f %.2f %.2f %.2f %.2f | NN: %.3f %.3f\r\n",
-	             0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32,
-	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot,
-	             ann_out_data[0], ann_out_data[1]);
-	     HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
-	     //HAL_UART_Transmit(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer), 100);
 	     // Run policy locally
 	     ANN_Run();
 
@@ -501,9 +511,25 @@ int main(void)
 	         HAL_Delay(5);
 	         DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
 	     }
-
-	     isDDSM115Ready = false;
 	 }
+
+	 // Debug telemetry to ESP32, on the slower 100ms tick so UART2/DMA
+	 // isn't loaded at the full 66.7Hz control rate.
+	 // Disabled for now (ENABLE_UART2_DEBUG_TELEMETRY == 0) to free up loop
+	 // time for the faster ANN/DDSM115 update above.
+#if ENABLE_UART2_DEBUG_TELEMETRY
+	 if (sendUart2Data) {
+	     sendUart2Data = 0;
+
+	     sprintf(NN_buffer, "%d%d %.2f %.2f %.2f %.2f %.2f %.2f %.2f | NN: %.3f %.3f\r\n",
+	             0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32,
+	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot,
+	             ann_out_data[0], ann_out_data[1]);
+	     HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
+	 }
+#else
+	 sendUart2Data = 0;
+#endif
 
 
 	 if (isTELEMETRYReady){
@@ -1388,50 +1414,144 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 // ===== ANN INIT =====
 void ANN_Init(void)
 {
-    const ai_handle act_addr[] = { ann_activations };
-    ai_error err = ai_ann_create_and_init(&ann_network, act_addr, NULL);
-    if (err.type != AI_ERROR_NONE) {
+    stai_ptr act_addr[] = { (stai_ptr)ann_activations };
+    stai_return_code err = stai_runtime_init();
+    if (err != STAI_SUCCESS) {
         Error_Handler();
     }
-    ann_input[0]  = ai_ann_inputs_get(ann_network, NULL)[0];
-    ann_output[0] = ai_ann_outputs_get(ann_network, NULL)[0];
-    ann_input[0].data  = AI_HANDLE_PTR(ann_in_data);
-    ann_output[0].data = AI_HANDLE_PTR(ann_out_data);
+
+    err = user_stai_network_init(ann_network_context);
+    if (err != STAI_SUCCESS) {
+        Error_Handler();
+    }
+
+    err = stai_network_set_activations(ann_network_context, act_addr, STAI_NETWORK_ACTIVATIONS_NUM);
+    if (err != STAI_SUCCESS) {
+        Error_Handler();
+    }
+
+    err = stai_network_set_inputs(ann_network_context, ann_input, STAI_NETWORK_IN_NUM);
+    if (err != STAI_SUCCESS) {
+        Error_Handler();
+    }
+
+    err = stai_network_set_outputs(ann_network_context, ann_output, STAI_NETWORK_OUT_NUM);
+    if (err != STAI_SUCCESS) {
+        Error_Handler();
+    }
 }
 
 // ===== ANN INFERENCE =====
 void ANN_Run(void)
 {
-    // Fill 9 inputs
-    ann_in_data[1] = pitch_esp32;
-    ann_in_data[0] = roll_esp32;
-    //ann_in_data[0] = pitch_esp32; //original
-    //ann_in_data[1] = roll_esp32; //original
-    ann_in_data[2] = gx_esp32;
-    ann_in_data[3] = gy_esp32;
-    ann_in_data[4] = gz_esp32;
-    ann_in_data[5] = (float)DDSM115MotorList[0].x_dot;
-    ann_in_data[6] = (float)DDSM115MotorList[1].x_dot;
-    ann_in_data[7] = prev_action_left;
-    ann_in_data[8] = prev_action_right;
+    static bool refs_valid = false;
+    static float phi_left_ref_nn = 0.0f;
+    static float phi_right_ref_nn = 0.0f;
+    static float yaw_ref_nn_rad = 0.0f;
 
-    ai_i32 n_batch = ai_ann_run(ann_network, ann_input, ann_output);
-    if (n_batch != 1) return;
+    if (isFallen() && !isStartupStrategy) {
+        refs_valid = false;
+        prev_action_left = 0.0f;
+        prev_action_right = 0.0f;
+        ddsm_NN_current_command[0] = 0.0f;
+        ddsm_NN_current_command[1] = 0.0f;
+        return;
+    }
 
-    float raw_left  = ann_out_data[0];
-    float raw_right = ann_out_data[1];
+    float phi_left_nn = WHEEL_POS_SIGN_LEFT * DDSM115MotorList[0].phi_rad;
+    float phi_right_nn = WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad;
+    float omega_left_nn = WHEEL_VEL_SIGN_LEFT * DDSM115MotorList[0].phi_dot_rad_s;
+    float omega_right_nn = WHEEL_VEL_SIGN_RIGHT * DDSM115MotorList[1].phi_dot_rad_s;
+    float yaw_nn_rad = YAW_SIGN * yaw_esp32;
 
-    if (raw_left  >  1.0f) raw_left  =  1.0f;
-    if (raw_left  < -1.0f) raw_left  = -1.0f;
-    if (raw_right >  1.0f) raw_right =  1.0f;
-    if (raw_right < -1.0f) raw_right = -1.0f;
+    if (!refs_valid) {
+        phi_left_ref_nn = phi_left_nn;
+        phi_right_ref_nn = phi_right_nn;
+        yaw_ref_nn_rad = yaw_nn_rad;
+        refs_valid = true;
+    }
 
-    prev_action_left  = raw_left;
-    prev_action_right = raw_right;
+    float s_left_m = WHEEL_RADIUS_R * (phi_left_nn - phi_left_ref_nn);
+    float s_right_m = WHEEL_RADIUS_R * (phi_right_nn - phi_right_ref_nn);
+    float v_left_mps = WHEEL_RADIUS_R * omega_left_nn;
+    float v_right_mps = WHEEL_RADIUS_R * omega_right_nn;
 
-    const float ACTION_SCALE = 1.5f;
-    ddsm_NN_current_command[0] = raw_left  * ACTION_SCALE;
-    ddsm_NN_current_command[1] = raw_right * ACTION_SCALE;
+    float x_rel_m = 0.5f * (s_left_m + s_right_m);
+    float x_dot_mps = 0.5f * (v_left_mps + v_right_mps);
+    float theta_rad = PITCH_SIGN * roll_esp32;
+    float theta_dot_radps = PITCH_RATE_SIGN * gx_esp32;
+    float yaw_error_rad = wrap_pi(yaw_nn_rad - yaw_ref_nn_rad);
+    float yaw_rate_radps = YAW_RATE_SIGN * gz_esp32;
+
+    // Current policy input: normalized obs[8].
+    ann_in_data[0] = x_rel_m / 1.0f;
+    ann_in_data[1] = x_dot_mps / 1.0f;
+    ann_in_data[2] = theta_rad / 0.43633231f;
+    ann_in_data[3] = theta_dot_radps / 4.0f;
+    ann_in_data[4] = yaw_error_rad / 3.14159265f;
+    ann_in_data[5] = yaw_rate_radps / 4.0f;
+    ann_in_data[6] = prev_action_left / 2.0f;
+    ann_in_data[7] = prev_action_right / 2.0f;
+
+    for (uint32_t i = 0; i < STAI_NETWORK_IN_1_SIZE; i++) {
+        if (!isfinite(ann_in_data[i])) {
+            ann_in_data[i] = 0.0f;
+        } else if (ann_in_data[i] > 10.0f) {
+            ann_in_data[i] = 10.0f;
+        } else if (ann_in_data[i] < -10.0f) {
+            ann_in_data[i] = -10.0f;
+        }
+    }
+
+    if (stai_network_run(ann_network_context, STAI_MODE_SYNC) != STAI_SUCCESS) {
+        ddsm_NN_current_command[0] = 0.0f;
+        ddsm_NN_current_command[1] = 0.0f;
+        return;
+    }
+
+    float left_nn_current_A = ann_out_data[0];
+    float right_nn_current_A = ann_out_data[1];
+
+    if (!isfinite(left_nn_current_A) || !isfinite(right_nn_current_A)) {
+        ddsm_NN_current_command[0] = 0.0f;
+        ddsm_NN_current_command[1] = 0.0f;
+        return;
+    }
+
+    prev_action_left = left_nn_current_A;
+    prev_action_right = right_nn_current_A;
+
+    ddsm_NN_current_command[0] = clamp_float(DDSM_CURRENT_SIGN_LEFT * left_nn_current_A,
+                                             -STM32_TEST_CURRENT_LIMIT_A,
+                                             STM32_TEST_CURRENT_LIMIT_A);
+    ddsm_NN_current_command[1] = clamp_float(DDSM_CURRENT_SIGN_RIGHT * right_nn_current_A,
+                                             -STM32_TEST_CURRENT_LIMIT_A,
+                                             STM32_TEST_CURRENT_LIMIT_A);
+    //ddsm_NN_current_command[0] = 0.0f;
+    //ddsm_NN_current_command[1] = 0.0f;
+
+}
+
+static float clamp_float(float value, float min_value, float max_value)
+{
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
+}
+
+static float wrap_pi(float angle_rad)
+{
+    while (angle_rad > 3.14159265f) {
+        angle_rad -= 6.28318531f;
+    }
+    while (angle_rad < -3.14159265f) {
+        angle_rad += 6.28318531f;
+    }
+    return angle_rad;
 }
 
 /* USER CODE END 4 */

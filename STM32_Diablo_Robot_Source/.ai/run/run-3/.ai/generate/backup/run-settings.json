@@ -1,0 +1,26 @@
+{
+  "args": {
+    "model": "C:\\Users\\jon\\Downloads\\policy_current_longer_training.onnx",
+    "valinput": "",
+    "valoutput": "",
+    "batch-size": 10,
+    "mode": "target",
+    "name": "network",
+    "verbosity": 1,
+    "c-api": "st-ai",
+    "optimization": "balanced"
+  },
+  "mempools": [
+    {
+      "name": "RAM",
+      "size": 131072,
+      "offset": 536870912,
+      "driver": "RAM",
+      "max": 131072,
+      "mode_available": []
+    }
+  ],
+  "exportWeightsAsBin": false,
+  "copyWeightsToRam": false,
+  "automaticFlash": true
+}

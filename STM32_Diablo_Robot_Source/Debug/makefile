@@ -9,10 +9,10 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include X-CUBE-AI/App/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include AI/App/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -62,7 +62,7 @@ main-build: Diablo_robot_source.elf secondary-outputs
 
 # Tool invocations
 Diablo_robot_source.elf Diablo_robot_source.map: $(OBJS) $(USER_OBJS) C:\Users\jon\OneDrive\ -\ Univerza\ v\ Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -gdwarf-4 -o "Diablo_robot_source.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Diablo_robot_source.map" -Wl,--gc-sections -static -L../Middlewares/ST/AI/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -gdwarf-4 -o "Diablo_robot_source.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Diablo_robot_source.map" -Wl,--gc-sections -static -L../Middlewares/ST/AI/Lib/NetworkRuntime1201_CM4_GCC.a --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

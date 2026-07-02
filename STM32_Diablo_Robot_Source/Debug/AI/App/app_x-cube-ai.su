@@ -1,0 +1,12 @@
+../Middlewares/ST/AI/Misc/Inc/aiTestUtility.h:321:22:cyclesCounterInit	40	static
+../Middlewares/ST/AI/Misc/Inc/aiTestUtility.h:357:22:cyclesCounterStart	8	static
+../Middlewares/ST/AI/Misc/Inc/aiTestUtility.h:374:26:cyclesCounterEnd	80	static
+../AI/App/app_x-cube-ai.c:113:5:aiInit	16	static
+../AI/App/app_x-cube-ai.c:149:5:aiDeinit	16	static
+../AI/App/app_x-cube-ai.c:164:18:aiRun	48	static
+../AI/App/app_x-cube-ai.c:205:5:acquire_and_process_data	4	static
+../AI/App/app_x-cube-ai.c:219:5:post_process	4	static
+../AI/App/app_x-cube-ai.c:238:6:main_loop	8	static
+../AI/App/app_x-cube-ai.c:257:6:STM32CubeAI_Studio_AI_Init	8	static
+../AI/App/app_x-cube-ai.c:264:6:STM32CubeAI_Studio_AI_Process	8	static
+../AI/App/app_x-cube-ai.c:269:6:STM32CubeAI_Studio_AI_Deinit	8	static
