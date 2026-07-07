@@ -1,6 +1,6 @@
 {
   "args": {
-    "model": "C:\\Users\\jon\\Downloads\\policy_current3.onnx",
+    "model": "C:\\Users\\jon\\Downloads\\policy_drive.onnx",
     "valinput": "",
     "valoutput": "",
     "batch-size": 10,

@@ -122,8 +122,16 @@ STAI_ALIGNED(4) static float ann_out_data[STAI_NETWORK_OUT_1_SIZE];
 static stai_ptr ann_input[STAI_NETWORK_IN_NUM] = { (stai_ptr)ann_in_data };
 static stai_ptr ann_output[STAI_NETWORK_OUT_NUM] = { (stai_ptr)ann_out_data };
 
+// ===== NN Drive policy (policy_drive, 18 obs -> 6 actions) =====
+// 1 = new NN-drive policy owns CyberGear leg targets + wheel current; 0 = revert to the
+// old posture_controler()/hardcoded-angle leg path and the old 8-obs/2-action ANN_Run(),
+// both kept intact under #else/#if !NN_DRIVE_POLICY_ACTIVE for instant rollback.
+#define NN_DRIVE_POLICY_ACTIVE 1
+
+#if !NN_DRIVE_POLICY_ACTIVE
 static float prev_action_left  = 0.0f;
 static float prev_action_right = 0.0f;
+#endif
 
 #define WHEEL_POS_SIGN_LEFT        (-1.0f)
 #define WHEEL_POS_SIGN_RIGHT       (+1.0f)
@@ -137,7 +145,57 @@ static float prev_action_right = 0.0f;
 
 #define DDSM_CURRENT_SIGN_LEFT     (+1.0f)
 #define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
-#define STM32_TEST_CURRENT_LIMIT_A (0.5f)
+#define STM32_TEST_CURRENT_LIMIT_A (1.0f)   // was 0.5f - raised for the NN-drive policy's first bench port
+
+// Normalization/scale constants (Template-Twowheeledrobot-NNDrive-v0 spec, STM32_DEPLOYMENT.md)
+#define NNDRIVE_POS_ERR_NORM_M       (0.5f)   // obs[0]: pos_err / 0.5m  (NOTE: differs from old policy's /1.0f)
+#define NNDRIVE_YAW_ERR_NORM_RAD     (1.5f)   // obs[4]: yaw_err / 1.5 rad (NEW - was /pi in the old policy)
+#define NNDRIVE_VEL_CMD_NORM_MPS     (1.0f)
+#define NNDRIVE_YAWRATE_CMD_NORM_RPS (2.0f)
+#define NNDRIVE_CG_POS_NORM_RAD      (0.45f)  // obs[8-11]: cg_pos / 0.45 rad
+#define NNDRIVE_PREV_CURRENT_NORM_A  (2.0f)   // obs[12-13]: prev_current / 2.0A (trained range, not the firmware clamp)
+#define CG_ACTION_SCALE_RAD          (0.45f)  // reconstructs tanh-space prev_cg_action from a physical rad target
+
+// Joystick is assumed to send zero for this port - no reference integration implemented yet.
+#define NNDRIVE_VELOCITY_CMD_MPS  (0.0f)      // obs[6]
+#define NNDRIVE_YAWRATE_CMD_RPS   (0.0f)      // obs[7]
+
+// CyberGear index <-> physical corner mapping - CONFIRMED via physical motor ID check
+// (motorID decimal 30/31/21/20 = 0x1E/0x1F/0x15/0x14 = CyberGearMotorList[0..3]):
+// FR=21(0x15)->idx2, BR=20(0x14)->idx3, FL=31(0x1F)->idx1, BL=30(0x1E)->idx0.
+// This matches cybergear.c's own leftFront/leftBack angle-limit naming (LB=0, LF=1) and
+// system_init.c, NOT telemetry.c/DDSM115.h's MOTOR_CG_LF/LB aliases (LF=0,LB=1), which
+// are therefore wrong and should not be trusted for CyberGearMotorList indexing.
+// The CyberGear_IndexBenchTest() below remains available to re-verify after any rewiring.
+#define NNDRIVE_CG_IDX_FL 1   // ann_out_data[0] -> CyberGearMotorList[1]
+#define NNDRIVE_CG_IDX_FR 2   // ann_out_data[1] -> CyberGearMotorList[2]
+#define NNDRIVE_CG_IDX_BL 0   // ann_out_data[2] -> CyberGearMotorList[0]
+#define NNDRIVE_CG_IDX_BR 3   // ann_out_data[3] -> CyberGearMotorList[3]
+
+// Per-corner hard position limits (deg->rad): fl/br in [-10,+90]deg, fr/bl in [-90,+10]deg
+#define NNDRIVE_CG_FLBR_MIN_RAD (-10.0f * 0.017453293f)
+#define NNDRIVE_CG_FLBR_MAX_RAD ( 90.0f * 0.017453293f)
+#define NNDRIVE_CG_FRBL_MIN_RAD (-90.0f * 0.017453293f)
+#define NNDRIVE_CG_FRBL_MAX_RAD ( 10.0f * 0.017453293f)
+
+#define NNDRIVE_CG_SLEW_RATE_RADPS (3.0f)   // matches spec's slew-limit requirement
+#define NNDRIVE_TICK_DT_S         (0.015f)  // 15ms TIM4 tick (matches MET_SAMPLE_DT_S)
+
+#if NN_DRIVE_POLICY_ACTIVE
+static float prev_cg_action[4]       = {0.0f, 0.0f, 0.0f, 0.0f}; // tanh-space obs[14-17], order fl/fr/bl/br
+static float prev_wheel_current_A[2] = {0.0f, 0.0f};             // obs[12-13], order left/right
+static float cg_last_cmd_rad[4]      = {0.0f, 0.0f, 0.0f, 0.0f}; // slew memory, indexed like CyberGearMotorList[]
+static bool  cg_slew_initialized     = false;                    // seeded from measured .angle on first tick, not 0
+#endif
+
+// One-shot bench routine to verify the NNDRIVE_CG_IDX_* mapping above against the real
+// robot before trusting closed-loop leg control. Write CG_BENCH_start = 1 (e.g. via STM
+// Studio) with the robot hand-held/on a stand (not standing on its own wheels) to run it.
+#define CYBERGEAR_INDEX_BENCH_TEST 1
+#if CYBERGEAR_INDEX_BENCH_TEST
+volatile uint8_t CG_BENCH_start = 0;  // write 1 to begin the sweep; clears itself when done
+volatile int8_t  CG_BENCH_active_index = -1; // -1 = idle, else 0..3 = CyberGearMotorList index currently being tested
+#endif
 
 // ===== Bench metrics for STM Studio (metrics_per_run_template.csv columns) =====
 // All "MET_" variables are updated once per 15ms control tick (see MET_Update()).
@@ -167,16 +225,21 @@ volatile float   MET_run_time_s        = 0.0f;  // elapsed time since MET_reset 
 // Start the STM Studio recording the instant you let go of the robot (or, for
 // undisturbed_balance, whenever you want t=0 to be) - that recorded sample becomes
 // t_s = 0, and LOG_theta_deg from that first sample is your initial_theta_deg.
-// obs_0..obs_7 are the exact 8 floats fed to the network (ann_in_data, normalized) -
+// obs_0..obs_17 are the exact 18 floats fed to the network (ann_in_data, normalized) -
 // adjust LOG_Update() if your training env logged obs in a different order/units.
-// action_L/R are the network's raw output (pre sign-flip, pre safety clamp);
+// action_L/R are the network's raw wheel-current output (pre sign-flip, pre safety
+// clamp); action_cg_fl/fr/bl/br are the raw CyberGear position outputs (pre clamp/slew).
 // I_L/R_cmd_A and I_L/R_meas_A are both the same commanded current actually sent to
 // the DDSM115 (post sign-flip and clamping) - there's no separate current feedback
 // from the drive, so "measured" just mirrors "commanded".
 volatile float   LOG_theta_deg      = 0.0f;  // instantaneous pitch (deg); first recorded sample -> initial_theta_deg
-volatile float   LOG_obs[8]         = {0};   // -> obs_0..obs_7
-volatile float   LOG_action_L       = 0.0f;  // -> action_L (raw network output)
-volatile float   LOG_action_R       = 0.0f;  // -> action_R (raw network output)
+volatile float   LOG_obs[18]        = {0};   // -> obs_0..obs_17
+volatile float   LOG_action_L       = 0.0f;  // -> action_L (raw wheel-current network output)
+volatile float   LOG_action_R       = 0.0f;  // -> action_R (raw wheel-current network output)
+volatile float   LOG_action_cg_fl   = 0.0f;  // raw CyberGear position output, front-left
+volatile float   LOG_action_cg_fr   = 0.0f;  // raw CyberGear position output, front-right
+volatile float   LOG_action_cg_bl   = 0.0f;  // raw CyberGear position output, back-left
+volatile float   LOG_action_cg_br   = 0.0f;  // raw CyberGear position output, back-right
 volatile float   LOG_I_L_cmd_A      = 0.0f;  // -> I_L_cmd_A
 volatile float   LOG_I_R_cmd_A      = 0.0f;  // -> I_R_cmd_A
 volatile float   LOG_I_L_meas_A     = 0.0f;  // -> I_L_meas_A
@@ -228,6 +291,9 @@ static float clamp_float(float value, float min_value, float max_value);
 static float wrap_pi(float angle_rad);
 static void MET_Update(void);
 static void LOG_Update(void);
+#if CYBERGEAR_INDEX_BENCH_TEST
+static void CyberGear_IndexBenchTest(void);
+#endif
 
 
 /* USER CODE END PFP */
@@ -433,6 +499,34 @@ int main(void)
 
 
 
+#if NN_DRIVE_POLICY_ACTIVE
+	 // Leg targets now come from the NN-drive policy, sent from the isDDSM115Ready
+	 // block below (same 15ms tick). This block just drains the flag and keeps the
+	 // fall-handling / jump-strategy / startup-strategy triggers running every tick.
+	 if (isCYBERGEARReady) {
+		 if (isFallen()) {
+			 if (startPressed == 1) isStartupStrategy = true;
+		 } else {
+			 if (xPressed == 1) isJumpStrategy = true;
+		 }
+
+		 if (isStartupStrategy) {
+			 startup_strategy_control();
+		 }
+
+		 if (isFallen()) {
+			 DDSM115setCurrent(0x10, 0);
+			 HAL_Delay(2);
+			 DDSM115setCurrent(0x11, 0);
+		 }
+
+		 if (isJumpStrategy) {
+			 jump_strategy_control();
+		 }
+
+		 isCYBERGEARReady = false;
+	 }
+#else
 	 if (isCYBERGEARReady){
 
 		 if (isFallen())
@@ -513,6 +607,7 @@ int main(void)
 
 		    }
 	 }
+#endif // NN_DRIVE_POLICY_ACTIVE
 
 
 	/* if (sendUart2Data){
@@ -548,13 +643,39 @@ int main(void)
 	 if (isDDSM115Ready) {
 	     isDDSM115Ready = false;
 
-	     // Run policy locally
-	     ANN_Run();
+#if CYBERGEAR_INDEX_BENCH_TEST
+	     if (CG_BENCH_start || CG_BENCH_active_index >= 0) {
+	         // Bench test owns the CyberGear motors this tick - skip the normal
+	         // NN-drive policy entirely so nothing fights over MIT commands.
+	         CyberGear_IndexBenchTest();
+	     } else
+#endif
+	     {
+	         // Run policy locally
+	         ANN_Run();
 
-	     if (!isFallen() || isStartupStrategy) {
-	         DDSM115setCurrent(0x11, 1 * ddsm_NN_current_command[0]);
-	         HAL_Delay(5);
-	         DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
+#if NN_DRIVE_POLICY_ACTIVE
+	         if (!isFallen() || isStartupStrategy) {
+	             CyberGearMotorList[0].desired_angle = cg_last_cmd_rad[0];
+	             CyberGearMotorList[1].desired_angle = cg_last_cmd_rad[1];
+	             CyberGearMotorList[2].desired_angle = cg_last_cmd_rad[2];
+	             CyberGearMotorList[3].desired_angle = cg_last_cmd_rad[3];
+
+	             Motor_SendMITCommand(&CyberGearMotorList[0]);
+	             Motor_SendMITCommand(&CyberGearMotorList[1]);
+	             HAL_Delay(5);
+	             Motor_SendMITCommand(&CyberGearMotorList[2]);
+	             Motor_SendMITCommand(&CyberGearMotorList[3]);
+	         }
+	         // else: fallen and not in startup strategy - don't send new MIT commands
+	         // this tick, legs hold their last state per the CyberGear's own timeout.
+#endif
+
+	         if (!isFallen() || isStartupStrategy) {
+	             DDSM115setCurrent(0x11, 1 * ddsm_NN_current_command[0]);
+	             HAL_Delay(5);
+	             DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
+	         }
 	     }
 
 	     // Bench metrics/telemetry for STM Studio (see MET_/LOG_ globals above), same 15ms tick.
@@ -1491,6 +1612,8 @@ void ANN_Init(void)
 }
 
 // ===== ANN INFERENCE =====
+#if !NN_DRIVE_POLICY_ACTIVE
+// ----- Old policy: policy_current3, 8 obs -> 2 actions (wheel currents only) -----
 void ANN_Run(void)
 {
     static bool refs_valid = false;
@@ -1580,6 +1703,245 @@ void ANN_Run(void)
     //ddsm_NN_current_command[1] = 0.0f;
 
 }
+
+#else
+// ----- New policy: policy_drive, 18 obs -> 6 actions (4 CyberGear leg targets + 2 wheel currents) -----
+// Joystick is assumed to always send zero for this port (obs[6]/[7] hardcoded, no pos_ref/yaw_ref
+// integration) - see STM32_DEPLOYMENT.md for the full spec this implements.
+void ANN_Run(void)
+{
+    static bool refs_valid = false;
+    static float phi_left_ref_nn = 0.0f;
+    static float phi_right_ref_nn = 0.0f;
+    static float yaw_ref_nn_rad = 0.0f;
+
+    if (isFallen() && !isStartupStrategy) {
+        refs_valid = false;
+        cg_slew_initialized = false;
+        prev_wheel_current_A[0] = 0.0f;
+        prev_wheel_current_A[1] = 0.0f;
+        prev_cg_action[0] = prev_cg_action[1] = prev_cg_action[2] = prev_cg_action[3] = 0.0f;
+        ddsm_NN_current_command[0] = 0.0f;
+        ddsm_NN_current_command[1] = 0.0f;
+        // cg_last_cmd_rad[] is left untouched - the main loop won't send new MIT
+        // commands while fallen (see the isDDSM115Ready block), so legs just hold.
+        return;
+    }
+
+    // ---- obs 0-5: base/wheel, same math as the old policy ----
+    float phi_left_nn = WHEEL_POS_SIGN_LEFT * DDSM115MotorList[0].phi_rad;
+    float phi_right_nn = WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad;
+    float omega_left_nn = WHEEL_VEL_SIGN_LEFT * DDSM115MotorList[0].phi_dot_rad_s;
+    float omega_right_nn = WHEEL_VEL_SIGN_RIGHT * DDSM115MotorList[1].phi_dot_rad_s;
+    float yaw_nn_rad = YAW_SIGN * yaw_esp32;
+
+    if (!refs_valid) {
+        phi_left_ref_nn = phi_left_nn;
+        phi_right_ref_nn = phi_right_nn;
+        yaw_ref_nn_rad = yaw_nn_rad;
+        refs_valid = true;
+    }
+
+    float s_left_m = WHEEL_RADIUS_R * (phi_left_nn - phi_left_ref_nn);
+    float s_right_m = WHEEL_RADIUS_R * (phi_right_nn - phi_right_ref_nn);
+    float v_left_mps = WHEEL_RADIUS_R * omega_left_nn;
+    float v_right_mps = WHEEL_RADIUS_R * omega_right_nn;
+
+    float x_rel_m = 0.5f * (s_left_m + s_right_m);
+    float x_dot_mps = 0.5f * (v_left_mps + v_right_mps);
+    float theta_rad = PITCH_SIGN * roll_esp32;
+    float theta_dot_radps = PITCH_RATE_SIGN * gx_esp32;
+    float yaw_error_rad = wrap_pi(yaw_nn_rad - yaw_ref_nn_rad);
+    float yaw_rate_radps = YAW_RATE_SIGN * gz_esp32;
+
+    ann_in_data[0] = x_rel_m / NNDRIVE_POS_ERR_NORM_M;                          // pos_err / 0.5m
+    ann_in_data[1] = x_dot_mps / NNDRIVE_VEL_CMD_NORM_MPS;                      // velocity / 1.0 m/s
+    ann_in_data[2] = theta_rad / 0.43633231f;                                   // pitch / 25deg
+    ann_in_data[3] = theta_dot_radps / 4.0f;                                    // pitch_rate / 4 rad/s
+    ann_in_data[4] = yaw_error_rad / NNDRIVE_YAW_ERR_NORM_RAD;                  // yaw_err / 1.5 rad
+    ann_in_data[5] = yaw_rate_radps / 4.0f;                                     // yaw_rate / 4 rad/s
+    ann_in_data[6] = NNDRIVE_VELOCITY_CMD_MPS / NNDRIVE_VEL_CMD_NORM_MPS;       // velocity_cmd (joystick=0)
+    ann_in_data[7] = NNDRIVE_YAWRATE_CMD_RPS / NNDRIVE_YAWRATE_CMD_NORM_RPS;    // yaw_rate_cmd (joystick=0)
+
+    // ---- obs 8-11: CyberGear joint angles, order fl/fr/bl/br (tentative index mapping) ----
+    ann_in_data[8]  = CyberGearMotorList[NNDRIVE_CG_IDX_FL].angle / NNDRIVE_CG_POS_NORM_RAD;
+    ann_in_data[9]  = CyberGearMotorList[NNDRIVE_CG_IDX_FR].angle / NNDRIVE_CG_POS_NORM_RAD;
+    ann_in_data[10] = CyberGearMotorList[NNDRIVE_CG_IDX_BL].angle / NNDRIVE_CG_POS_NORM_RAD;
+    ann_in_data[11] = CyberGearMotorList[NNDRIVE_CG_IDX_BR].angle / NNDRIVE_CG_POS_NORM_RAD;
+
+    // ---- obs 12-13: previous wheel current, left/right ----
+    ann_in_data[12] = prev_wheel_current_A[0] / NNDRIVE_PREV_CURRENT_NORM_A;
+    ann_in_data[13] = prev_wheel_current_A[1] / NNDRIVE_PREV_CURRENT_NORM_A;
+
+    // ---- obs 14-17: previous CyberGear action, tanh-space, order fl/fr/bl/br ----
+    ann_in_data[14] = prev_cg_action[0];
+    ann_in_data[15] = prev_cg_action[1];
+    ann_in_data[16] = prev_cg_action[2];
+    ann_in_data[17] = prev_cg_action[3];
+
+    for (uint32_t i = 0; i < STAI_NETWORK_IN_1_SIZE; i++) {
+        if (!isfinite(ann_in_data[i])) {
+            ann_in_data[i] = 0.0f;
+        } else if (ann_in_data[i] > 10.0f) {
+            ann_in_data[i] = 10.0f;
+        } else if (ann_in_data[i] < -10.0f) {
+            ann_in_data[i] = -10.0f;
+        }
+    }
+
+    if (stai_network_run(ann_network_context, STAI_MODE_SYNC) != STAI_SUCCESS) {
+        ddsm_NN_current_command[0] = 0.0f;
+        ddsm_NN_current_command[1] = 0.0f;
+        // cg_last_cmd_rad[] left as-is - previous tick's target keeps being sent.
+        return;
+    }
+
+    bool all_finite = true;
+    for (uint32_t i = 0; i < STAI_NETWORK_OUT_1_SIZE; i++) {
+        if (!isfinite(ann_out_data[i])) {
+            all_finite = false;
+            break;
+        }
+    }
+    if (!all_finite) {
+        ddsm_NN_current_command[0] = 0.0f;
+        ddsm_NN_current_command[1] = 0.0f;
+        return;
+    }
+
+    // ---- actions 0-3: CyberGear position targets (rad), assumed fl/fr/bl/br order ----
+    // (Action order mirroring obs order is an ASSUMPTION - not confirmed anywhere in the
+    // repo. Verify against real robot behavior during the staged bring-up.)
+    float raw_fl = ann_out_data[0];
+    float raw_fr = ann_out_data[1];
+    float raw_bl = ann_out_data[2];
+    float raw_br = ann_out_data[3];
+
+    float target_rad[4]; // indexed like CyberGearMotorList[], i.e. physical-array order
+    target_rad[NNDRIVE_CG_IDX_FL] = clamp_float(raw_fl, NNDRIVE_CG_FLBR_MIN_RAD, NNDRIVE_CG_FLBR_MAX_RAD);
+    target_rad[NNDRIVE_CG_IDX_FR] = clamp_float(raw_fr, NNDRIVE_CG_FRBL_MIN_RAD, NNDRIVE_CG_FRBL_MAX_RAD);
+    target_rad[NNDRIVE_CG_IDX_BL] = clamp_float(raw_bl, NNDRIVE_CG_FRBL_MIN_RAD, NNDRIVE_CG_FRBL_MAX_RAD);
+    target_rad[NNDRIVE_CG_IDX_BR] = clamp_float(raw_br, NNDRIVE_CG_FLBR_MIN_RAD, NNDRIVE_CG_FLBR_MAX_RAD);
+
+    // First valid tick since a (re)start: seed slew memory from the *measured* angle,
+    // not 0, so the first commanded angle doesn't jump from 0 to wherever the policy wants.
+    if (!cg_slew_initialized) {
+        for (int i = 0; i < 4; i++) {
+            cg_last_cmd_rad[i] = CyberGearMotorList[i].angle;
+        }
+        cg_slew_initialized = true;
+    }
+
+    float max_step_rad = NNDRIVE_CG_SLEW_RATE_RADPS * NNDRIVE_TICK_DT_S; // 3.0 * 0.015 = 0.045 rad/tick
+    for (int i = 0; i < 4; i++) {
+        float delta = target_rad[i] - cg_last_cmd_rad[i];
+        if (delta > max_step_rad) delta = max_step_rad;
+        if (delta < -max_step_rad) delta = -max_step_rad;
+        cg_last_cmd_rad[i] += delta;
+    }
+
+    // Reconstruct tanh-space "previous action" feedback from the ACTUAL commanded angle
+    // (post clamp+slew), not the raw network output, per obs[14-17] semantics.
+    prev_cg_action[0] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_FL] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    prev_cg_action[1] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_FR] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    prev_cg_action[2] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_BL] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    prev_cg_action[3] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_BR] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+
+    // (Main loop reads cg_last_cmd_rad[] and writes it into CyberGearMotorList[i].desired_angle.)
+
+    // ---- actions 4-5: wheel currents (A) ----
+    float left_nn_current_A = ann_out_data[4];
+    float right_nn_current_A = ann_out_data[5];
+
+    prev_wheel_current_A[0] = left_nn_current_A;
+    prev_wheel_current_A[1] = right_nn_current_A;
+
+    ddsm_NN_current_command[0] = clamp_float(DDSM_CURRENT_SIGN_LEFT * left_nn_current_A,
+                                             -STM32_TEST_CURRENT_LIMIT_A,
+                                             STM32_TEST_CURRENT_LIMIT_A);
+    ddsm_NN_current_command[1] = clamp_float(DDSM_CURRENT_SIGN_RIGHT * right_nn_current_A,
+                                             -STM32_TEST_CURRENT_LIMIT_A,
+                                             STM32_TEST_CURRENT_LIMIT_A);
+}
+#endif // NN_DRIVE_POLICY_ACTIVE
+
+#if CYBERGEAR_INDEX_BENCH_TEST
+// One-shot, non-blocking bench routine to identify which CyberGearMotorList[] index
+// drives which physical corner. Robot must be hand-held or resting unloaded on a stand
+// (NOT standing on its own wheels) while this runs. Write CG_BENCH_start = 1 to begin;
+// it sweeps index 0->3, nudging each one at a time by CG_BENCH_STEP_RAD and back, with
+// CG_BENCH_active_index showing which index is currently being tested so you can watch
+// the robot and note which corner moves. Call this once per 15ms tick in place of the
+// normal NN-drive control while it's active.
+#define CG_BENCH_STEP_RAD (0.12f)  // ~6.9deg - safe/visible under any possible corner's real limits
+#define CG_BENCH_HOLD_S    (2.0f)  // time spent at the nudged-out angle, and again back at start
+#define CG_BENCH_PAUSE_S   (1.5f)  // pause between motors so the transition is easy to see
+
+typedef enum {
+    CG_BENCH_PHASE_IDLE = 0,
+    CG_BENCH_PHASE_OUT,
+    CG_BENCH_PHASE_BACK,
+    CG_BENCH_PHASE_PAUSE,
+} CG_BenchPhase;
+
+static void CyberGear_IndexBenchTest(void)
+{
+    static CG_BenchPhase phase = CG_BENCH_PHASE_IDLE;
+    static float phase_timer_s = 0.0f;
+    static float base_angle_rad = 0.0f;
+    static int   index = 0;
+
+    if (CG_BENCH_start && phase == CG_BENCH_PHASE_IDLE) {
+        CG_BENCH_start = 0;
+        // Safety: make sure the wheels aren't still driving from a previous run.
+        DDSM115setCurrent(0x10, 0);
+        DDSM115setCurrent(0x11, 0);
+        index = 0;
+        base_angle_rad = CyberGearMotorList[index].angle;
+        CG_BENCH_active_index = index;
+        phase = CG_BENCH_PHASE_OUT;
+        phase_timer_s = 0.0f;
+    }
+
+    if (phase == CG_BENCH_PHASE_IDLE) {
+        return;
+    }
+
+    phase_timer_s += NNDRIVE_TICK_DT_S;
+
+    float target = (phase == CG_BENCH_PHASE_OUT) ? (base_angle_rad + CG_BENCH_STEP_RAD) : base_angle_rad;
+
+    if (phase != CG_BENCH_PHASE_PAUSE) {
+        CyberGearMotorList[index].desired_angle = target;
+        Motor_SendMITCommand(&CyberGearMotorList[index]);
+    }
+
+    switch (phase) {
+        case CG_BENCH_PHASE_OUT:
+            if (phase_timer_s >= CG_BENCH_HOLD_S) { phase = CG_BENCH_PHASE_BACK; phase_timer_s = 0.0f; }
+            break;
+        case CG_BENCH_PHASE_BACK:
+            if (phase_timer_s >= CG_BENCH_HOLD_S) { phase = CG_BENCH_PHASE_PAUSE; phase_timer_s = 0.0f; }
+            break;
+        case CG_BENCH_PHASE_PAUSE:
+            if (phase_timer_s >= CG_BENCH_PAUSE_S) {
+                index++;
+                if (index >= 4) {
+                    phase = CG_BENCH_PHASE_IDLE;
+                    CG_BENCH_active_index = -1;
+                } else {
+                    base_angle_rad = CyberGearMotorList[index].angle;
+                    CG_BENCH_active_index = index;
+                    phase = CG_BENCH_PHASE_OUT;
+                    phase_timer_s = 0.0f;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+#endif // CYBERGEAR_INDEX_BENCH_TEST
 
 static float clamp_float(float value, float min_value, float max_value)
 {
@@ -1706,12 +2068,21 @@ static void LOG_Update(void)
 {
     LOG_theta_deg = (PITCH_SIGN * roll_esp32) * MET_RAD2DEG;
 
-    for (int i = 0; i < 8; i++) {
+    for (uint32_t i = 0; i < STAI_NETWORK_IN_1_SIZE; i++) {
         LOG_obs[i] = ann_in_data[i];
     }
 
+#if NN_DRIVE_POLICY_ACTIVE
+    LOG_action_cg_fl = ann_out_data[0];
+    LOG_action_cg_fr = ann_out_data[1];
+    LOG_action_cg_bl = ann_out_data[2];
+    LOG_action_cg_br = ann_out_data[3];
+    LOG_action_L = ann_out_data[4];
+    LOG_action_R = ann_out_data[5];
+#else
     LOG_action_L = ann_out_data[0];
     LOG_action_R = ann_out_data[1];
+#endif
 
     LOG_I_L_cmd_A = ddsm_NN_current_command[0];
     LOG_I_R_cmd_A = ddsm_NN_current_command[1];
