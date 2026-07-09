@@ -286,6 +286,46 @@ Next step: watch `ann_in_data[8]` (equivalently `LOG_obs[8]`) alongside
 `ann_in_data[8]` with a snapping output instead points at (2) or a genuinely sharp
 decision boundary in the trained policy.
 
+### CyberGear index/corner mapping re-verified via CG_BENCH
+
+Re-ran `CyberGear_IndexBenchTest()` (`CG_BENCH_start=1` in STM Studio, robot hand-held).
+First pass gave a false negative: `CyberGearMotorList[0]` (BL) did not visibly move and
+felt like it had different `kp`/`kd` from the other three - traced to a real bug (see
+below), not a wiring/mapping problem.
+
+After fixing that bug and re-running: sweep order was **BL -> FL -> FR -> BR**, matching
+`CyberGearMotorList[0..3]` exactly and matching the documented mapping at the top of
+`main.c` (`idx0=BL, idx1=FL, idx2=FR, idx3=BR`). **The motor-index-to-physical-corner
+mapping is confirmed correct.** Combined with the action-order test above (mode 1 ruled
+out), this rules out both an index/corner swap and a front/back action-order swap as the
+cause of the original opposite-limits lockout.
+
+FL and BR moved in the "wrong" direction (into their guard) during this test while BL and
+FR moved cleanly. This is *expected*, not a new fault: `CG_BENCH_STEP_RAD` applies a flat
+`+0.12 rad` to raw `.desired_angle` with no per-corner sign awareness, and `fl`/`br` are
+mechanically mirrored relative to `bl`/`fr` (already reflected in the asymmetric policy
+limits and rest offsets at the top of `main.c` - `fl`/`br` use `[-10,+90]deg`, `fr`/`bl`
+use the mirrored `[-90,+10]deg`). The real `ANN_Run()` pipeline already accounts for this
+via `cg_sim_at_rest[]`; the raw bench step does not, so this result is consistent with
+known geometry, not a new suspect.
+
+### Bug found and fixed: MIT_controler_gain_schedule_Jump/Normal only ever wrote motor index 0
+
+`MIT_controler_gain_schedule_Jump()` / `_Normal()` in `controler.c` were meant to update
+CyberGear MIT gains but only ever wrote `CyberGearMotorList[0]` (BL), setting it to
+`kp=3.5-4.0, kd=0.1-0.2` versus the struct-init `kp=20.0, kd=0.9` shared by the other
+three motors (`cybergear.c`). `_Normal()` was called unconditionally at boot
+(`system_init.c`), so BL silently ran at roughly 6x weaker position gain and 9x weaker
+damping than the other three legs the entire time - this is what caused the false
+"BL didn't move / feels different" bench result above.
+
+Per project decision, MIT gains are fixed at start and do not need runtime scheduling, so
+this was removed outright rather than fixed to write all four motors:
+`MIT_controler_gain_schedule_Jump/Normal()` deleted from `controler.c`/`controler.h`, and
+their call sites removed from `system_init.c` (boot) and `JumpStrategy.c` (jump-extend
+entry and jump-cleanup). All four CyberGear motors now run identical, constant
+`kp`/`kd` from their `cybergear.c` struct init for the lifetime of the program.
+
 ## UART Runner
 
 Host-side runner:

@@ -55,7 +55,6 @@ void jump_strategy_control()
 
 
             disable_controler(); // Disable other controllers during jump
-            MIT_controler_gain_schedule_Jump(); // Set gains for jump
 
             // Prepare for N cycles hold
             jump_counter = 0;
@@ -103,7 +102,6 @@ void jump_strategy_control()
         case JUMP_CLEANUP:
             // --- STEP 4: RESTORE NORMAL OPERATION ---
             controler_defaults(); // Re-enable normal controllers
-            MIT_controler_gain_schedule_Normal(); // Restore normal gains
 
             // Zero out the feed-forward torque
             CyberGearMotorList[0].desired_torque_ff = 0.0f;

@@ -148,7 +148,4 @@ void System_Init(void)
 	  	  HAL_Delay(10);
 	  	  DDMS115setMode(0x11, 0x01);  // 0x01 => current mode
 
-	  	  MIT_controler_gain_schedule_Normal();
-
-
 }
