@@ -3,5 +3,3 @@
 ../Core/Src/controler.c:220:6:posture_controler	80	static
 ../Core/Src/controler.c:301:6:disable_controler	4	static
 ../Core/Src/controler.c:327:6:controler_defaults	4	static
-../Core/Src/controler.c:353:6:MIT_controler_gain_schedule_Jump	4	static
-../Core/Src/controler.c:357:6:MIT_controler_gain_schedule_Normal	4	static

@@ -215,7 +215,7 @@ static const float cg_sim_at_rest[4] = { NNDRIVE_CG_REST_FRBL_RAD,   // idx0 = B
 // per corner with CyberGear_IndexBenchTest() now that the frames agree: a +0.12 rad nudge on
 // index i should move that corner the way a positive sim angle does (fl/br extend toward
 // +90deg, fr/bl toward their -90deg side is NEGATIVE sim direction). Flip only proven corners.
-static const float cg_dir[4]         = { +1.0f, +1.0f, +1.0f, +1.0f };
+static const float cg_dir[4]         = { -1.0f, -1.0f, -1.0f, -1.0f };
 #endif
 static bool  cg_ref_captured         = false;                    // latch cg_angle_ref once (boot rest); NOT reset on fall
 static bool  cg_slew_initialized     = false;                    // slew seed latch; reset on fall so it re-seeds from current pose
@@ -697,7 +697,7 @@ int main(void)
 	         // STM Studio (LOG_action_cg_fl/fr/bl/br, LOG_obs[]) or a debugger watch on
 	         // ann_out_data[]/cg_cmd_fw[] with the legs held still. Revert to 0 to resume
 	         // normal operation.
-#define NNDRIVE_OUTPUT_DISABLE 1
+#define NNDRIVE_OUTPUT_DISABLE 0
 #if !NNDRIVE_OUTPUT_DISABLE
 #if NN_DRIVE_POLICY_ACTIVE
 	         if (!isFallen() || isStartupStrategy) {
