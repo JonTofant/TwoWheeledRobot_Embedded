@@ -181,11 +181,44 @@ static float prev_action_right = 0.0f;
 #define NNDRIVE_CG_SLEW_RATE_RADPS (3.0f)   // matches spec's slew-limit requirement
 #define NNDRIVE_TICK_DT_S         (0.015f)  // 15ms TIM4 tick (matches MET_SAMPLE_DT_S)
 
+// CyberGear rest-offset: at boot setMechanicalZero is called while each leg rests at its
+// FOLDED hard stop, so firmware .angle=0 there. In the sim/policy frame that folded pose is
+// NOT 0deg - it is the small-magnitude joint limit: fl/br fold to -10deg (min of [-10,+90]),
+// fr/bl fold to +10deg (max of [-90,+10]). We latch the measured .angle at rest as a per-corner
+// reference and work in sim frame: sim_angle = (.angle - cg_angle_ref) + rest; convert back to
+// firmware only when writing desired_angle. Because it is a difference, it is immune to any
+// constant bias in the .angle CAN decode (e.g. the remaining +M_PI_2 frame term); a decode
+// SCALE error would still matter (verify obs magnitude on the bench). Set
+// NNDRIVE_CG_REST_ENABLE=0 to fall back to raw .angle behaviour.
+#define NNDRIVE_CG_REST_ENABLE   1
+#define NNDRIVE_CG_REST_FLBR_RAD (-10.0f * 0.017453293f)  // fl, br folded-rest sim angle
+#define NNDRIVE_CG_REST_FRBL_RAD ( 10.0f * 0.017453293f)  // fr, bl folded-rest sim angle
+
 #if NN_DRIVE_POLICY_ACTIVE
 static float prev_cg_action[4]       = {0.0f, 0.0f, 0.0f, 0.0f}; // tanh-space obs[14-17], order fl/fr/bl/br
 static float prev_wheel_current_A[2] = {0.0f, 0.0f};             // obs[12-13], order left/right
-static float cg_last_cmd_rad[4]      = {0.0f, 0.0f, 0.0f, 0.0f}; // slew memory, indexed like CyberGearMotorList[]
-static bool  cg_slew_initialized     = false;                    // seeded from measured .angle on first tick, not 0
+static float cg_last_cmd_rad[4]      = {0.0f, 0.0f, 0.0f, 0.0f}; // slew memory (SIM frame), indexed like CyberGearMotorList[]
+static float cg_cmd_fw[4]            = {0.0f, 0.0f, 0.0f, 0.0f}; // firmware-frame target the main loop writes to desired_angle
+static float cg_angle_ref[4]         = {0.0f, 0.0f, 0.0f, 0.0f}; // firmware .angle latched at folded rest, per motor index (STM Studio readback)
+#if NNDRIVE_CG_REST_ENABLE
+// sim-frame folded-rest angle per motor index (0=BL,1=FL,2=FR,3=BR): BL/FR=+10, FL/BR=-10.
+static const float cg_sim_at_rest[4] = { NNDRIVE_CG_REST_FRBL_RAD,   // idx0 = BL
+                                         NNDRIVE_CG_REST_FLBR_RAD,   // idx1 = FL
+                                         NNDRIVE_CG_REST_FRBL_RAD,   // idx2 = FR
+                                         NNDRIVE_CG_REST_FLBR_RAD }; // idx3 = BR
+// Per-corner hardware<->sim rotation-direction sign (motor-index order 0=BL,1=FL,2=FR,3=BR),
+// applied to BOTH obs and command so the loop stays coherent:
+//   obs: sim = dir*(.angle - ref) + rest ;   cmd: .desired_angle = ref + dir*(sim_target - rest)
+// Bench test showed the legs driving the WRONG way, so default all to -1 (flip). If a later
+// test shows only some corners inverted, set those individual entries back to +1.
+static const float cg_dir[4]         = { -1.0f, -1.0f, -1.0f, -1.0f };
+#endif
+static bool  cg_ref_captured         = false;                    // latch cg_angle_ref once (boot rest); NOT reset on fall
+static bool  cg_slew_initialized     = false;                    // slew seed latch; reset on fall so it re-seeds from current pose
+// Write CG_REF_recapture=1 in STM Studio (with legs at folded rest) to force a fresh cg_angle_ref
+// capture - use if the first-tick capture happened before valid CAN angle feedback arrived, or to
+// re-zero after manually posing the legs. Clears itself once applied.
+volatile uint8_t CG_REF_recapture    = 0;
 #endif
 
 // One-shot bench routine to verify the NNDRIVE_CG_IDX_* mapping above against the real
@@ -654,12 +687,22 @@ int main(void)
 	         // Run policy locally
 	         ANN_Run();
 
+	         // DEBUG: NNDRIVE_OUTPUT_DISABLE=1 stops all motor output (CyberGear MIT
+	         // commands and DDSM115 currents) while still running ANN_Run()/MET_Update()/
+	         // LOG_Update() every tick, so the raw network outputs can be inspected via
+	         // STM Studio (LOG_action_cg_fl/fr/bl/br, LOG_obs[]) or a debugger watch on
+	         // ann_out_data[]/cg_cmd_fw[] with the legs held still. Revert to 0 to resume
+	         // normal operation.
+#define NNDRIVE_OUTPUT_DISABLE 1
+#if !NNDRIVE_OUTPUT_DISABLE
 #if NN_DRIVE_POLICY_ACTIVE
 	         if (!isFallen() || isStartupStrategy) {
-	             CyberGearMotorList[0].desired_angle = cg_last_cmd_rad[0];
-	             CyberGearMotorList[1].desired_angle = cg_last_cmd_rad[1];
-	             CyberGearMotorList[2].desired_angle = cg_last_cmd_rad[2];
-	             CyberGearMotorList[3].desired_angle = cg_last_cmd_rad[3];
+	             // cg_cmd_fw[] is the firmware-frame target (sim target converted back via the
+	             // folded-rest offset in ANN_Run); desired_angle is in the motor's own frame.
+	             CyberGearMotorList[0].desired_angle = cg_cmd_fw[0];
+	             CyberGearMotorList[1].desired_angle = cg_cmd_fw[1];
+	             CyberGearMotorList[2].desired_angle = cg_cmd_fw[2];
+	             CyberGearMotorList[3].desired_angle = cg_cmd_fw[3];
 
 	             Motor_SendMITCommand(&CyberGearMotorList[0]);
 	             Motor_SendMITCommand(&CyberGearMotorList[1]);
@@ -676,6 +719,7 @@ int main(void)
 	             HAL_Delay(5);
 	             DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
 	         }
+#endif // !NNDRIVE_OUTPUT_DISABLE
 	     }
 
 	     // Bench metrics/telemetry for STM Studio (see MET_/LOG_ globals above), same 15ms tick.
@@ -1344,7 +1388,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
            // Extract current angle from Bytes 0-1
            uint16_t angle_raw = (CAN_received_data[0] << 8) | CAN_received_data[1];
-           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2 - 10*M_PI/180.0f;
+           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2;
            // Convert to degrees
            //angle = angle * 180.0f / 3.14159265359f;
 
@@ -1763,11 +1807,31 @@ void ANN_Run(void)
     ann_in_data[6] = NNDRIVE_VELOCITY_CMD_MPS / NNDRIVE_VEL_CMD_NORM_MPS;       // velocity_cmd (joystick=0)
     ann_in_data[7] = NNDRIVE_YAWRATE_CMD_RPS / NNDRIVE_YAWRATE_CMD_NORM_RPS;    // yaw_rate_cmd (joystick=0)
 
-    // ---- obs 8-11: CyberGear joint angles, order fl/fr/bl/br (tentative index mapping) ----
-    ann_in_data[8]  = CyberGearMotorList[NNDRIVE_CG_IDX_FL].angle / NNDRIVE_CG_POS_NORM_RAD;
-    ann_in_data[9]  = CyberGearMotorList[NNDRIVE_CG_IDX_FR].angle / NNDRIVE_CG_POS_NORM_RAD;
-    ann_in_data[10] = CyberGearMotorList[NNDRIVE_CG_IDX_BL].angle / NNDRIVE_CG_POS_NORM_RAD;
-    ann_in_data[11] = CyberGearMotorList[NNDRIVE_CG_IDX_BR].angle / NNDRIVE_CG_POS_NORM_RAD;
+    // ---- obs 8-11: CyberGear joint angles (SIM frame), order fl/fr/bl/br ----
+    // Capture the folded-rest firmware reference once (or on an STM-Studio recapture request),
+    // then express every leg angle in sim frame: sim = (.angle - ref) + rest. See NNDRIVE_CG_REST_*.
+    if (!cg_ref_captured || CG_REF_recapture) {
+        CG_REF_recapture = 0;
+        for (int i = 0; i < 4; i++) {
+            cg_angle_ref[i] = CyberGearMotorList[i].angle;
+        }
+        cg_ref_captured = true;
+        cg_slew_initialized = false; // force slew re-seed from the freshly-referenced pose
+    }
+
+    float cg_sim_angle[4];
+    for (int i = 0; i < 4; i++) {
+#if NNDRIVE_CG_REST_ENABLE
+        cg_sim_angle[i] = cg_dir[i] * (CyberGearMotorList[i].angle - cg_angle_ref[i]) + cg_sim_at_rest[i];
+#else
+        cg_sim_angle[i] = CyberGearMotorList[i].angle;
+#endif
+    }
+
+    ann_in_data[8]  = cg_sim_angle[NNDRIVE_CG_IDX_FL] / NNDRIVE_CG_POS_NORM_RAD;
+    ann_in_data[9]  = cg_sim_angle[NNDRIVE_CG_IDX_FR] / NNDRIVE_CG_POS_NORM_RAD;
+    ann_in_data[10] = cg_sim_angle[NNDRIVE_CG_IDX_BL] / NNDRIVE_CG_POS_NORM_RAD;
+    ann_in_data[11] = cg_sim_angle[NNDRIVE_CG_IDX_BR] / NNDRIVE_CG_POS_NORM_RAD;
 
     // ---- obs 12-13: previous wheel current, left/right ----
     ann_in_data[12] = prev_wheel_current_A[0] / NNDRIVE_PREV_CURRENT_NORM_A;
@@ -1812,10 +1876,38 @@ void ANN_Run(void)
     // ---- actions 0-3: CyberGear position targets (rad), assumed fl/fr/bl/br order ----
     // (Action order mirroring obs order is an ASSUMPTION - not confirmed anywhere in the
     // repo. Verify against real robot behavior during the staged bring-up.)
+    //
+    // BENCH TEST: front/back-opposite-limits lockout points at this assumption rather than
+    // at cg_dir/offsets. Cycle NNDRIVE_ACTION_ORDER_MODE through the candidate permutations
+    // below and re-run the same hand-held bench test after each:
+    //   0 = [fl,fr,bl,br]  original assumption
+    //   1 = [bl,br,fl,fr]  front/back pair swap             - TRIED, did not fix it
+    //   2 = [br,bl,fr,fl]  front/back pair swap + left/right swap (both reversed)
+    //   3 = [fr,fl,br,bl]  left/right swap only, pairs kept grouped
+    // If none of 0-3 fix it, action order is likely not the root cause - move on to a
+    // non-uniform cg_dir or a .angle decode scale check instead.
+#define NNDRIVE_ACTION_ORDER_MODE 2
+#if NNDRIVE_ACTION_ORDER_MODE == 1
+    float raw_bl = ann_out_data[0];
+    float raw_br = ann_out_data[1];
+    float raw_fl = ann_out_data[2];
+    float raw_fr = ann_out_data[3];
+#elif NNDRIVE_ACTION_ORDER_MODE == 2
+    float raw_br = ann_out_data[0];
+    float raw_bl = ann_out_data[1];
+    float raw_fr = ann_out_data[2];
+    float raw_fl = ann_out_data[3];
+#elif NNDRIVE_ACTION_ORDER_MODE == 3
+    float raw_fr = ann_out_data[0];
+    float raw_fl = ann_out_data[1];
+    float raw_br = ann_out_data[2];
+    float raw_bl = ann_out_data[3];
+#else
     float raw_fl = ann_out_data[0];
     float raw_fr = ann_out_data[1];
     float raw_bl = ann_out_data[2];
     float raw_br = ann_out_data[3];
+#endif
 
     float target_rad[4]; // indexed like CyberGearMotorList[], i.e. physical-array order
     target_rad[NNDRIVE_CG_IDX_FL] = clamp_float(raw_fl, NNDRIVE_CG_FLBR_MIN_RAD, NNDRIVE_CG_FLBR_MAX_RAD);
@@ -1823,11 +1915,12 @@ void ANN_Run(void)
     target_rad[NNDRIVE_CG_IDX_BL] = clamp_float(raw_bl, NNDRIVE_CG_FRBL_MIN_RAD, NNDRIVE_CG_FRBL_MAX_RAD);
     target_rad[NNDRIVE_CG_IDX_BR] = clamp_float(raw_br, NNDRIVE_CG_FLBR_MIN_RAD, NNDRIVE_CG_FLBR_MAX_RAD);
 
-    // First valid tick since a (re)start: seed slew memory from the *measured* angle,
-    // not 0, so the first commanded angle doesn't jump from 0 to wherever the policy wants.
+    // First valid tick since a (re)start: seed the (sim-frame) slew memory from the current
+    // sim pose so the first commanded angle doesn't jump. On the very first capture cg_sim_angle
+    // equals the folded-rest value; after a fall-recovery it reflects wherever the legs are now.
     if (!cg_slew_initialized) {
         for (int i = 0; i < 4; i++) {
-            cg_last_cmd_rad[i] = CyberGearMotorList[i].angle;
+            cg_last_cmd_rad[i] = cg_sim_angle[i];
         }
         cg_slew_initialized = true;
     }
@@ -1841,13 +1934,21 @@ void ANN_Run(void)
     }
 
     // Reconstruct tanh-space "previous action" feedback from the ACTUAL commanded angle
-    // (post clamp+slew), not the raw network output, per obs[14-17] semantics.
+    // (post clamp+slew, sim frame), not the raw network output, per obs[14-17] semantics.
     prev_cg_action[0] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_FL] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
     prev_cg_action[1] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_FR] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
     prev_cg_action[2] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_BL] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
     prev_cg_action[3] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_BR] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
 
-    // (Main loop reads cg_last_cmd_rad[] and writes it into CyberGearMotorList[i].desired_angle.)
+    // Convert the sim-frame slew target back to firmware frame for the desired_angle write:
+    // firmware = ref + dir*(sim - rest). The main loop writes cg_cmd_fw[] into CyberGearMotorList[].desired_angle.
+    for (int i = 0; i < 4; i++) {
+#if NNDRIVE_CG_REST_ENABLE
+        cg_cmd_fw[i] = cg_angle_ref[i] + cg_dir[i] * (cg_last_cmd_rad[i] - cg_sim_at_rest[i]);
+#else
+        cg_cmd_fw[i] = cg_last_cmd_rad[i];
+#endif
+    }
 
     // ---- actions 4-5: wheel currents (A) ----
     float left_nn_current_A = ann_out_data[4];

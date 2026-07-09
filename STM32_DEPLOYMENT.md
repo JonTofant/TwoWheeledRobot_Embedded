@@ -225,6 +225,67 @@ Files to keep aligned for this task: `nn_drive_env.py`, `nn_drive_env_cfg.py`,
 CyberGearStanceProcessor), `agents/rsl_rl_nn_drive_cfg.py`, and the STM32
 inference + joystick code.
 
+## NN Drive Bring-up Debug Log (in progress)
+
+Hand-held bench bring-up of `policy_drive` (run-7) is not yet working: CyberGear legs
+drive the wrong direction and lock out against their limits, with front and back legs
+pinned at **opposite** limits (highly asymmetric). This persisted after the sim/firmware
+rest-offset fix, removing a stale -10deg decode fudge, and flipping `cg_dir` to all -1
+(see `NN Drive policy` section of `CLAUDE.md`).
+
+### Action-order permutation test
+
+Added `NNDRIVE_ACTION_ORDER_MODE` in `main.c` (`ANN_Run()`, near the action-unpacking
+code) to test whether `ann_out_data[0..3]` is actually ordered `[fl,fr,bl,br]` as assumed:
+
+```text
+0 = [fl,fr,bl,br]  original assumption
+1 = [bl,br,fl,fr]  front/back pair swap             - TRIED, did NOT fix the opposite-limits lockout
+2 = [br,bl,fr,fl]  front/back + left/right swap (both reversed)  - current default, untested on hardware yet
+3 = [fr,fl,br,bl]  left/right swap only, pairs kept grouped
+```
+
+Mode 1 not fixing the symptom is itself informative: a true output-order permutation bug
+would only be fixed by exactly one of the 24 possible 4-element permutations, so if modes
+2 and 3 also fail to fix it, action order is likely *not* the root cause - the other
+open suspects (non-uniform `cg_dir` per corner, or a `.angle` decode scale/wrap error)
+should be investigated instead.
+
+### Output-disable debug mode
+
+Added `NNDRIVE_OUTPUT_DISABLE` in `main.c` (same block as the tick handler around
+`ANN_Run()`) to inspect raw network output without moving any motors: when set to `1`,
+`ANN_Run()`/`MET_Update()`/`LOG_Update()` still run every 15 ms tick, but no
+`Motor_SendMITCommand()` or `DDSM115setCurrent()` calls happen. Useful watch variables
+while in this mode: `ann_out_data[0..3]` (raw network output, unaffected by
+`NNDRIVE_ACTION_ORDER_MODE`), `cg_cmd_fw[0..3]` (firmware-frame target it would have
+sent, physical-corner-indexed), `LOG_action_cg_fl/fr/bl/br` (same as `ann_out_data[0..3]`,
+STM-Studio-visible). Set back to `0` to resume normal motor output.
+
+### FL channel discontinuity finding
+
+With output disabled, moving the legs by hand: `LOG_action_cg_bl` changes smoothly and
+slowly with leg angle, but `LOG_action_cg_fl` jumps **instantly** from -0.45 to +0.45 for
+a very small physical movement across the FL leg's zero position. Since `LOG_action_cg_fl`
+is the raw, unpermuted `ann_out_data[0]`, this is not an action-order artifact - it points
+either at:
+
+1. **CAN angle decode wraparound** - `main.c`'s `.angle` decode
+   (`angle = (raw/65535)*(ANGLE_MAX-ANGLE_MIN) + ANGLE_MIN + M_PI_2`, `ANGLE_MIN/MAX =
+   +-12.5 rad`) is a linear map of the encoder's raw 16-bit counter over a 25 rad span. If
+   FL's physical zero happens to sit at the raw counter's wrap boundary (0 <-> 65535), a
+   tiny physical move there would decode as a ~25 rad jump in `.angle`, blow up
+   `cg_sim_angle[FL]` / `ann_in_data[8]` far outside the training distribution, and could
+   saturate the network's output to an extreme - matching the observed -0.45/+0.45 snap.
+2. A bad `cg_angle_ref[FL]` latch (captured before valid CAN feedback, or off a stale
+   first reading), putting `cg_sim_angle[FL]` at a value the network reacts to sharply.
+
+Next step: watch `ann_in_data[8]` (equivalently `LOG_obs[8]`) alongside
+`LOG_action_cg_fl` while moving the FL leg across zero. A discontinuous jump in
+`ann_in_data[8]` at the same moment confirms the encoder-wrap hypothesis (1); a smooth
+`ann_in_data[8]` with a snapping output instead points at (2) or a genuinely sharp
+decision boundary in the trained policy.
+
 ## UART Runner
 
 Host-side runner:
