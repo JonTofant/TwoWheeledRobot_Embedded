@@ -168,6 +168,76 @@ void DDSM115setCurrent(uint8_t motorID, float current_amp) {
     HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
 }
 
+// ---------------------------------------------------------------------------
+// Non-blocking half-duplex request/response sequencer
+// ---------------------------------------------------------------------------
+// All DDSM115s share one RS485 (MAX485) line, and every drive command triggers
+// a 10-byte reply frame from the addressed motor. Because the transceiver is
+// half-duplex, we must NOT turn it back to transmit (to command the next motor)
+// until the current motor's reply has fully arrived on the idle line - doing so
+// drives DE over the incoming reply and that wheel's feedback is lost. The old
+// fixed HAL_Delay() between the two commands was a blind guess at that turnaround.
+//
+// This sequencer instead advances to the next motor only when its predecessor's
+// reply has actually been received (flagged from HAL_UARTEx_RxEventCallback via
+// DDSM115_NotifyReply) or after a short safety timeout, without ever blocking the
+// superloop on a fixed delay. Call DDSM115_QueueCurrents() once per control tick
+// with the desired per-wheel currents, and DDSM115_Service() every superloop pass.
+#define DDSM_REPLY_TIMEOUT_MS 3u   // fallback if a motor never answers (unplugged/off)
+
+static uint8_t  ddsm_seq_id[MAX_MOTORS_DDSM115];
+static float    ddsm_seq_current[MAX_MOTORS_DDSM115];
+static uint8_t  ddsm_seq_len = 0;   // number of motors queued this cycle
+static uint8_t  ddsm_seq_pos = 0;   // next motor to command; >= len means cycle done
+static uint8_t  ddsm_seq_busy = 0;  // 1 while waiting for the current motor's reply
+static uint8_t  ddsm_seq_wait_id = 0;
+static uint32_t ddsm_seq_tx_tick = 0;
+
+static volatile uint8_t ddsm_reply_id = 0;    // motorID of the most recent reply
+static volatile uint8_t ddsm_reply_flag = 0;  // set by the RX ISR, cleared before each TX
+
+// Load a fresh command cycle. Any unfinished previous cycle is abandoned (turnaround
+// is a few ms, well inside the ~15ms control tick, so this normally never happens).
+void DDSM115_QueueCurrents(uint8_t id0, float c0, uint8_t id1, float c1)
+{
+    ddsm_seq_id[0] = id0; ddsm_seq_current[0] = c0;
+    ddsm_seq_id[1] = id1; ddsm_seq_current[1] = c1;
+    ddsm_seq_len = 2;
+    ddsm_seq_pos = 0;
+    ddsm_seq_busy = 0;
+}
+
+// Called from HAL_UARTEx_RxEventCallback when a DDSM115 reply frame has been parsed.
+void DDSM115_NotifyReply(uint8_t motorID)
+{
+    ddsm_reply_id = motorID;
+    ddsm_reply_flag = 1;
+}
+
+// Advance the sequencer. Sends the next motor's command when the line is free
+// (previous reply received, or timed out); otherwise returns immediately so the
+// superloop keeps running during the bus turnaround.
+void DDSM115_Service(void)
+{
+    if (ddsm_seq_pos >= ddsm_seq_len) {
+        return;  // cycle complete / nothing queued
+    }
+
+    if (!ddsm_seq_busy) {
+        // Line is free: send this motor's command and start waiting for its reply.
+        ddsm_seq_wait_id = ddsm_seq_id[ddsm_seq_pos];
+        ddsm_reply_flag = 0;  // discard any stale reply before we listen for this one
+        DDSM115setCurrent(ddsm_seq_id[ddsm_seq_pos], ddsm_seq_current[ddsm_seq_pos]);
+        ddsm_seq_tx_tick = HAL_GetTick();
+        ddsm_seq_busy = 1;
+    } else if ((ddsm_reply_flag && ddsm_reply_id == ddsm_seq_wait_id) ||
+               ((HAL_GetTick() - ddsm_seq_tx_tick) >= DDSM_REPLY_TIMEOUT_MS)) {
+        // Reply captured (feedback safe) or motor never answered: move to the next.
+        ddsm_seq_busy = 0;
+        ddsm_seq_pos++;
+    }
+}
+
 // --- Change Motor ID Function ---
 // This function changes the motor ID. The new ID should be unique and not conflict with other motors.
 

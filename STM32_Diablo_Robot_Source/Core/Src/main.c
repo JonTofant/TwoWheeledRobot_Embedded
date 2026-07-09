@@ -523,6 +523,10 @@ int main(void)
 	  // ----- MAIN CONTROL LOOP -----
 	  // Seperated by flags for auxiliary tasks and a state machine
 
+	 // Pump the non-blocking DDSM115 RS485 command sequencer every pass. It walks
+	 // through the currents queued by DDSM115_QueueCurrents(), turning the half-duplex
+	 // line around to the next wheel only once the current wheel's reply has arrived.
+	 DDSM115_Service();
 
 
 	 if (isCANReady) {
@@ -552,8 +556,9 @@ int main(void)
 		 }
 
 		 if (isFallen()) {
+			 // Safety stop: both wheels to zero. No turnaround wait needed - we
+			 // don't care about the feedback frame while stopping.
 			 DDSM115setCurrent(0x10, 0);
-			 HAL_Delay(2);
 			 DDSM115setCurrent(0x11, 0);
 		 }
 
@@ -581,8 +586,8 @@ int main(void)
 		 }
 
 		 if(isFallen()){
+			 // Safety stop: both wheels to zero, feedback frame not needed here.
 			 DDSM115setCurrent(0x10, 0);
-			 HAL_Delay(2);
 			 DDSM115setCurrent(0x11, 0);
 
 		 }
@@ -608,9 +613,11 @@ int main(void)
 		    	MOTOR_CG_RB.desired_angle = -0.0f;
 
 
+		    	// No inter-command delay: Motor_SendMITCommand() waits for a free
+		    	// CAN TX mailbox internally, so all four frames queue back-to-back
+		    	// without any being dropped.
 		    	Motor_SendMITCommand(&MOTOR_CG_LF);
 		    	Motor_SendMITCommand(&MOTOR_CG_LB);
-		    	HAL_Delay(5);
 		    	Motor_SendMITCommand(&MOTOR_CG_RF);
 		    	Motor_SendMITCommand(&MOTOR_CG_RB);
 
@@ -627,9 +634,10 @@ int main(void)
 			    	posture_controler();
 
 
+			    	// No inter-command delay: the send waits for a free CAN TX
+			    	// mailbox internally (see Motor_SendMITCommand).
 			    	Motor_SendMITCommand(&MOTOR_CG_LF);
 			    	Motor_SendMITCommand(&MOTOR_CG_LB);
-			    	HAL_Delay(5);
 			    	Motor_SendMITCommand(&MOTOR_CG_RF);
 			    	Motor_SendMITCommand(&MOTOR_CG_RB);
 
@@ -708,9 +716,10 @@ int main(void)
 	             CyberGearMotorList[2].desired_angle = cg_cmd_fw[2];
 	             CyberGearMotorList[3].desired_angle = cg_cmd_fw[3];
 
+	             // No inter-command delay: Motor_SendMITCommand() waits for a free
+	             // CAN TX mailbox internally, so all four frames queue back-to-back.
 	             Motor_SendMITCommand(&CyberGearMotorList[0]);
 	             Motor_SendMITCommand(&CyberGearMotorList[1]);
-	             HAL_Delay(5);
 	             Motor_SendMITCommand(&CyberGearMotorList[2]);
 	             Motor_SendMITCommand(&CyberGearMotorList[3]);
 	         }
@@ -719,9 +728,12 @@ int main(void)
 #endif
 
 	         if (!isFallen() || isStartupStrategy) {
-	             DDSM115setCurrent(0x11, 1 * ddsm_NN_current_command[0]);
-	             HAL_Delay(5);
-	             DDSM115setCurrent(0x10, 1 * ddsm_NN_current_command[1]);
+	             // Queue both wheel currents; the non-blocking sequencer (pumped by
+	             // DDSM115_Service() in the superloop) sends the second only after the
+	             // first wheel's RS485 reply lands, so neither wheel's feedback is lost
+	             // and there is no fixed inter-command delay.
+	             DDSM115_QueueCurrents(0x11, 1 * ddsm_NN_current_command[0],
+	                                   0x10, 1 * ddsm_NN_current_command[1]);
 	         }
 #endif // !NNDRIVE_OUTPUT_DISABLE
 	     }
@@ -1511,6 +1523,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	                break;
 	            }
 	        }
+
+	        // Tell the non-blocking sequencer this wheel's reply has landed so it can
+	        // turn the line around and command the next wheel.
+	        DDSM115_NotifyReply(motor_id);
 
 	        // Restart reception for next frame
 	        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);

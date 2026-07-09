@@ -86,5 +86,12 @@ void DDSM115setCurrent(uint8_t motorID, float current_amp);
 void DDSM115ChangeID(uint8_t motorID, uint8_t newID);
 void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_radius);
 
+// Non-blocking half-duplex command sequencer (see DDSM115.c). Queue the per-wheel
+// currents once per control tick, pump DDSM115_Service() every superloop pass, and
+// call DDSM115_NotifyReply() from the RS485 RX-complete callback.
+void DDSM115_QueueCurrents(uint8_t id0, float c0, uint8_t id1, float c1);
+void DDSM115_Service(void);
+void DDSM115_NotifyReply(uint8_t motorID);
+
 
 #endif /* INC_DDSM115_H_ */

@@ -25,6 +25,32 @@
 uint8_t CAN_received_data[8];
 
 
+// Max time to wait for a free CAN1 TX mailbox before giving up on a frame.
+// The common path never comes close to this: bxCAN has 3 TX mailboxes, so a
+// burst of up to 3 frames queues instantly, and a 4th only spins for the
+// ~110us it takes one queued 8-byte frame to leave the bus at 1 Mbit/s. The
+// timeout only trips if the bus is stuck (bus-off / no ACK / unplugged), so it
+// bounds a fault instead of hanging the superloop.
+#define CG_CAN_TX_TIMEOUT_MS 2u
+
+// Queue a CAN frame on hcan1, first waiting (briefly, bounded) for a free TX
+// mailbox. This replaces the old fixed HAL_Delay() between motor commands: it
+// only stalls when the mailboxes are genuinely full and drains in microseconds,
+// so no frame is dropped by HAL_CAN_AddTxMessage returning HAL_ERROR on a full
+// mailbox set.
+static HAL_StatusTypeDef CyberGear_CAN_Send(CAN_TxHeaderTypeDef* txHeader,
+                                            uint8_t* txData, uint32_t* txMailbox)
+{
+    uint32_t start = HAL_GetTick();
+    while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0u) {
+        if ((HAL_GetTick() - start) > CG_CAN_TX_TIMEOUT_MS) {
+            return HAL_TIMEOUT;
+        }
+    }
+    return HAL_CAN_AddTxMessage(&hcan1, txHeader, txData, txMailbox);
+}
+
+
 // Initialize motors with errorFlag set to true (unverified) and names for clarity.
 // kp/kd match the NNDrive sim nominal (cg_kp_range 21-39 around 30, cg_kd_range 2.1-3.9
 // around 3) - the policy was trained on these gains, don't soften them without retraining.
@@ -109,7 +135,7 @@ HAL_StatusTypeDef writeParameter(uint16_t paramIndex, const volatile void* param
     // Byte4..7 = paramValue
     memcpy(&txData[4], paramValue, 4);
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
 
 HAL_StatusTypeDef clearMotorFault(uint8_t hostID, uint8_t motorID)
@@ -132,7 +158,7 @@ HAL_StatusTypeDef clearMotorFault(uint8_t hostID, uint8_t motorID)
     // data[0] = 1 => clear fault
     txData[0] = 1;
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
 
 
@@ -152,7 +178,7 @@ HAL_StatusTypeDef motorEnable(uint8_t hostID, uint8_t motorID)
     txHeader.DLC   = 8;
     txHeader.TransmitGlobalTime = DISABLE;
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
 
 HAL_StatusTypeDef getMotorDeviceID(uint8_t hostID, uint8_t motorID)
@@ -175,7 +201,7 @@ HAL_StatusTypeDef getMotorDeviceID(uint8_t hostID, uint8_t motorID)
     // Typically data can be all 0
     memset(txData, 0, 8);
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
 
 HAL_StatusTypeDef setMechanicalZero(uint8_t hostID, uint8_t motorID) {
@@ -197,7 +223,7 @@ HAL_StatusTypeDef setMechanicalZero(uint8_t hostID, uint8_t motorID) {
     // Set data byte 0 to 1 to indicate zeroing the angle.
     txData[0] = 1;
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
 
 
@@ -284,7 +310,7 @@ HAL_StatusTypeDef motorStop(CyberGear* motor) {
     // For a normal stop command, all data bytes are set to zero.
     memset(txData, 0, sizeof(txData));
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
 
 /**
@@ -329,5 +355,5 @@ HAL_StatusTypeDef Motor_SendMITCommand(CyberGear* motor) {
     txData[6] = (uint8_t)(q_kd >> 8);
     txData[7] = (uint8_t)(q_kd & 0xFF);
 
-    return HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox);
+    return CyberGear_CAN_Send(&txHeader, txData, &txMailbox);
 }
