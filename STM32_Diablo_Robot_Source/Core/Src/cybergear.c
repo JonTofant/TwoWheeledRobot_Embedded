@@ -26,15 +26,17 @@ uint8_t CAN_received_data[8];
 
 
 // Initialize motors with errorFlag set to true (unverified) and names for clarity.
+// kp/kd match the NNDrive sim nominal (cg_kp_range 21-39 around 30, cg_kd_range 2.1-3.9
+// around 3) - the policy was trained on these gains, don't soften them without retraining.
 CyberGear CyberGearMotorList[MAX_MOTORS] = {
     { .hostID = 0xFE, .motorID = 0x1E, .angle = 1.0f, .min_angle = leftBackMinAngle, .max_angle = leftBackMaxAngle,
-      .kp = 20.0f, .kd = 0.9f, .errorFlag = true, .max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
+      .kp = 30.0f, .kd = 3.0f, .errorFlag = true, .max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x1F, .angle = 1.0f, .min_angle = leftFrontMinAngle, .max_angle = leftFrontMaxAngle,
-      .kp = 20.0f, .kd = 0.9f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
+      .kp = 30.0f, .kd = 3.0f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x15, .angle = 1.0f, .min_angle = ANGLE_MIN, .max_angle = ANGLE_MAX,
-      .kp = 20.0f, .kd = 0.9f, .errorFlag = true ,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
+      .kp = 30.0f, .kd = 3.0f, .errorFlag = true ,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f },
     { .hostID = 0xFE, .motorID = 0x14, .angle = 1.0f, .min_angle = ANGLE_MIN, .max_angle = ANGLE_MAX,
-      .kp = 20.0f, .kd = 0.9f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f }
+      .kp = 30.0f, .kd = 3.0f, .errorFlag = true,.max_velocity = 30.0f, .update_flag = false, .target_current_LQR = 0.0f, .desired_angle = 0.0f, .desired_velocity = 0.0f, .desired_torque_ff = 0.0f }
 };
 
 

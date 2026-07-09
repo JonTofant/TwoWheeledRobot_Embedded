@@ -154,7 +154,7 @@ static float prev_action_right = 0.0f;
 #define NNDRIVE_YAWRATE_CMD_NORM_RPS (2.0f)
 #define NNDRIVE_CG_POS_NORM_RAD      (0.45f)  // obs[8-11]: cg_pos / 0.45 rad
 #define NNDRIVE_PREV_CURRENT_NORM_A  (2.0f)   // obs[12-13]: prev_current / 2.0A (trained range, not the firmware clamp)
-#define CG_ACTION_SCALE_RAD          (0.45f)  // reconstructs tanh-space prev_cg_action from a physical rad target
+#define CG_ACTION_SCALE_RAD          (0.45f)  // ONNX CG outputs are tanh(a)*this; divide to recover tanh-space prev action
 
 // Joystick is assumed to send zero for this port - no reference integration implemented yet.
 #define NNDRIVE_VELOCITY_CMD_MPS  (0.0f)      // obs[6]
@@ -186,10 +186,11 @@ static float prev_action_right = 0.0f;
 // NOT 0deg - it is the small-magnitude joint limit: fl/br fold to -10deg (min of [-10,+90]),
 // fr/bl fold to +10deg (max of [-90,+10]). We latch the measured .angle at rest as a per-corner
 // reference and work in sim frame: sim_angle = (.angle - cg_angle_ref) + rest; convert back to
-// firmware only when writing desired_angle. Because it is a difference, it is immune to any
-// constant bias in the .angle CAN decode (e.g. the remaining +M_PI_2 frame term); a decode
-// SCALE error would still matter (verify obs magnitude on the bench). Set
-// NNDRIVE_CG_REST_ENABLE=0 to fall back to raw .angle behaviour.
+// firmware only when writing desired_angle. The obs difference is immune to a constant bias
+// in the .angle CAN decode, but the COMMAND (cg_cmd_fw = ref + ...) is NOT: cg_angle_ref must
+// be in the exact frame Motor_SendMITCommand encodes desired_angle in. The CAN RX decode is
+// therefore offset-free (the old +M_PI_2 term there drove every leg 90deg into its hard stop).
+// Set NNDRIVE_CG_REST_ENABLE=0 to fall back to raw .angle behaviour.
 #define NNDRIVE_CG_REST_ENABLE   1
 #define NNDRIVE_CG_REST_FLBR_RAD (-10.0f * 0.017453293f)  // fl, br folded-rest sim angle
 #define NNDRIVE_CG_REST_FRBL_RAD ( 10.0f * 0.017453293f)  // fr, bl folded-rest sim angle
@@ -209,9 +210,12 @@ static const float cg_sim_at_rest[4] = { NNDRIVE_CG_REST_FRBL_RAD,   // idx0 = B
 // Per-corner hardware<->sim rotation-direction sign (motor-index order 0=BL,1=FL,2=FR,3=BR),
 // applied to BOTH obs and command so the loop stays coherent:
 //   obs: sim = dir*(.angle - ref) + rest ;   cmd: .desired_angle = ref + dir*(sim_target - rest)
-// Bench test showed the legs driving the WRONG way, so default all to -1 (flip). If a later
-// test shows only some corners inverted, set those individual entries back to +1.
-static const float cg_dir[4]         = { -1.0f, -1.0f, -1.0f, -1.0f };
+// The earlier all -1 setting was derived from bench runs corrupted by the +M_PI_2 decode
+// offset (every target was ~90deg off, so "wrong way" observations meant nothing). Re-derive
+// per corner with CyberGear_IndexBenchTest() now that the frames agree: a +0.12 rad nudge on
+// index i should move that corner the way a positive sim angle does (fl/br extend toward
+// +90deg, fr/bl toward their -90deg side is NEGATIVE sim direction). Flip only proven corners.
+static const float cg_dir[4]         = { +1.0f, +1.0f, +1.0f, +1.0f };
 #endif
 static bool  cg_ref_captured         = false;                    // latch cg_angle_ref once (boot rest); NOT reset on fall
 static bool  cg_slew_initialized     = false;                    // slew seed latch; reset on fall so it re-seeds from current pose
@@ -1386,20 +1390,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     if (type == 2) {  // Feedback message from motor
 
 
-           // Extract current angle from Bytes 0-1
+           // Extract current angle from Bytes 0-1.
+           // Feedback spans -4pi..+4pi and MUST stay in the same frame Motor_SendMITCommand
+           // encodes desired_angle in (0 = mechanical zero set at the folded stop): any
+           // offset added here walks straight into cg_cmd_fw and shifts every leg target.
            uint16_t angle_raw = (CAN_received_data[0] << 8) | CAN_received_data[1];
-           float angle = ((float)angle_raw / 65535.0f) * (ANGLE_MAX - ANGLE_MIN) + ANGLE_MIN + M_PI_2;
-           // Convert to degrees
-           //angle = angle * 180.0f / 3.14159265359f;
+           float angle = ((float)angle_raw / 65535.0f) * (8.0f * M_PI) - 4.0f * M_PI;
 
-
-           // Extract angular velocity from Bytes 2-3
+           // Extract angular velocity from Bytes 2-3 (raw 0 = -30 rad/s, raw 65535 = +30 rad/s)
            uint16_t velocity_raw = (CAN_received_data[2] << 8) | CAN_received_data[3];
-           float velocity = ((float)velocity_raw / 65535.0f) * (-30.0f - 30.0f) + 30.0f; // -30 to 30 rad/s
+           float velocity = ((float)velocity_raw / 65535.0f) * 60.0f - 30.0f;
 
-           // Extract torque from Bytes 4-5
+           // Extract torque from Bytes 4-5 (raw 0 = -12 Nm, raw 65535 = +12 Nm)
            uint16_t torque_raw = (CAN_received_data[4] << 8) | CAN_received_data[5];
-           float torque = ((float)torque_raw / 65535.0f) * (-12.0f - 12.0f) + 12.0f; // -12Nm to 12Nm
+           float torque = ((float)torque_raw / 65535.0f) * 24.0f - 12.0f;
 
            // Extract temperature from Bytes 6-7
            uint16_t temp_raw = (CAN_received_data[6] << 8) | CAN_received_data[7];
@@ -1873,20 +1877,12 @@ void ANN_Run(void)
         return;
     }
 
-    // ---- actions 0-3: CyberGear position targets (rad), assumed fl/fr/bl/br order ----
-    // (Action order mirroring obs order is an ASSUMPTION - not confirmed anywhere in the
-    // repo. Verify against real robot behavior during the staged bring-up.)
-    //
-    // BENCH TEST: front/back-opposite-limits lockout points at this assumption rather than
-    // at cg_dir/offsets. Cycle NNDRIVE_ACTION_ORDER_MODE through the candidate permutations
-    // below and re-run the same hand-held bench test after each:
-    //   0 = [fl,fr,bl,br]  original assumption
-    //   1 = [bl,br,fl,fr]  front/back pair swap             - TRIED, did not fix it
-    //   2 = [br,bl,fr,fl]  front/back pair swap + left/right swap (both reversed)
-    //   3 = [fr,fl,br,bl]  left/right swap only, pairs kept grouped
-    // If none of 0-3 fix it, action order is likely not the root cause - move on to a
-    // non-uniform cg_dir or a .angle decode scale check instead.
-#define NNDRIVE_ACTION_ORDER_MODE 2
+    // ---- actions 0-3: CyberGear position targets (rad), order fl/fr/bl/br ----
+    // Order CONFIRMED against the sim: nn_drive_env.py feeds actions[:, 0:4] straight to
+    // _cg_ids, which standup_env.py builds as [front_left, front_right, back_left,
+    // back_right]. Modes 1-3 were permutation experiments against the old +M_PI_2
+    // command-frame bug (bench lockouts) and are obsolete - keep mode 0.
+#define NNDRIVE_ACTION_ORDER_MODE 0
 #if NNDRIVE_ACTION_ORDER_MODE == 1
     float raw_bl = ann_out_data[0];
     float raw_br = ann_out_data[1];
@@ -1933,12 +1929,14 @@ void ANN_Run(void)
         cg_last_cmd_rad[i] += delta;
     }
 
-    // Reconstruct tanh-space "previous action" feedback from the ACTUAL commanded angle
-    // (post clamp+slew, sim frame), not the raw network output, per obs[14-17] semantics.
-    prev_cg_action[0] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_FL] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
-    prev_cg_action[1] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_FR] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
-    prev_cg_action[2] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_BL] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
-    prev_cg_action[3] = clamp_float(cg_last_cmd_rad[NNDRIVE_CG_IDX_BR] / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    // obs[14-17] in the sim are the RAW tanh action, captured BEFORE the stance processor
+    // clamps and slews (nn_drive_env.py stores CyberGearStanceProcessor.tanh_action). The
+    // exported ONNX already outputs tanh(a)*CG_ACTION_SCALE_RAD, so dividing the raw network
+    // output recovers the exact tanh-space value.
+    prev_cg_action[0] = clamp_float(raw_fl / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    prev_cg_action[1] = clamp_float(raw_fr / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    prev_cg_action[2] = clamp_float(raw_bl / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
+    prev_cg_action[3] = clamp_float(raw_br / CG_ACTION_SCALE_RAD, -1.0f, 1.0f);
 
     // Convert the sim-frame slew target back to firmware frame for the desired_angle write:
     // firmware = ref + dir*(sim - rest). The main loop writes cg_cmd_fw[] into CyberGearMotorList[].desired_angle.

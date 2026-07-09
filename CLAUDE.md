@@ -58,6 +58,16 @@ sibling modules under `Core/Src` / `Core/Inc`, all included directly from `main.
   API (`Motor_SendAngle`, `Motor_SendMITCommand`, parameter read/write, fault clearing). Global instances
   are `CyberGearMotorList[MAX_MOTORS]` and the named aliases `MOTOR_CG_LF/LB/RF/RB` (left/right,
   front/back) used throughout `main.c`.
+  **Angle-frame invariant:** the CAN feedback decode for `.angle` (type-2 handler in `main.c`) and the
+  MIT command encode of `desired_angle` (`Motor_SendMITCommand`) must use the exact same frame — full
+  span ±4π, zero at the mechanical zero set by `setMechanicalZero()` at the folded stop, **no offset
+  terms**. A historical `+M_PI_2` in the decode made `cg_angle_ref`-derived MIT targets land ~90° past
+  the intended pose, driving every leg into its hard stop ("lockout"). Never reintroduce an offset in
+  one place without the other; anything display-only belongs in `telemetry.c`, not the decode.
+  The struct-init `kp = 30.0f` / `kd = 3.0f` match the NNDrive sim's nominal CyberGear gains
+  (`cg_kp_range`/`cg_kd_range` in `nn_drive_env_cfg.py`) — the policy was trained on them, don't soften
+  without retraining. Note `MIT_controler_gain_schedule_Jump/Normal()` in `controler.c` only ever write
+  motor index 0.
 - `DDSM115.c/h` — driver for the DDSM115 hub/wheel motors used for the chassis (referenced as
   `DDSM115MotorList`, `DDSM115setCurrent`).
 - `kinematics.c/h` — leg inverse kinematics for the 2-legged platform (`MAX_NUM_LEGS = 2`): 2-solution IK
@@ -92,10 +102,39 @@ The robot runs a small on-device neural-network policy via ST's X-CUBE-AI (`STAI
 `NetworkRuntime*_CM4_GCC.a` in `Middlewares/ST/AI/`). The **integrated, actually-built** model lives in
 `STM32_Diablo_Robot_Source/AI/App/` (`network.c/h`, `network_data.c/h`, `network_details.h`,
 `network_weights.c/h`, `app_config.h`, `app_x-cube-ai.c/h`, `user_init.c/h`) and is wired into `main.c`
-via `ann_network_context`, `ann_input`/`ann_output`, and `STAI_NETWORK_*` macros (input size 8 floats,
-output size 2 floats as of the current policy). `app_x-cube-ai.c/h` here has been hand-customized for
-this project's boot/inference sequence — do not blindly overwrite it from a fresh ApplicationTemplate
-export.
+via `ann_network_context`, `ann_input`/`ann_output`, and `STAI_NETWORK_*` macros (input size 18 floats,
+output size 6 floats for the current NNDrive policy; the older 8-in/2-out balance policy path is kept
+under `#if !NN_DRIVE_POLICY_ACTIVE` in `main.c` for rollback). `app_x-cube-ai.c/h` here has been
+hand-customized for this project's boot/inference sequence — do not blindly overwrite it from a fresh
+ApplicationTemplate export.
+
+### NNDrive sim2real port (current bring-up)
+
+`ANN_Run()` in `main.c` implements the `Template-Twowheeledrobot-NNDrive-v0` contract from the
+`~/Projects/TwoWheeledRobot` Isaac Lab repo (18 obs → 6 actions; spec in that repo's
+`STM32_DEPLOYMENT.md`, env in `nn_drive_env.py` / `pure_nn_components.py`). Facts that were verified
+against the sim source and must not regress:
+
+- **Action order is `[fl, fr, bl, br]`** (`NNDRIVE_ACTION_ORDER_MODE 0`): `nn_drive_env.py` feeds
+  `actions[:, 0:4]` to `_cg_ids`, built as [front_left, front_right, back_left, back_right] in
+  `standup_env.py`. Modes 1–3 were experiments against the old `+M_PI_2` frame bug — obsolete.
+- **CG outputs are already radians**: the exported ONNX bakes in `tanh(a) * 0.45`
+  (`export_pure_nn_current_onnx.py`), so `ann_out_data[0..3]` are position targets in the sim joint
+  frame; the firmware only clamps to per-corner limits (fl/br [−10°, +90°], fr/bl [−90°, +10°], same
+  as sim) and slews at 3 rad/s.
+- **obs[14–17] are the raw tanh action** (pre-clamp, pre-slew): reconstructed as
+  `ann_out_data[k] / CG_ACTION_SCALE_RAD`, matching the sim's `tanh_action` — not the slewed command.
+- **Sim frame ↔ firmware frame** goes through the folded-rest reference (`cg_angle_ref`, latched at
+  boot; `CG_REF_recapture=1` in STM Studio re-latches): sim = `dir*(.angle − ref) + rest`,
+  command = `ref + dir*(sim − rest)`. The obs difference tolerates a constant decode bias, the
+  command does **not** — see the cybergear.c angle-frame invariant above.
+- **`cg_dir[]` per-corner signs are unverified** (currently all +1). All pre-2026-07-09 bench
+  conclusions (all-`−1` cg_dir, action order mode 2) were artifacts of the `+M_PI_2` bug — distrust
+  them. Re-derive with `CyberGear_IndexBenchTest()` (`CG_BENCH_start=1` in STM Studio, robot on a
+  stand); the bench test bypasses `NNDRIVE_OUTPUT_DISABLE`.
+- **`NNDRIVE_OUTPUT_DISABLE` is currently 1** in `main.c`: `ANN_Run()` and MET/LOG telemetry run every
+  15 ms tick but no motor commands are sent. Set back to 0 only after the bench retest confirms
+  `cg_dir`.
 
 There is an **older, unused** network under `STM32_Diablo_Robot_Source/X-CUBE-AI/App/` (`ann*.c/h`,
 `STAI`-less naming) that is not referenced from `main.c` — don't confuse it with the live policy.
