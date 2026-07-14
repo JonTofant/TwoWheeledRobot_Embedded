@@ -215,7 +215,11 @@ static const float cg_sim_at_rest[4] = { NNDRIVE_CG_REST_FRBL_RAD,   // idx0 = B
 // per corner with CyberGear_IndexBenchTest() now that the frames agree: a +0.12 rad nudge on
 // index i should move that corner the way a positive sim angle does (fl/br extend toward
 // +90deg, fr/bl toward their -90deg side is NEGATIVE sim direction). Flip only proven corners.
-static const float cg_dir[4]         = { -1.0f, -1.0f, -1.0f, -1.0f };
+//idx0 = BL  →  -1.0f
+//idx1 = FL  →  -1.0f
+//idx2 = FR  →  +1.0f
+//idx3 = BR  →  +1.0f
+static const float cg_dir[4]         = { +1.0f, +1.0f, -1.0f, -1.0f };
 #endif
 static bool  cg_ref_captured         = false;                    // latch cg_angle_ref once (boot rest); NOT reset on fall
 static bool  cg_slew_initialized     = false;                    // slew seed latch; reset on fall so it re-seeds from current pose

@@ -3,5 +3,8 @@
 ../Core/Src/DDSM115.c:97:10:angleToValue	16	static
 ../Core/Src/DDSM115.c:115:6:DDMS115setMode	32	static
 ../Core/Src/DDSM115.c:134:6:DDSM115setCurrent	32	static
-../Core/Src/DDSM115.c:174:6:DDSM115ChangeID	32	static
-../Core/Src/DDSM115.c:208:6:update_ddsm115_state	56	static
+../Core/Src/DDSM115.c:201:6:DDSM115_QueueCurrents	24	static
+../Core/Src/DDSM115.c:211:6:DDSM115_NotifyReply	16	static
+../Core/Src/DDSM115.c:220:6:DDSM115_Service	8	static
+../Core/Src/DDSM115.c:244:6:DDSM115ChangeID	32	static
+../Core/Src/DDSM115.c:278:6:update_ddsm115_state	56	static
