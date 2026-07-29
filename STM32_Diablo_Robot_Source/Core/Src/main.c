@@ -148,8 +148,10 @@ static float prev_action_right = 0.0f;
 #define STM32_TEST_CURRENT_LIMIT_A (1.0f)   // was 0.5f - raised for the NN-drive policy's first bench port
 
 // Normalization/scale constants (Template-Twowheeledrobot-NNDrive-v0 spec, STM32_DEPLOYMENT.md)
-#define NNDRIVE_POS_ERR_NORM_M       (0.5f)   // obs[0]: pos_err / 0.5m  (NOTE: differs from old policy's /1.0f)
-#define NNDRIVE_YAW_ERR_NORM_RAD     (1.5f)   // obs[4]: yaw_err / 1.5 rad (NEW - was /pi in the old policy)
+#define NNDRIVE_POS_ERR_NORM_M       (0.5f)   // obs[0]: pos_err / 0.5m
+#define NNDRIVE_POS_ERR_CLAMP_M      (0.5f)   // reference anti-windup limit
+#define NNDRIVE_YAW_ERR_NORM_RAD     (1.5f)   // obs[4]: yaw_err / 1.5 rad
+#define NNDRIVE_YAW_ERR_CLAMP_RAD    (1.0f)   // reference anti-windup limit
 #define NNDRIVE_VEL_CMD_NORM_MPS     (1.0f)
 #define NNDRIVE_YAWRATE_CMD_NORM_RPS (2.0f)
 #define NNDRIVE_CG_POS_NORM_RAD      (0.45f)  // obs[8-11]: cg_pos / 0.45 rad
@@ -1774,13 +1776,14 @@ void ANN_Run(void)
 
 #else
 // ----- New policy: policy_drive, 18 obs -> 6 actions (4 CyberGear leg targets + 2 wheel currents) -----
-// Joystick is assumed to always send zero for this port (obs[6]/[7] hardcoded, no pos_ref/yaw_ref
-// integration) - see STM32_DEPLOYMENT.md for the full spec this implements.
+// Joystick is assumed to always send zero for this port (obs[6]/[7] hardcoded). The position
+// and yaw references still move through anti-windup back-calculation to match the simulator.
 void ANN_Run(void)
 {
     static bool refs_valid = false;
     static float phi_left_ref_nn = 0.0f;
     static float phi_right_ref_nn = 0.0f;
+    static float pos_ref_nn_m = 0.0f;
     static float yaw_ref_nn_rad = 0.0f;
 
     if (isFallen() && !isStartupStrategy) {
@@ -1806,6 +1809,7 @@ void ANN_Run(void)
     if (!refs_valid) {
         phi_left_ref_nn = phi_left_nn;
         phi_right_ref_nn = phi_right_nn;
+        pos_ref_nn_m = 0.0f;
         yaw_ref_nn_rad = yaw_nn_rad;
         refs_valid = true;
     }
@@ -1819,10 +1823,22 @@ void ANN_Run(void)
     float x_dot_mps = 0.5f * (v_left_mps + v_right_mps);
     float theta_rad = PITCH_SIGN * roll_esp32;
     float theta_dot_radps = PITCH_RATE_SIGN * gx_esp32;
-    float yaw_error_rad = wrap_pi(yaw_nn_rad - yaw_ref_nn_rad);
     float yaw_rate_radps = YAW_RATE_SIGN * gz_esp32;
 
-    ann_in_data[0] = x_rel_m / NNDRIVE_POS_ERR_NORM_M;                          // pos_err / 0.5m
+    // Back-calculate each reference by the error outside its policy-visible range. This
+    // is the same anti-windup used during training: observations stay in distribution,
+    // and yaw error never reaches the +/-pi wrap discontinuity.
+    float pos_error_raw_m = x_rel_m - pos_ref_nn_m;
+    float pos_error_m = clamp_float(pos_error_raw_m,
+                                    -NNDRIVE_POS_ERR_CLAMP_M, NNDRIVE_POS_ERR_CLAMP_M);
+    pos_ref_nn_m += pos_error_raw_m - pos_error_m;
+
+    float yaw_error_raw_rad = wrap_pi(yaw_nn_rad - yaw_ref_nn_rad);
+    float yaw_error_rad = clamp_float(yaw_error_raw_rad,
+                                      -NNDRIVE_YAW_ERR_CLAMP_RAD, NNDRIVE_YAW_ERR_CLAMP_RAD);
+    yaw_ref_nn_rad += yaw_error_raw_rad - yaw_error_rad;
+
+    ann_in_data[0] = pos_error_m / NNDRIVE_POS_ERR_NORM_M;                      // clamped pos_err / 0.5m
     ann_in_data[1] = x_dot_mps / NNDRIVE_VEL_CMD_NORM_MPS;                      // velocity / 1.0 m/s
     ann_in_data[2] = theta_rad / 0.43633231f;                                   // pitch / 25deg
     ann_in_data[3] = theta_dot_radps / 4.0f;                                    // pitch_rate / 4 rad/s
