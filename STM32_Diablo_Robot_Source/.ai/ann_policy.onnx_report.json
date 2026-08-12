@@ -1,7 +1,7 @@
 {
     "_allocate_inputs": 4,
     "_allocate_outputs": 4,
-    "cli_parameters": "generate --name ann -m E:/policy.onnx --type onnx --compression none --verbosity 1 --workspace C:\\Users\\jon\\AppData\\Local\\Temp\\mxAI_workspace118526140899750018267577004091999548 --output C:\\Users\\jon\\.stm32cubemx\\ann_output --allocate-inputs --series stm32f4 --allocate-outputs",
+    "cli_parameters": "analyze --name ann -m E:/policy.onnx --type onnx --compression none --verbosity 1 --workspace C:\\Users\\jon\\AppData\\Local\\Temp\\mxAI_workspace602615333063008980276007576460990 --output C:\\Users\\jon\\.stm32cubemx\\ann_output --allocate-inputs --series stm32f4 --allocate-outputs",
     "cli_version": {
         "major": 1,
         "micro": 0,
@@ -13,10 +13,10 @@
         "factor": null,
         "layers": {}
     },
-    "date_time": "Wed Jun 24 13:05:46 2026",
+    "date_time": "Wed Aug 12 14:20:01 2026",
     "error": 0,
     "error_str": [],
-    "exec_cmd": "generate",
+    "exec_cmd": "analyze",
     "exec_duration": 0.0,
     "hash": "320dc50ff0d7333d8bf24e0ef057d502",
     "inputs": [

@@ -1,7 +1,0 @@
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:51:9:compute_crc8	4
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:65:6:sendPositionCommand	1
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:97:10:angleToValue	3
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:115:6:DDMS115setMode	1
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:134:6:DDSM115setCurrent	3
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:174:6:DDSM115ChangeID	2
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/DDSM115.c:208:6:update_ddsm115_state	6

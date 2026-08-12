@@ -1,5 +1,0 @@
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/system_init.c:23:6:System_Init	8	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/system_init.c:40:13:EnableCybergearMotor	16	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/system_init.c:46:13:ZeroCybergearMotor	16	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/system_init.c:52:13:SetInitialCybergearTargets	4	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/system_init.c:60:13:SetDriveMotorsToCurrentMode	8	static

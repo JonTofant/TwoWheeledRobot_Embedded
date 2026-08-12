@@ -1,3 +1,0 @@
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/build/Release/CMakeFiles/Diablo_robot_source.dir
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/build/Release/CMakeFiles/edit_cache.dir
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/build/Release/CMakeFiles/rebuild_cache.dir

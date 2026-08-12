@@ -1,8 +1,0 @@
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:153:6:SystemClock_Config	88	static,ignoring_inline_asm
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:95:5:main	72	static,ignoring_inline_asm
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:651:6:HAL_CAN_RxFifo0MsgPendingCallback	0	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:656:6:HAL_UART_RxCpltCallback	0	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:661:6:HAL_UARTEx_RxEventCallback	0	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:666:6:HAL_TIM_PeriodElapsedCallback	0	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:671:6:HAL_UART_TxCpltCallback	0	static
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/main.c:682:6:Error_Handler	0	static,ignoring_inline_asm

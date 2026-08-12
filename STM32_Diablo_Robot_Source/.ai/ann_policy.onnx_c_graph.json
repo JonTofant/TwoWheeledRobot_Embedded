@@ -573,7 +573,7 @@
         }
     ],
     "c_activations_count": 1,
-    "date_time": "Wed Jun 24 13:05:46 2026",
+    "date_time": "Wed Aug 12 14:20:01 2026",
     "model_name": "policy",
     "tool_version": {
         "major": 1,
@@ -665,9 +665,12 @@
             0,
             0
         ],
-        "series": "generic",
+        "series": "stm32f4",
         "activations": 512,
-        "weights": 19792
+        "toolchain_flash": 736,
+        "toolchain_ram": 0,
+        "weights": 19792,
+        "toolchain": "arm-none-eabi-gcc (GNU Tools for STM32 14.3.rel1.20251027-0700) 14.3.1 20250623"
     },
     "version": "1.2",
     "tool_api_version": {

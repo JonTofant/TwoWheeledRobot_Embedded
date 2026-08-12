@@ -1,8 +1,0 @@
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:64:6:calculate_r_eff	1
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:75:6:calculate_L_and_L_dot	2
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:94:6:calculate_Xc_Yc	1
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:123:6:calculate_L_and_theta	1
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:148:6:init_leg_state	1
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:157:6:set_leg_foot_position	7
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:208:6:solveIKTwoSolutions_c	4
-C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/STM32_Jumping_Robot_VS_Code_Project/Diablo_robot_source/Core/Src/kinematics.c:234:6:chooseContinuousSolution_c	2
