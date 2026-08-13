@@ -16,9 +16,9 @@ void startup_strategy_control()
 				K_GAINS[0] = 180.0f;
 				K_GAINS[1] = 10.0f;
 				 attempt_for_amount_of_samples -=1;
-				 if (attempt_for_amount_of_samples <=0 || (roll_esp32 > -0.0872664626 && roll_esp32 < 0.0872664626)){
+				 if (attempt_for_amount_of_samples <=0 || (body_pitch_rad > -0.0872664626 && body_pitch_rad < 0.0872664626)){
 
-					 if (roll_esp32 > -0.1872664626 && roll_esp32 < 0.1872664626)
+					 if (body_pitch_rad > -0.1872664626 && body_pitch_rad < 0.1872664626)
 					 {
 					     isStartupStategySuccess = true;
 					     isStartupStrategy = false;

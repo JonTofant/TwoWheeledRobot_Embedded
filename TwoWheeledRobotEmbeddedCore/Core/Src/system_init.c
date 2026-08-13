@@ -9,10 +9,11 @@
 #include "system_init.h"
 #include "cybergear.h"
 
-#define MOTOR_CG_LB CyberGearMotorList[0] // Phi 2
-#define MOTOR_CG_LF CyberGearMotorList[1] // Phi 1
-#define MOTOR_CG_RF CyberGearMotorList[2]
-#define MOTOR__CG_RB CyberGearMotorList[3]
+// MOTOR_CG_LF/LB/RF/RB come from DDSM115.h (included via system_init.h). Do not
+// redefine them here - a previous local redefinition had LF/LB swapped relative to
+// that canonical mapping, which telemetry.c and controler.c both rely on, causing
+// System_Init()'s motorEnable/setMechanicalZero/writeParameter/Motor_SendAngle calls
+// to act on the wrong physical leg motor for LF/LB.
 // Function that initializes the system
 void System_Init(void)
 {
@@ -28,7 +29,7 @@ void System_Init(void)
 	  motorEnable(MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 	  HAL_Delay(50);
 
-	  motorEnable(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
+	  motorEnable(MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 	  HAL_Delay(50);
 
 
@@ -43,7 +44,7 @@ void System_Init(void)
 	  setMechanicalZero(MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 	  HAL_Delay(50);
 
-	  setMechanicalZero(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
+	  setMechanicalZero(MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 	  HAL_Delay(50);
 
 	  // DDSM115 change ID
@@ -58,7 +59,7 @@ void System_Init(void)
 	  	  HAL_Delay(50);
 	  	  writeParameter(0x7005, &runMode, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 	  	  HAL_Delay(50);
-	  	  writeParameter(0x7005, &runMode, MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
+	  	  writeParameter(0x7005, &runMode, MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 	  	  HAL_Delay(50);
 
 	  	  writeParameter(0x7017, &MOTOR_CG_LF.max_velocity, MOTOR_CG_LF.hostID, MOTOR_CG_LF.motorID);
@@ -70,7 +71,7 @@ void System_Init(void)
 	  	  writeParameter(0x7017, &MOTOR_CG_RF.max_velocity, MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 	  	  HAL_Delay(50);
 
-	  	  writeParameter(0x7017, &MOTOR__CG_RB.max_velocity, MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
+	  	  writeParameter(0x7017, &MOTOR_CG_RB.max_velocity, MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 	  	  HAL_Delay(50);
 */
 
@@ -86,7 +87,7 @@ void System_Init(void)
 
 	  	  MOTOR_CG_RF.target_angle = -0.785398163f;
 
-	  	  MOTOR__CG_RB.target_angle = 0.785398163f;*/
+	  	  MOTOR_CG_RB.target_angle = 0.785398163f;*/
 
 	  	  // DEBUG MODE
 	  	  /*
@@ -96,7 +97,7 @@ void System_Init(void)
 
 	  	  MOTOR_CG_RF.target_angle = -0.523598776f;
 
-	  	  MOTOR__CG_RB.target_angle = 0.523598776f;
+	  	  MOTOR_CG_RB.target_angle = 0.523598776f;
 	  	  */
 	  	  MOTOR_CG_LF.target_angle = 0.0;
 
@@ -104,7 +105,7 @@ void System_Init(void)
 
 	  	  MOTOR_CG_RF.target_angle = -0.0;
 
-	  	  MOTOR__CG_RB.target_angle = 0.0;
+	  	  MOTOR_CG_RB.target_angle = 0.0;
 
 
 	  	  // Send the target angle to each motor
@@ -114,7 +115,7 @@ void System_Init(void)
 	  	//HAL_Delay(70);
 	  	//Motor_SendMITCommand(&MOTOR_CG_RF, 1.0);
 	  	//HAL_Delay(70);
-	  	//Motor_SendMITCommand(&MOTOR__CG_RB, 1.0);
+	  	//Motor_SendMITCommand(&MOTOR_CG_RB, 1.0);
 	  	//HAL_Delay(70);
 
 	  	/*
@@ -124,7 +125,7 @@ void System_Init(void)
 	  	  HAL_Delay(70);
 	  	  Motor_SendAngle(&MOTOR_CG_RF);
 	  	  HAL_Delay(70);
-	  	  Motor_SendAngle(&MOTOR__CG_RB);
+	  	  Motor_SendAngle(&MOTOR_CG_RB);
 	  	  HAL_Delay(70);
 */
 	  	  /* Ta Mechanical zero ne dela nic
@@ -138,7 +139,7 @@ void System_Init(void)
 		  setMechanicalZero(MOTOR_CG_RF.hostID, MOTOR_CG_RF.motorID);
 		  HAL_Delay(50);
 
-		  setMechanicalZero(MOTOR__CG_RB.hostID, MOTOR__CG_RB.motorID);
+		  setMechanicalZero(MOTOR_CG_RB.hostID, MOTOR_CG_RB.motorID);
 		  HAL_Delay(50);
 
 		  HAL_Delay(3000);*/

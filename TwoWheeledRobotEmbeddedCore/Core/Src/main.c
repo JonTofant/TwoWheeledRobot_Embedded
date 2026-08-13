@@ -37,13 +37,13 @@
 #include "DDSM115.h"
 #include "kinematics.h"
 #include "system_init.h"
-#include "telemetry.h"
 #include "controler.h"
 #include "joystick.h"
 #include "StartupStrategy.h"
 #include "StateEstimator.h"
 #include "state_machine.h"
 #include "JumpStrategy.h"
+#include "bno08x.h"
 
 /* USER CODE END Includes */
 
@@ -56,9 +56,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-// ESP32 buffer size (ROLL PITCH YAW)
-#define PACKET_SIZE 19
 
 // Set to 1 to re-enable the UART2 debug telemetry print to the ESP32.
 // Disabled by default to save loop time for the 15ms ANN/DDSM115 update.
@@ -255,17 +252,12 @@ static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
-uint16_t getDMACurrentIndex(void);
 volatile uint16_t rxReadIndex = 0;       // Your software read pointer
 
 
 
 
 
-
-#define BNO080_PACKET_SIZE 25  // 1 SOF + 6×4-byte floats
-#define UART1_RX_BUFFER_SIZE 128
-static uint8_t  uart1RxBuffer[UART1_RX_BUFFER_SIZE];
 
 #define UART2_RX_BUFFER_SIZE 10
 static uint8_t uart2RxBuffer[UART2_RX_BUFFER_SIZE];
@@ -350,12 +342,6 @@ int main(void)
   HAL_UART_Transmit(&huart3, (uint8_t*)boot, strlen(boot), 100);
   HAL_Delay(100);*/
 
-  // Kick off DMA+Idle for USART1
-  HAL_UARTEx_ReceiveToIdle_IT(&huart1,
-                             uart1RxBuffer,
-                             UART1_RX_BUFFER_SIZE);
-
-
   // Enable UART DMA for uart2
   HAL_UART_Receive_DMA(&huart2, uart2RxBuffer, UART2_RX_BUFFER_SIZE);
 
@@ -377,6 +363,10 @@ int main(void)
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
   //------------------------------------------------
+
+  // BNO08x IMU, wired directly to I2C3 (PA8/PC9) - see bno08x.h. Depends on the DWT
+  // cycle counter enabled just above.
+  BNO08x_Init(&hi2c3, BNO080_INT_Pin);
 
 
 // SEND QUERY TO DDSM115
@@ -442,14 +432,6 @@ int main(void)
 
   	  System_Init();
 
-  	init_leg_state(&leg_state_rf);
-  	init_leg_state(&leg_state_lf);
-  	init_leg_state(&leg_state_rb);
-  	init_leg_state(&leg_state_lb);
-
-
-  	// Testing of inverse kinematics
-
   	//start TIM2 for USART2 data transfer
   		HAL_TIM_Base_Start_IT(&htim2);
 		  // Enable Timer 3 interupt
@@ -475,6 +457,12 @@ int main(void)
 
 	  // ----- MAIN CONTROL LOOP -----
 	  // Seperated by flags for auxiliary tasks and a state machine
+
+	 // Service the BNO08x (no-ops unless its INT pin has signaled new data) and
+	 // refresh the derived pitch/roll/yaw state every pass, before anything below
+	 // reads it (isFallen(), posture/startup/jump strategies, NN_ReadImu()).
+	 BNO08x_Service();
+	 StateEstimator_UpdateFromBNO();
 
 	 // Pump the non-blocking DDSM115 RS485 command sequencer every pass. It walks
 	 // through the currents queued by DDSM115_QueueCurrents(), turning the half-duplex
@@ -616,7 +604,8 @@ int main(void)
 	     sendUart2Data = 0;
 
 	     sprintf(NN_buffer, "%d%d %.2f %.2f %.2f %.2f %.2f %.2f %.2f | NN: %.3f %.3f\r\n",
-	             0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32,
+	             0xAA, 0x55, body_roll_rad, body_pitch_rad, body_pitch_rate_rad_s,
+	             body_roll_rate_rad_s, body_yaw_rate_rad_s,
 	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot,
 	             nn_out_action[0], nn_out_action[1]);
 	     HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
@@ -624,11 +613,6 @@ int main(void)
 #else
 	 sendUart2Data = 0;
 #endif
-
-
-	 if (isTELEMETRYReady){
-		 Send_Telemetry(&huart3);
-	 }
 
 
     /* USER CODE END WHILE */
@@ -1394,62 +1378,17 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	        // Restart reception for next frame
 	        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
 	    }
-    if (huart->Instance == USART1)
-    {
-        // Size = number of bytes received into uart1RxBuffer[]
-        uint16_t bytes = Size;
-        uint16_t idx   = 0;
-
-        // Process as many full packets as we have
-        while (idx + PACKET_SIZE <= bytes)
-        {
-            if (uart1RxBuffer[idx] == 0xAA)
-            {
-                // Sync on first packet only
-                if (!uartSynced)
-                {
-                    uartSynced = true;
-                    // shift this good packet to buffer start if desired:
-                    memmove(uart1RxBuffer,
-                            uart1RxBuffer + idx,
-                            PACKET_SIZE);
-                    idx = 0;       // start parsing from buffer[0]
-                    bytes = PACKET_SIZE;
-                }
-
-                // Parse the six floats (little-endian) at idx+1..idx+24
-                float *f   = (float*)(uart1RxBuffer + idx + 1);
-                yaw_esp32   = f[0];
-                pitch_esp32 = f[1];
-                roll_esp32  = f[2];
-                gx_esp32    = f[3];
-                gy_esp32    = f[4];
-                gz_esp32    = f[5];
-
-                // Advance past this packet
-                idx += PACKET_SIZE;
-            }
-            else
-            {
-                // No SOF here, skip one byte
-                idx++;
-            }
-        }
-
-
-
-        // re-arm for next Idle
-        HAL_UARTEx_ReceiveToIdle_IT(&huart1,
-                                   uart1RxBuffer,
-                                   UART1_RX_BUFFER_SIZE);
-    }
-
-
 
 
 
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == BNO080_INT_Pin) {
+        BNO08x_EXTI_Callback(GPIO_Pin);
+    }
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -1463,8 +1402,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		isDDSM115Ready = true;
 		isCYBERGEARReady = true;
-		isTELEMETRYReady = true;
-
 	}
 
 	if (htim->Instance == TIM2) {
@@ -1497,17 +1434,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   * @retval None (Results are stored in the global variables via pointers).
   */
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-    // Check if the callback is from our telemetry UART.
-    if (huart->Instance == USART3) {
-        // The transmission is complete, so we set the flag to true,
-        // allowing the next call to Send_Telemetry() to proceed.
-        Telemetry_UART_TxCpltCallback(huart);
-    }
-}
-
-
 // ===== ANN INIT =====
 void ANN_Init(void)
 {
@@ -1531,23 +1457,23 @@ void ANN_Init(void)
 }
 
 // ===== ANN INFERENCE =====
-// TODO(IMU): placeholder mapping via the ESP32-relayed BNO085 stream. Replace when a
-// BNO085 is wired directly to the STM32 for a real gravity vector:
-// pitch = atan2(g_y,-g_z), roll = atan2(g_x,-g_z) per STM32_DEPLOYMENT.md. roll_esp32/
-// gx_esp32 are reused here for pitch because they were the OLD code's validated balance
-// axis; pitch_esp32/gy_esp32 are an UNVALIDATED best guess for roll/roll_rate - confirm
-// both on the bench (tip the robot, watch LOG_obs[2]/[11] move the expected direction)
-// before trusting balance behavior. Kept as the single place this mapping lives so a
-// future direct-BNO085 driver only needs to change this function.
+// IMU source: BNO08x wired directly to I2C3 (bno08x.h/.c), fused into
+// body_pitch_rad/body_roll_rad/body_yaw_rad and their rates by
+// StateEstimator_UpdateFromBNO() (called once per main-loop tick, before this).
+// pitch/roll come from atan2() on body-frame gravity per STM32_DEPLOYMENT.md; yaw
+// comes from the BNO's game rotation vector (no magnetometer - drifts slowly over
+// long runs, see StateEstimator.h). The BNO's physical mounting orientation on the
+// chassis has NOT been bench-verified against this axis mapping - tip the robot and
+// watch LOG_obs[2]/[11] move the expected direction before trusting balance behavior.
 static void NN_ReadImu(float *pitch, float *pitch_rate, float *roll, float *roll_rate,
                         float *yaw, float *yaw_rate)
 {
-    *pitch      = PITCH_SIGN * roll_esp32;
-    *pitch_rate = PITCH_RATE_SIGN * gx_esp32;
-    *roll       = pitch_esp32;      // PLACEHOLDER, unvalidated
-    *roll_rate  = gy_esp32;         // PLACEHOLDER, unvalidated
-    *yaw        = YAW_SIGN * yaw_esp32;
-    *yaw_rate   = YAW_RATE_SIGN * gz_esp32;
+    *pitch      = PITCH_SIGN * body_pitch_rad;
+    *pitch_rate = PITCH_RATE_SIGN * body_pitch_rate_rad_s;
+    *roll       = body_roll_rad;
+    *roll_rate  = body_roll_rate_rad_s;
+    *yaw        = YAW_SIGN * body_yaw_rad;
+    *yaw_rate   = YAW_RATE_SIGN * body_yaw_rate_rad_s;
 }
 
 // ----- NNDriveFixedStance policy: 13 obs -> 2 actions (left/right DDSM115 wheel current,
