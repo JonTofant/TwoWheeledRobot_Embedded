@@ -2,3 +2,10 @@
 # not source. Delete Debug/ and rebuild any time; nothing here should be tracked.
 TwoWheeledRobotEmbeddedCore/Debug/
 TwoWheeledRobotEmbeddedCore/Release/
+
+# X-CUBE-AI CLI run history (analyze/generate/validate output per NN policy
+# generation attempt). Not referenced by .cproject or any source file - the one
+# file that used to be wired in (run-3/Core/Startup/startup_stm32f446retx.s) was
+# a duplicate of Core/Startup/startup_stm32f446retx.s and has been dropped from
+# the build. A fresh clone doesn't need this to build or run.
+TwoWheeledRobotEmbeddedCore/.ai/
