@@ -9,10 +9,11 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include X-CUBE-AI/App/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
--include AI/App/subdir.mk
+-include .ai/run/run-3/Core/Startup/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -35,34 +36,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := Diablo_robot_source
+BUILD_ARTIFACT_NAME := TwoWheeledRobot_Embeded_Core
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-Diablo_robot_source.elf \
+TwoWheeledRobot_Embeded_Core.elf \
 
 MAP_FILES += \
-Diablo_robot_source.map \
+TwoWheeledRobot_Embeded_Core.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-Diablo_robot_source.list \
+TwoWheeledRobot_Embeded_Core.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: Diablo_robot_source.elf secondary-outputs
+main-build: TwoWheeledRobot_Embeded_Core.elf secondary-outputs
 
 # Tool invocations
-Diablo_robot_source.elf Diablo_robot_source.map: $(OBJS) $(USER_OBJS) C:\Users\jon\OneDrive\ -\ Univerza\ v\ Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -gdwarf-4 -o "Diablo_robot_source.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\STM32_Diablo_Robot_Source\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Diablo_robot_source.map" -Wl,--gc-sections -static -L../Middlewares/ST/AI/Lib/NetworkRuntime1201_CM4_GCC.a --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+TwoWheeledRobot_Embeded_Core.elf TwoWheeledRobot_Embeded_Core.map: $(OBJS) $(USER_OBJS) C:\Users\jon\OneDrive\ -\ Univerza\ v\ Mariboru\Dokumenti\GitHub\BipedRobot\TwoWheeledRobotEmbeddedCore\STM32F446RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "TwoWheeledRobot_Embeded_Core.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\TwoWheeledRobotEmbeddedCore\STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TwoWheeledRobot_Embeded_Core.map" -Wl,--gc-sections -static -L../Middlewares/ST/AI/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -71,14 +72,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-Diablo_robot_source.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "Diablo_robot_source.list"
+TwoWheeledRobot_Embeded_Core.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "TwoWheeledRobot_Embeded_Core.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) Diablo_robot_source.elf Diablo_robot_source.list Diablo_robot_source.map default.size.stdout
+	-$(RM) TwoWheeledRobot_Embeded_Core.elf TwoWheeledRobot_Embeded_Core.list TwoWheeledRobot_Embeded_Core.map default.size.stdout
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

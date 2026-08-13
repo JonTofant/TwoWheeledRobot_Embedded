@@ -25,6 +25,8 @@ extern float xc_des_l;
 extern float xc_des_r;
 extern float desired_v_left;
 extern float desired_v_right;
+extern float nn_in_obs[13];
+extern float nn_out_action[2];
 
 
 float theta_des_l_telemetry;
@@ -73,6 +75,12 @@ void Send_Telemetry(UART_HandleTypeDef *huart) {
     tx_packet.payload.motor_angle_lb = MOTOR_CG_LB.angle;
 
     tx_packet.payload.roll_angle     = roll_esp32;
+
+    for (int i = 0; i < 13; i++) {
+        tx_packet.payload.nn_obs[i] = nn_in_obs[i];
+    }
+    tx_packet.payload.nn_action_left_A  = nn_out_action[0];
+    tx_packet.payload.nn_action_right_A = nn_out_action[1];
 
     // 3. SET PACKET METADATA (The "Transparent" part)
     tx_packet.sof = TELEMETRY_SOF;

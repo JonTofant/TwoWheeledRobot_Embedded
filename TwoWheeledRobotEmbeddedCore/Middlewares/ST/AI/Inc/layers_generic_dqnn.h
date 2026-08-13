@@ -14,16 +14,20 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef LAYERS_GENERIC_DQNN_H
 #define LAYERS_GENERIC_DQNN_H
+#pragma once
 
 #include "layers_common.h"
 #include "layers_generic.h"
 
 /*!
  * @defgroup layers_generic_dqnn Layers Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 
@@ -36,7 +40,7 @@ AI_API_DECLARE_BEGIN
 /******************************************************************************/
 
 /*!
- * @brief Handles concat with binary input, binary output and
+ * @brief Handles concat with binary input, binary output and 
  *        binary weights
  * @ingroup layers_generic_dqnn
  * @param layer concat layer

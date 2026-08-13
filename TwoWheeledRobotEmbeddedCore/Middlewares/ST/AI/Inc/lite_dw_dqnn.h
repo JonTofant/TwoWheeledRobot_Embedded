@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    lite_dw_dqnn.h
   * @author  AIS
-  * @brief   header file of AI platform lite integer depthwise kernel datatypes
+  * @brief   header file of AI platform lite dw kernel datatypes
   ******************************************************************************
   * @attention
   *
@@ -14,10 +14,13 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef LITE_DW_DQNN_H
 #define LITE_DW_DQNN_H
-
+#pragma once
 
 #include "ai_lite_interface.h"
 
@@ -28,7 +31,7 @@
 /******************************************************************************/
 
 /*!
- * @brief Handles 2D DW convolution with binary input, binary output and
+ * @brief Handles 2D DW convolution with binary input, binary output and 
  *        binary weights - with 0 padding (QKeras like) - Lite I/F
  * @ingroup lite_conv2d_dqnn
  */
@@ -39,7 +42,7 @@ void forward_lite_dw_is1os1ws1_bn_pad0(const ai_u32 *pDataIn_init,
                                         ai_float *pScratch_32,
                                         const ai_u32 n_channel_in,
                                         const ai_u32 n_channel_out,
-                                        const ai_i32 width_in,
+                                        const ai_i32 width_in, 
                                         const ai_i32 height_in,
                                         const ai_i32 width_out,
                                         const ai_i32 height_out,
@@ -52,8 +55,8 @@ void forward_lite_dw_is1os1ws1_bn_pad0(const ai_u32 *pDataIn_init,
                                         const ai_i32 *pThreshold);
 
 /*!
- * @brief Handles 2D DW convolution with binary input, binary output and
- *        binary weights - with 0 padding (QKeras like) - Lite I/F
+ * @brief Handles 2D DW convolution with binary input, binary output and 
+ *        binary weights - with 0 padding (QKeras like) - Lite I/F 
  *        - Optimized thanks to Optim3 assumptions
  * @ingroup lite_conv2d_dqnn
  */
@@ -64,7 +67,7 @@ void forward_lite_dw_is1os1ws1_bn_pad0_optim3(const ai_u32 *pDataIn_init,
                                               ai_float *pScratch_32,
                                               const ai_u32 n_channel_in,
                                               const ai_u32 n_channel_out,
-                                              const ai_i32 width_in,
+                                              const ai_i32 width_in, 
                                               const ai_i32 height_in,
                                               const ai_i32 width_out,
                                               const ai_i32 height_out,
@@ -77,8 +80,8 @@ void forward_lite_dw_is1os1ws1_bn_pad0_optim3(const ai_u32 *pDataIn_init,
                                               const ai_i32 *pThreshold);
 
 /*!
- * @brief Handles 2D convolution with binary input, binary output and
- *        binary weights - with +1/-1 padding (Larq like) - Lite I/F
+ * @brief Handles 2D convolution with binary input, binary output and 
+ *        binary weights - with +1/-1 padding (Larq like) - Lite I/F 
  * @ingroup lite_conv2d_dqnn
  */
 LITE_API_ENTRY
@@ -88,7 +91,7 @@ void forward_lite_dw_is1os1ws1_bn_pad1(const ai_u32 *pDataIn_init,
                                         ai_float *pScratch_32,
                                         const ai_u32 n_channel_in,
                                         const ai_u32 n_channel_out,
-                                        const ai_i32 width_in,
+                                        const ai_i32 width_in, 
                                         const ai_i32 height_in,
                                         const ai_i32 width_out,
                                         const ai_i32 height_out,
@@ -102,8 +105,8 @@ void forward_lite_dw_is1os1ws1_bn_pad1(const ai_u32 *pDataIn_init,
                                         const ai_i32 pad_value);
 
  /*!
- * @brief Handles 2D convolution with binary input, binary output and
- *        binary weights - with +1/-1 padding (Larq like) - Lite I/F
+ * @brief Handles 2D convolution with binary input, binary output and 
+ *        binary weights - with +1/-1 padding (Larq like) - Lite I/F 
  *        - Optimized thanks to Optim3 assumptions
  * @ingroup lite_conv2d_dqnn
  */
@@ -114,7 +117,7 @@ void forward_lite_dw_is1os1ws1_bn_pad1_optim3(const ai_u32 *pDataIn_init,
                                               ai_float *pScratch_32,
                                               const ai_u32 n_channel_in,
                                               const ai_u32 n_channel_out,
-                                              const ai_i32 width_in,
+                                              const ai_i32 width_in, 
                                               const ai_i32 height_in,
                                               const ai_i32 width_out,
                                               const ai_i32 height_out,

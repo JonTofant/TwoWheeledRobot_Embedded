@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    lite_pw_dqnn.h
   * @author  AIS
-  * @brief   header file of AI platform lite dqnn pointwise kernel datatypes
+  * @brief   header file of AI platform lite pw kernel datatypes
   ******************************************************************************
   * @attention
   *
@@ -14,10 +14,13 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef LITE_PW_DQNN_H
 #define LITE_PW_DQNN_H
-
+#pragma once
 
 #include "ai_lite_interface.h"
 
@@ -27,7 +30,7 @@
 /******************************************************************************/
 
 /*!
- * @brief Handles point wise convolution with binary input, binary output and
+ * @brief Handles point wise convolution with binary input, binary output and 
  *        binary weights - Lite API version
  * @ingroup lite_pw_dqnn
  */
@@ -42,8 +45,8 @@ void forward_lite_pw_is1os1ws1_bn(const ai_u32 *pDataIn_init,
                                   const ai_i32 *pThreshold);
 
 /*!
- * @brief Handles point wise convolution with binary input, binary output and
- *        binary weights - Lite API version - Optimized thanks to Optim2
+ * @brief Handles point wise convolution with binary input, binary output and 
+ *        binary weights - Lite API version - Optimized thanks to Optim2 
  *        assumptions
  * @ingroup lite_pw_dqnn
  */
@@ -58,7 +61,7 @@ void forward_lite_pw_is1os1ws1_bn_optim2(const ai_u32 *pDataIn_init,
                                         const ai_i32 *pThreshold);
 
 /*!
- * @brief Handles point wise convolution with binary input, 8-bits output and
+ * @brief Handles point wise convolution with binary input, 8-bits output and 
  *        binary weights - Lite API version
  * @ingroup lite_pw_dqnn
  */
@@ -74,8 +77,8 @@ void forward_lite_pw_is1os8ws1_bn(const ai_u32 *pDataIn_init,
                                   const ai_float *pOffset);
 
 /*!
- * @brief Handles point wise convolution with binary input, 8-bits output and
- *        binary weights - Lite API version - Optimized thanks to Optim1
+ * @brief Handles point wise convolution with binary input, 8-bits output and 
+ *        binary weights - Lite API version - Optimized thanks to Optim1 
  *        assumptions
  * @ingroup lite_pw_dqnn
  */
@@ -91,7 +94,7 @@ void forward_lite_pw_is1os8ws1_bn_optim1(const ai_u32 *pDataIn_init,
                                         const ai_float *pOffset);
 
 /*!
- * @brief Handles point-wise convolution with binary input, float32 output
+ * @brief Handles point-wise convolution with binary input, float32 output 
  *        and binary weights - Lite API version
  * @ingroup lite_pw_dqnn
  */
@@ -107,8 +110,8 @@ void forward_lite_pw_is1of32ws1_bn(const ai_u32 *pDataIn_init,
                                    const ai_float *pOffset);
 
 /*!
- * @brief Handles point-wise convolution with binary input, float32 output
- *        and binary weights - Lite API version - Optimized thanks to Optim1
+ * @brief Handles point-wise convolution with binary input, float32 output 
+ *        and binary weights - Lite API version - Optimized thanks to Optim1 
  *        assumptions
  * @ingroup lite_pw_dqnn
  */

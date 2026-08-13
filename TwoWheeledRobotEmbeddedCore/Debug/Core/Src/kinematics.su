@@ -1,8 +1,0 @@
-../Core/Src/kinematics.c:64:6:calculate_r_eff	40	static
-../Core/Src/kinematics.c:75:6:calculate_L_and_L_dot	40	static
-../Core/Src/kinematics.c:94:6:calculate_Xc_Yc	64	static
-../Core/Src/kinematics.c:123:6:calculate_L_and_theta	32	static
-../Core/Src/kinematics.c:148:6:init_leg_state	16	static
-../Core/Src/kinematics.c:157:6:set_leg_foot_position	120	static
-../Core/Src/kinematics.c:208:6:solveIKTwoSolutions_c	96	static
-../Core/Src/kinematics.c:234:6:chooseContinuousSolution_c	48	static

@@ -14,10 +14,13 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
-#ifndef LITE_PAD_GENERIC_H
-#define LITE_PAD_GENERIC_H
-
+#ifndef LITE_PADDING_DQNN_H
+#define LITE_PADDING_DQNN_H
+#pragma once
 
 #include "ai_lite_interface.h"
 
@@ -30,21 +33,9 @@
  * Channel 1st Format Input and Output
  * @ingroup lite_padding_dqnn
  */
-
-/* Variant used for padding pattern = (1, 1, 1, 1) */
 LITE_API_ENTRY
-void forward_lite_pad_8bit_ch1st_3x3_constant_P1111(ai_ptr_const in_data_tensor,
-                                              ai_ptr out_data_tensor,
-                                              const ai_handle fill_value,
-                                              const ai_i32 height_in,
-                                              const ai_i32 channel_in,
-                                              const ai_ptr_offset ch_stride_in,
-                                              const ai_ptr_offset h_stride_in,
-                                              const ai_ptr_offset h_stride_pad);
 
-/* Variant used for padding pattern = (0, 0, 2, 2) */
-LITE_API_ENTRY
-void forward_lite_pad_8bit_ch1st_3x3_constant_P0022(ai_ptr_const in_data_tensor,
+void forward_lite_pad_8bit_ch1st_3x3_constant(ai_ptr_const in_data_tensor,
                                               ai_ptr out_data_tensor,
                                               const ai_handle fill_value,
                                               const ai_i32 height_in,
@@ -108,4 +99,4 @@ void forward_lite_pad_reflect(ai_ptr_const in_data,
                               const ai_ptr_offset w_stride_pad,
                               const ai_ptr_offset w_stride_pad_r);
 
-#endif    /* LITE_PAD_GENERIC_H */
+#endif    /*LITE_PADDING_GENERIC_H*/

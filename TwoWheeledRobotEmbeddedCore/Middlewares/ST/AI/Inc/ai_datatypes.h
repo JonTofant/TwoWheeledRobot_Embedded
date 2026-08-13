@@ -1,6 +1,3 @@
-
-#ifndef AI_DATATYPES_H
-#define AI_DATATYPES_H
 /**
   ******************************************************************************
   * @file    ai_datatypes.h
@@ -17,7 +14,15 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
+
+#ifndef AI_DATATYPES_H
+#define AI_DATATYPES_H
+#pragma once
+
 #include <string.h>
 #include "ai_platform.h"
 #include "ai_platform_interface.h"

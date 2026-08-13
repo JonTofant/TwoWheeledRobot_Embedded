@@ -14,13 +14,16 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
+
 #ifndef AI_DATATYPES_DEFINES_H
 #define AI_DATATYPES_DEFINES_H
+#pragma once
 
 #include "ai_platform.h"
-#include "core_assert.h"
-
 
 /*!
  * @defgroup datatypes_defines Internal Datatypes Defines Header
@@ -29,6 +32,8 @@
  */
 
 /* define to track datatypes used by codegen */
+#define AI_INTERFACE_TYPE             /* AI_INTERFACE_TYPE */
+
 #define AI_INTERNAL_API               /* AI_INTERNAL_API */
 
 #define AI_CONST                      const
@@ -45,9 +50,14 @@
 #define AI_PRIMITIVE_CAT(a, ...)      a ## __VA_ARGS__
 
 /******************************************************************************/
-#define AI_ASSERT(expr) \
-  CORE_ASSERT(expr)
-
+#ifdef HAS_AI_ASSERT
+#include <assert.h>
+#define AI_ASSERT(cond) \
+  { assert(cond); }
+#else
+#define AI_ASSERT(cond) \
+  AI_WRAP_FUNC(/*AI_ASSERT*/)
+#endif  /*HAS_AI_ASSERT*/
 
 /******************************************************************************/
 #define AI_NO_PACKED_STRUCTS

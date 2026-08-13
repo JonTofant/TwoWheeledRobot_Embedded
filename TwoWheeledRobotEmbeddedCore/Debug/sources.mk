@@ -22,8 +22,9 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-AI/App \
+.ai/run/run-3/Core/Startup \
 Core/Src \
 Core/Startup \
 Drivers/STM32F4xx_HAL_Driver/Src \
+X-CUBE-AI/App \
 

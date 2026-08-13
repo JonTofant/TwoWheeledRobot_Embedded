@@ -14,13 +14,17 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef AI_COMMON_CONFIG_H
 #define AI_COMMON_CONFIG_H
+#pragma once
 
 /*!
  * @defgroup layers Layers Compilation Config Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 

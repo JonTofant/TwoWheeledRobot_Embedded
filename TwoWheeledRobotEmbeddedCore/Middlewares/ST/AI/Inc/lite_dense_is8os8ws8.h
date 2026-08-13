@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file    lite_dense_is8os8ws8.h
-  * @author  AIS
+  * @author  Marco Forleo
   * @brief   header file of AI platform lite dense kernel datatypes
   ******************************************************************************
   * @attention
@@ -14,9 +14,13 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
  */
 #ifndef LITE_DENSE_IS8OS8WS8_H
 #define LITE_DENSE_IS8OS8WS8_H
+#pragma once
 
 #include "ai_lite_interface.h"
 
@@ -53,34 +57,6 @@ void forward_lite_dense_is8os8ws8(ai_i8 * pDataOut,
                                   const ai_float out_scale,
                                   const ai_float Wt_scale,
                                   ai_i16 *pBuffer_a);
-
-void forward_lite_dense_hsp0_is8os8ws8(ai_i8 * pDataOut,
-                                       const ai_i8 *pDataIn,
-                                       const ai_i8 *pWeights,
-                                       const ai_i32 *pBias,
-                                       const ai_i8 in_zeropoint,
-                                       const ai_i8 out_zeropoint,
-                                       const ai_u16 n_channel_in,
-                                       const ai_u16 n_channel_out,
-                                       const ai_size n_pixels,
-                                       const ai_float in_scale,
-                                       const ai_float out_scale,
-                                       const ai_float Wt_scale,
-                                       const ai_u16 bram_size);
-
-void forward_lite_dense_hsp1_is8os8ws8(ai_i8 * pDataOut,
-                                       const ai_i8 *pDataIn,
-                                       const ai_i8 *pWeights,
-                                       const ai_i32 *pBias,
-                                       const ai_i8 in_zeropoint,
-                                       const ai_i8 out_zeropoint,
-                                       const ai_u16 n_channel_in,
-                                       const ai_u16 n_channel_out,
-                                       const ai_size n_pixels,
-                                       const ai_float in_scale,
-                                       const ai_float out_scale,
-                                       const ai_float Wt_scale,
-                                       const ai_u16 bram_size);
 
 void forward_lite_dense_is8os8ws8_ch(ai_i8 * pDataOut,
                                      const ai_i8 *pDataIn,

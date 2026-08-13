@@ -6,13 +6,16 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2018-2024 STMicroelectronics.
+  * Copyright (c) 2018 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
   * in the root directory of this software component.
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
+  ******************************************************************************
+  @verbatim
+  @endverbatim
   ******************************************************************************
   */
 
@@ -101,8 +104,10 @@ LAYER_ENTRY(GATHER, LAYER_ID(28), gather, forward_gather, NULL, NULL)
 LAYER_ENTRY(PACK, LAYER_ID(29), pack, forward_pack, NULL, NULL)
 /*!< Unpack layer */
 LAYER_ENTRY(UNPACK, LAYER_ID(30), unpack, forward_unpack, NULL, NULL)
-/*!< ArgMin & ArgMax layers */
-LAYER_ENTRY(ARGMINMAX, LAYER_ID(31), argminmax, NULL, NULL, NULL)
+/*!< ArgMax layer */
+LAYER_ENTRY(ARGMAX, LAYER_ID(31), argmax, forward_argmax, NULL, NULL)
+/*!< ArgMin layer */
+LAYER_ENTRY(ARGMIN, LAYER_ID(32), argmin, forward_argmin, NULL, NULL)
 /*!< Cast Neural Network Layer */
 LAYER_ENTRY(CAST, LAYER_ID(33), cast, forward_cast, NULL, NULL)
 /*!< iForest layer */
@@ -118,37 +123,28 @@ LAYER_ENTRY(ZIPMAP, LAYER_ID(38), zipmap, forward_zipmap, NULL, NULL)
 /*!< Where layer */
 LAYER_ENTRY(WHERE, LAYER_ID(39), where, forward_where, NULL, NULL)
 /*!< LinearClassifier layer */
-LAYER_ENTRY(LINEARCLASSIFIER, LAYER_ID(40), linearclassifier, forward_linearclassifier, NULL, NULL)
+LAYER_ENTRY(LINEARCLASSIFIER, LAYER_ID(42), linearclassifier, forward_linearclassifier, NULL, NULL)
 /*!< TreeEnsembleClassifier layer */
-LAYER_ENTRY(TREE_ENSEMBLE_CLASSIFIER, LAYER_ID(41), tree_ensemble_classifier, forward_tree_ensemble_classifier, NULL, NULL)
+LAYER_ENTRY(TREE_ENSEMBLE_CLASSIFIER, LAYER_ID(43), tree_ensemble_classifier, forward_tree_ensemble_classifier, NULL, NULL)
 /*!< TopK layer */
-LAYER_ENTRY(TOPK, LAYER_ID(42), topK, forward_topK, NULL, NULL)
+LAYER_ENTRY(TOPK, LAYER_ID(45), topK, forward_topK, NULL, NULL)
 /*!< ReduceLogSumExp layer */
-LAYER_ENTRY(REDUCE_LOG_SUM_EXP, LAYER_ID(43), reduce_log_sum_exp, forward_reduce_log_sum_exp, NULL, NULL)
+LAYER_ENTRY(REDUCE_LOG_SUM_EXP, LAYER_ID(51), reduce_log_sum_exp, forward_reduce_log_sum_exp, NULL, NULL)
 /*!< ReduceL1 layer */
-LAYER_ENTRY(REDUCE_L1, LAYER_ID(44), reduce_l1, forward_reduce_l1, NULL, NULL)
+LAYER_ENTRY(REDUCE_L1, LAYER_ID(52), reduce_l1, forward_reduce_l1, NULL, NULL)
 /*!< Runtime Lite Graph Wrapper layer */
-LAYER_ENTRY(LITE_GRAPH, LAYER_ID(45), lite_graph, NULL, NULL, NULL)
+LAYER_ENTRY(LITE_GRAPH, LAYER_ID(63), lite_graph, NULL, NULL, NULL)
 /*!< TreeEnsembleRegressor layer */
-LAYER_ENTRY(TREE_ENSEMBLE_REGRESSOR, LAYER_ID(46), tree_ensemble_regressor, forward_tree_ensemble_regressor, NULL, NULL)
-/*!< GatherND layer */
-LAYER_ENTRY(GATHER_ND, LAYER_ID(67), gather_nd, forward_gather_nd, NULL, NULL)
-/*!< MATMUL layer */
-LAYER_ENTRY(MATMUL, LAYER_ID(68), matmul, forward_dmatmul, NULL, NULL)
-/*!< GatherElements layer */
-LAYER_ENTRY(GATHER_ELEMENTS, LAYER_ID(70), gather_elements, forward_gather_elements, NULL, NULL)
+LAYER_ENTRY(TREE_ENSEMBLE_REGRESSOR, LAYER_ID(66), tree_ensemble_regressor, forward_tree_ensemble_regressor, NULL, NULL)
+
 /*!< Deeply Quantized Dense Layers */
-LAYER_ENTRY(CONV2D_DQNN, LAYER_ID(48), conv2d_dqnn, forward_pw_is1os1ws1_bn, NULL, NULL)
-LAYER_ENTRY(POOL_DQNN, LAYER_ID(49), pool_dqnn, forward_maxpool_is1os1, NULL, NULL)
+LAYER_ENTRY(CONV2D_DQNN, LAYER_ID(40), conv2d_dqnn, forward_pw_is1os1ws1_bn, NULL, NULL)
+LAYER_ENTRY(POOL_DQNN, LAYER_ID(41), pool_dqnn, forward_maxpool_is1os1, NULL, NULL)
 
-LAYER_ENTRY(DENSE_DQNN, LAYER_ID(50), dense_dqnn, forward_dense_is1os1ws1, NULL, NULL)
+LAYER_ENTRY(DENSE_DQNN, LAYER_ID(44), dense_dqnn, forward_dense_is1os1ws1, NULL, NULL)
 /*!< Reverse layer */
-LAYER_ENTRY(REVERSE, LAYER_ID(51), reverse, forward_reverse, NULL, NULL)
-/*!< ScatterND layer */
-LAYER_ENTRY(SCATTER_ND, LAYER_ID(69), scatter_nd, forward_scatter_nd, NULL, NULL)
+LAYER_ENTRY(REVERSE, LAYER_ID(50), reverse, forward_reverse, NULL, NULL)
 
-/*!< TFLite wrapper */
-LAYER_ENTRY(TFLITE_WRAPPER, LAYER_ID(52), tflite_wrapper, NULL, NULL, NULL)
 
 /*****************************************************************************/
 /*!< Base Stateful Layer type */
@@ -164,13 +160,6 @@ LAYER_ENTRY(GRU, LAYER_STATEFUL_ID(3), gru, forward_gru, init_gru, destroy_gru)
 /* LAYER_ENTRY(TEMPLATE, LAYER_ID(XX), template, forward_template, NULL, NULL) */
 /*!< Stateful Template layer declaration */
 /* LAYER_ENTRY(TEMPLATE, LAYER_STATEFUL_ID(XX), template, forward_template, init_template, destroy_template) */
-
-/*****************************************************************************/
-/*!< Softmax Cross Entropy Loss layer */
-LAYER_ENTRY(SOFTMAXCROSSENTROPYLOSS, LAYER_ID(100), softmaxcrossentropyloss, forward_softmaxcrossentropyloss, NULL, NULL)
-LAYER_ENTRY(SOFTMAXCROSSENTROPYLOSSGRAD, LAYER_ID(101), softmaxcrossentropylossgrad, backward_softmaxcrossentropylossgrad, NULL, NULL)
-LAYER_ENTRY(INPLACEACCUMULATORV2, LAYER_ID(102), inplaceaccumulatorv2, backward_inplaceaccumulatorv2, NULL, NULL)
-LAYER_ENTRY(RELU_GRAD, LAYER_ID(103), relu_grad, backward_relu, NULL, NULL)
 
 #undef LAYER_ENTRY
 #undef LAYER_ID

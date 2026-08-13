@@ -14,16 +14,20 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 
 #ifndef LAYERS_LITE_GRAPH_H
 #define LAYERS_LITE_GRAPH_H
+#pragma once
 
 #include "core_common.h"
 
 /*!
  * @defgroup layers_lite_graph Lite Graph Wrapper Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 

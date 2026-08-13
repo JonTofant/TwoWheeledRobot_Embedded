@@ -15,10 +15,14 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
+
 #ifndef AI_CORE_DATATYPES_H
 #define AI_CORE_DATATYPES_H
-
+#pragma once
 #include <stdint.h>
 
 /*!
@@ -29,15 +33,14 @@
 /*!
  * @brief platform runtime core library version
  */
-#ifndef AI_PLATFORM_RUNTIME_MAJOR
-#define AI_PLATFORM_RUNTIME_MAJOR    (12)
-#endif
-#ifndef AI_PLATFORM_RUNTIME_MINOR
-#define AI_PLATFORM_RUNTIME_MINOR    (0)
-#endif
-#ifndef AI_PLATFORM_RUNTIME_MICRO
-#define AI_PLATFORM_RUNTIME_MICRO    (1)
-#endif
+#define AI_PLATFORM_RUNTIME_MAJOR    8
+#define AI_PLATFORM_RUNTIME_MINOR    1
+#define AI_PLATFORM_RUNTIME_MICRO    0
+#define AI_PLATFORM_RUNTIME_BUILD    A1-SNAPSHOT
+
+#define AI_MAGIC_CONTEXT_TOKEN       (0xA1C00100)   /*!< AI Cool! Magic Token */
+
+#define AI_MAGIC_INSPECTOR_TOKEN     (0xA1C00101)   /*!< AI Cool! Magic Token */
 
 
 #define AI_ID_OBJ(id) \
@@ -53,9 +56,9 @@
 /*!
  * @typedef ai_id_obj
  * @ingroup core_datatypes
- * @brief numeric identifier for generic object instances (e.g. layers,
+ * @brief numeric identifier for generic object instances (e.g. layers, 
  * operators, etc.) It is used by codegen tool to keep tracks of specific
- * instances created
+ * instances created 
  */
 typedef uint16_t ai_id_obj;
 

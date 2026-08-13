@@ -15,9 +15,13 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef LAYERS_GENERIC_H
 #define LAYERS_GENERIC_H
+#pragma once
 
 #include "layers_common.h"
 
@@ -33,7 +37,7 @@ typedef enum {
 
 /*!
  * @defgroup layers_generic Generic Layers Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 
@@ -57,11 +61,21 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_time_delay_ {
  * This layer defines the params of a splitting layer. It is intended to be used
  * by his associated forward function @ref forward_split
  */
+//typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_split_ {
+//  AI_LAYER_COMMON_FIELDS_DECLARE
+//  ai_u16             out_layers_count; /*!< number of output layers to split*/
+//  ai_u16             out_layer_curr;   /*!< current layer to split  */
+//  ai_layer**         out_layers;  /*!< output layers list */
+//  ai_tensor**        out_tensors; /*!< output tensors list */
+//  ai_tensor*         in_tensor;   /*!< input tensor */
+//  func_copy_tensor   copy_to_out_tensor; /*!< pointer to copy tensor func
+//                                         (NULL = no copy) */
+//} ai_layer_split;
 
 typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_split_ {
     AI_LAYER_COMMON_FIELDS_DECLARE
-    const ai_i32              outer_elems;
-    const ai_i32              outer_elems_stride;
+    ai_shape_dimension axis;
+    //ai_tensor* num_or_size_splits;
 } ai_layer_split;
 
 
@@ -113,32 +127,6 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_gather_ {
   ai_tensor* indices;  /*!< Indices of corrisponding axis in axes*/
   } ai_layer_gather;
 
-/*!
- * @struct ai_layer_gather_elements
- * @ingroup layers_generic
- * @brief GatherElements layer definition
- *
- * This layer defines the params of a gathering layer. It is intended to be used
- * by his associated forward function @ref forward_gather_elements
- */
-typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_gather_elements_ {
-  AI_LAYER_COMMON_FIELDS_DECLARE
-  ai_i16 axis;    /*!< Which axis to gather on It's optional*/
-  ai_tensor* indices;  /*!< Indices of corrisponding axis in axes*/
-  } ai_layer_gather_elements;
-
-/*!
- * @struct ai_layer_gather_nd
- * @ingroup layers_generic
- * @brief GatherND layer definition
- *
- * This layer defines the params of a gathering layer (ND). It is intended to be used
- * by his associated forward function @ref forward_gather_nd
- */
-typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_gather_nd_ {
-  AI_LAYER_COMMON_FIELDS_DECLARE
-  ai_tensor* indices;  /*!< Indices of corrisponding slices of inputs*/
-  } ai_layer_gather_nd;
 
 /*!
  * @struct ai_layer_tile
@@ -153,6 +141,7 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_tile_{
   AI_LAYER_COMMON_FIELDS_DECLARE
   AI_CONST ai_array* repeats;  /*!< numbers of repeated copies along each dimension */
 } ai_layer_tile;
+
 
 /*!
  * @struct ai_layer_shape
@@ -251,7 +240,7 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_constantofshape_{
  * @ingroup layers_generic
  * @brief Add layer definition
  *
- * This layer defines the params of an add layer.
+ * This layer defines the params of an add layer. 
  */
 typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_add_ {
   AI_LAYER_COMMON_FIELDS_DECLARE
@@ -260,16 +249,27 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_add_ {
   ai_tensor**        in_tensors;  /*!< input tensors list (if NULL==no copy) */
   ai_tensor*         out_tensor;  /*!< output tensor (if NULL==no copy) */
   func_copy_tensor   copy_to_out_tensor; /*!< pointer to copy tensor func
-                                         (NULL = no copy) */
+                                         (NULL = no copy) */ 
   ai_layer_base*     split_layer; /*!< pointer to associated split layer */
   ai_layer_base*     next_layer;  /*!< pointer to next layer to process */
 } ai_layer_add;
 
-typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_argminmax_ {
+typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_argmax_ {
   AI_LAYER_COMMON_FIELDS_DECLARE
   ai_i16   axis;
   ai_i16   select_last_index;
-} ai_layer_argminmax;
+} ai_layer_argmax;
+
+typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_argmin_ {
+  AI_LAYER_COMMON_FIELDS_DECLARE
+  ai_i16   axis;
+  ai_i16   select_last_index;
+} ai_layer_argmin;
+
+// TODO: REMOVE This legacy
+typedef ai_layer_argmax ai_layer_ArgMax;
+typedef ai_layer_argmin ai_layer_ArgMin;
+
 
 /*!
  * @struct ai_layer_transpose
@@ -350,7 +350,7 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_unpack_ {
 typedef void (*func_binary)(ai_handle out,const ai_handle a, const ai_handle b);
 typedef void (*func_buffer_binary)(ai_handle out,const ai_handle a, const ai_handle b, const ai_size loop);
 typedef void (*func_buffer_binary_integer)(ai_handle out,const ai_handle a, const ai_handle b, const ai_size loop,
-                                        const ai_handle scale1, const ai_handle zp1, const ai_handle scale2, const ai_handle zp2,
+                                        const ai_handle scale1, const ai_handle zp1, const ai_handle scale2, const ai_handle zp2, 
                                         const ai_handle scaleout, const ai_handle zpout, const ai_i32 scalar_op);
 
 /*!
@@ -380,22 +380,6 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_eltwise_integer_ {
   func_binary operation;       /*!< operation to apply elementwise */
   func_buffer_binary_integer buffer_operation; /*!< operation to apply elementwise */
 } ai_layer_eltwise_integer;
-
-/*!
- * @struct ai_layer_scatter_nd
- * @ingroup layers_generic
- * @brief ScatterND layer definition
- *
- * This layer defines the params of a scattering layer (ND). It is intended to be used
- * by his associated forward function @ref forward_scatter_nd
- */
-typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_scatter_nd_ {
-  AI_LAYER_COMMON_FIELDS_DECLARE
-  ai_tensor* indices;  /*!< Indices of corrisponding slices of inputs*/
-  ai_tensor* updates;  /*!< Updates of corrisponding slices of inputs*/
-  func_binary operation;    /*!< operation to apply elementwise */
-  ai_scatter_nd_reduction reduction; /*!< Reduction operation in ScatterND layer*/
-} ai_layer_scatter_nd;
 
 /*!
  * @struct ai_layer_reduce
@@ -522,7 +506,7 @@ void forward_add(ai_layer* layer);
 /*!
  * @brief Compute the indices of the max elements of the input tensor's element along the provided axis.
  * @ingroup layers_generic
- * @param layer argminmax layer
+ * @param layer argmax layer
  */
 AI_INTERNAL_API
 void forward_argmax(ai_layer* layer);
@@ -530,7 +514,7 @@ void forward_argmax(ai_layer* layer);
 /*!
  * @brief Compute the indices of the min elements of the input tensor's element along the provided axis.
  * @ingroup layers_generic
- * @param layer argminmax layer
+ * @param layer argmin layer
  */
 AI_INTERNAL_API
 void forward_argmin(ai_layer* layer);
@@ -563,7 +547,7 @@ void forward_transpose_batch(ai_layer* layer);
 
 /*!
  * @brief TimeDistrubuted forward layer function. This forward function
- * implements the timedistributed layer.
+ * implements the timedistributed layer. 
  * @ingroup layers_generic
  * @param layer the time distributed layer
  */
@@ -601,40 +585,6 @@ void forward_concat(ai_layer* layer);
  */
 AI_INTERNAL_API
 void forward_gather(ai_layer* layer);
-
-/*!
- * @brief Gather an input tensor
- * @ingroup layers_generic
- * @param layer the gathered layer
- */
-AI_INTERNAL_API
-void forward_gather_elements(ai_layer* layer);
-
-
-
-/*!
- * @brief GatherND an input tensor
- * @ingroup layers_generic
- * @param layer the gathered layer (ND)
- */
-AI_INTERNAL_API
-void forward_gather_nd(ai_layer* layer);
-
-/*!
- * @brief GatherND channel first an input tensor
- * @ingroup layers_generic
- * @param layer the gathered layer (ND)
- */
-AI_INTERNAL_API
-void forward_gather_nd_channel_first(ai_layer* layer);
-
-/*!
- * @brief ScatterND an input tensor
- * @ingroup layers_generic
- * @param layer the scattered layer (ND)
- */
-AI_INTERNAL_API
-void forward_scatter_nd(ai_layer* layer);
 
 /*!
  * @brief Slice an input tensors

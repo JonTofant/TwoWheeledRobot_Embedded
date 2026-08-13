@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file    lite_dense_is8os1ws1.h
-  * @author  AIS
+  * @author  Marco Forleo
   * @brief   header file of AI platform lite dense kernel datatypes
   ******************************************************************************
   * @attention
@@ -14,10 +14,14 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
+
 #ifndef LITE_DENSE_IS8OS1WS1_H
 #define LITE_DENSE_IS8OS1WS1_H
-
+#pragma once
 
 #include "ai_lite_interface.h"
 

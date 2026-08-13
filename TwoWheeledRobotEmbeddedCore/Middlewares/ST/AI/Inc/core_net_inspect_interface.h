@@ -14,9 +14,14 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
-#ifndef CORE_NET_INSPECT_INTERFACE_H
-#define CORE_NET_INSPECT_INTERFACE_H
+
+#ifndef __CORE_NET_INSPECT_INTERFACE_H_
+#define __CORE_NET_INSPECT_INTERFACE_H_
+#pragma once
 
 #include "ai_platform.h"
 
@@ -24,7 +29,7 @@ AI_API_DECLARE_BEGIN
 
 /*!
  * @defgroup core_validation Validation Core
- * @brief Implementation of the validation network interface headers
+ * @brief Implementation of the validation network interface headers 
  */
 
 
@@ -35,12 +40,12 @@ AI_API_DECLARE_BEGIN
  */
 typedef struct ai_inspect_node_info_s {
   ai_u16                type; /*!< node type info @see ai_node datastruct */
-  ai_u16                id;   /*!< node id assigned by codegen tool to identify
+  ai_u16                id;   /*!< node id assigned by codegen tool to identify 
                               the specific node instance */
   ai_u16                batch_id; /*!< current node batch processed */
   ai_u16                n_batches; /*!< total number of node batches to process */
   ai_float              elapsed_ms; /*!< node performance analysys: time in
-                                    milliseconds to execute the node forward
+                                    milliseconds to execute the node forward 
                                     function */
   ai_u16                in_size; /*!< number of node's input activation buffers */
   ai_u16                out_size; /*!< number of node's output activation buffers */
@@ -55,13 +60,13 @@ typedef struct ai_inspect_node_info_s {
 typedef struct ai_inspect_net_report_s {
   ai_u32                id;         /*!< id of the report */
   ai_signature          signature;  /*!< network identification checksum */
-  ai_u32                num_inferences; /*!< total number of inferences processed
+  ai_u32                num_inferences; /*!< total number of inferences processed 
                                         during the inspection */
   ai_u32                n_nodes;    /*!< number of nodes in the network */
   ai_float              elapsed_ms; /*!< network total time (in ms) for processing
                                      num_inferences inferences */
   ai_inspect_node_info* node;     /*!< pointer to the array of size n_nodes where
-                                    a single node report is reported. see @ref
+                                    a single node report is reported. see @ref 
                                      ai_inspect_node_info datastruct */
 } ai_inspect_net_report;
 
@@ -114,4 +119,4 @@ typedef struct ai_inspect_config_s {
 
 AI_API_DECLARE_END
 
-#endif    /* CORE_NET_INSPECT_INTERFACE_H */
+#endif    /*__CORE_NET_INSPECT_INTERFACE_H_*/

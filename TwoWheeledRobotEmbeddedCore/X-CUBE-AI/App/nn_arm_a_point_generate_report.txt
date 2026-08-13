@@ -1,0 +1,185 @@
+Neural Network Tools for STM32 family v1.7.0 (stm.ai v8.1.0-19520)
+Created date          : 2026-08-13 09:04:32
+Parameters            : generate --name nn_arm_a_point -m C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/AI_Policies/Paper 2026/policy_candidate_a_point.onnx --type onnx --compression none --verbosity 1 --workspace C:\Users\jon\AppData\Local\Temp\mxAI_workspace1278201286045008328593660250487931 --output C:\Users\jon\.stm32cubemx\nn_arm_a_point_output --allocate-inputs --series stm32f4 --allocate-outputs
+
+Exec/report summary (generate)
+------------------------------------------------------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\AI_Policies\Paper 2026\policy_candidate_a_point.onnx   
+type               :   onnx                                                                                                                           
+c_name             :   nn_arm_a_point                                                                                                                 
+compression        :   none                                                                                                                           
+options            :   allocate-inputs, allocate-outputs                                                                                              
+optimization       :   balanced                                                                                                                       
+target/series      :   stm32f4                                                                                                                        
+workspace dir      :   C:\Users\jon\AppData\Local\Temp\mxAI_workspace1278201286045008328593660250487931                                               
+output dir         :   C:\Users\jon\.stm32cubemx\nn_arm_a_point_output                                                                                
+model_fmt          :   float                                                                                                                          
+model_name         :   policy_candidate_a_point                                                                                                       
+model_hash         :   0849ba7b3d771c708980dfe8c5fbe04f                                                                                               
+params #           :   5,187 items (20.26 KiB)                                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------
+input 1/1          :   'obs' (domain:activations/**default**)                                                                                         
+                   :   13 items, 52 B, ai_float, float, (1,13)                                                                                        
+output 1/1         :   'current_a' (domain:activations/**default**)                                                                                   
+                   :   2 items, 8 B, ai_float, float, (1,2)                                                                                           
+macc               :   5,336                                                                                                                          
+weights (ro)       :   20,748 B (20.26 KiB) (1 segment)                                                                                               
+activations (rw)   :   512 B (512 B) (1 segment) *                                                                                                    
+ram (total)        :   512 B (512 B) = 512 + 0 + 0                                                                                                    
+------------------------------------------------------------------------------------------------------------------------------------------------------
+(*) 'input'/'output' buffers can be used from the activations buffer
+
+Model name - policy_candidate_a_point ['obs'] ['current_a']
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+m_id   layer (type,original)                                 oshape             param/size        macc                     connected to   | c_size          c_macc            c_type                   
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+1      actor_0_weight (Placeholder, Gemm)                    [h:64,h:64,c:13]   832/3,328                                                 | +256(+7.7%)     +896(+100.0%)     dense_of32[0]            
+       actor_0_bias (Placeholder, Gemm)                      [c:64]             64/256                                                    | -256(-100.0%)                     
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+3      actor_2_weight (Placeholder, Gemm)                    [h:64,h:64,c:64]   4,096/16,384                                              | +256(+1.6%)     +4,160(+100.0%)   dense_of32[2]            
+       actor_2_bias (Placeholder, Gemm)                      [c:64]             64/256                                                    | -256(-100.0%)                     
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+5      actor_4_weight (Placeholder, Gemm)                    [h:2,h:2,c:64]     128/512                                                   | +8(+1.6%)       +130(+100.0%)     dense_of32[4]            
+       actor_4_bias (Placeholder, Gemm)                      [c:2]              2/8                                                       | -8(-100.0%)                       
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+7      output_scale (Placeholder, Mul)                       []                 1/4                                                       |                 +2(+100.0%)       eltwise/mul_of32[o][6]   
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+0      obs (Input, )                                         [b:1,c:13]                                                                   |                                   
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+1      _actor_actor_0_Gemm_output_0 (Gemm, Gemm)             [b:1,c:64]                            896                              obs   |                 -896(-100.0%)     
+                                                                                                                         actor_0_weight   | 
+                                                                                                                           actor_0_bias   | 
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+2      _actor_actor_1_Relu_output_0 (Nonlinearity, Relu)     [b:1,c:64]                             64     _actor_actor_0_Gemm_output_0   |                                   nl_of32[1]               
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+3      _actor_actor_2_Gemm_output_0 (Gemm, Gemm)             [b:1,c:64]                          4,160     _actor_actor_1_Relu_output_0   |                 -4,160(-100.0%)   
+                                                                                                                         actor_2_weight   | 
+                                                                                                                           actor_2_bias   | 
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+4      _actor_actor_1_1_Relu_output_0 (Nonlinearity, Relu)   [b:1,c:64]                             64     _actor_actor_2_Gemm_output_0   |                                   nl_of32[3]               
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+5      actions (Gemm, Gemm)                                  [b:1,c:2]                             130   _actor_actor_1_1_Relu_output_0   |                 -130(-100.0%)     
+                                                                                                                         actor_4_weight   | 
+                                                                                                                           actor_4_bias   | 
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+6      actions_tanh (Nonlinearity, Tanh)                     [b:1,c:2]                              20                          actions   |                                   nl_of32[5]               
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+7      current_a (Eltwise, Mul)                              [b:1,c:2]                               2                     actions_tanh   |                 -2(-100.0%)       
+                                                                                                                           output_scale   | 
+------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------ 
+model/c-model: macc=5,336/5,336  weights=20,748/20,748  activations=--/512 io=--/0
+
+
+
+Generated C-graph summary
+------------------------------------------------------------------------------------------------------------------------
+model name            : policy_candidate_a_point
+c-name                : nn_arm_a_point
+c-node #              : 7
+c-array #             : 15
+activations size      : 512 (1 segment)
+weights size          : 20748 (1 segment)
+macc                  : 5336
+inputs                : ['obs_output']
+outputs               : ['current_a_output']
+
+C-Arrays (15)
+------ --------------------------------------- ------------ ------------------------- ------------- --------- --------- 
+c_id   name (*_array)                          item/size    domain/mem-pool           c-type        fmt       comment   
+------ --------------------------------------- ------------ ------------------------- ------------- --------- --------- 
+0      _actor_actor_0_Gemm_output_0_bias       64/256       weights/weights           const float   float32             
+1      _actor_actor_2_Gemm_output_0_weights    4096/16384   weights/weights           const float   float32             
+2      _actor_actor_2_Gemm_output_0_bias       64/256       weights/weights           const float   float32             
+3      actions_weights                         128/512      weights/weights           const float   float32             
+4      actions_bias                            2/8          weights/weights           const float   float32             
+5      obs_output                              13/52        activations/**default**   float         float32   /input    
+6      output_scale                            1/4          weights/weights           const float   float32             
+7      _actor_actor_0_Gemm_output_0_output     64/256       activations/**default**   float         float32             
+8      _actor_actor_1_Relu_output_0_output     64/256       activations/**default**   float         float32             
+9      _actor_actor_2_Gemm_output_0_output     64/256       activations/**default**   float         float32             
+10     _actor_actor_1_1_Relu_output_0_output   64/256       activations/**default**   float         float32             
+11     actions_output                          2/8          activations/**default**   float         float32             
+12     actions_tanh_output                     2/8          activations/**default**   float         float32             
+13     current_a_output                        2/8          activations/**default**   float         float32   /output   
+14     _actor_actor_0_Gemm_output_0_weights    832/3328     weights/weights           const float   float32             
+------ --------------------------------------- ------------ ------------------------- ------------- --------- --------- 
+
+C-Layers (7)
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+c_id   name (*_layer)                   id   layer_type     macc   rom     tensors                                    shape (array id)   
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+0      _actor_actor_0_Gemm_output_0     1    dense          896    3584    I: obs_output                              (1,13) (5)         
+                                                                           W: _actor_actor_0_Gemm_output_0_weights    (13,64) (14)       
+                                                                           W: _actor_actor_0_Gemm_output_0_bias       (64,) (0)          
+                                                                           O: _actor_actor_0_Gemm_output_0_output     (1,64) (7)         
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+1      _actor_actor_1_Relu_output_0     2    nl             64     0       I: _actor_actor_0_Gemm_output_0_output     (1,64) (7)         
+                                                                           O: _actor_actor_1_Relu_output_0_output     (1,64) (8)         
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+2      _actor_actor_2_Gemm_output_0     3    dense          4160   16640   I: _actor_actor_1_Relu_output_0_output     (1,64) (8)         
+                                                                           W: _actor_actor_2_Gemm_output_0_weights    (64,64) (1)        
+                                                                           W: _actor_actor_2_Gemm_output_0_bias       (64,) (2)          
+                                                                           O: _actor_actor_2_Gemm_output_0_output     (1,64) (9)         
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+3      _actor_actor_1_1_Relu_output_0   4    nl             64     0       I: _actor_actor_2_Gemm_output_0_output     (1,64) (9)         
+                                                                           O: _actor_actor_1_1_Relu_output_0_output   (1,64) (10)        
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+4      actions                          5    dense          130    520     I: _actor_actor_1_1_Relu_output_0_output   (1,64) (10)        
+                                                                           W: actions_weights                         (64,2) (3)         
+                                                                           W: actions_bias                            (2,) (4)           
+                                                                           O: actions_output                          (1,2) (11)         
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+5      actions_tanh                     6    nl             20     0       I: actions_output                          (1,2) (11)         
+                                                                           O: actions_tanh_output                     (1,2) (12)         
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+6      current_a                        7    eltwise/mul    2      4       I: actions_tanh_output                     (1,2) (12)         
+                                                                           I: output_scale                            (1,) (6)           
+                                                                           O: current_a_output                        (1,2) (13)         
+------ -------------------------------- ---- -------------- ------ ------- ------------------------------------------ ------------------ 
+
+
+
+Number of operations per c-layer
+------- ------ -------------------------------------- ------- -------------- -------- ---------- 
+c_id    m_id   name (type)                                #op           type   #param   sparsity 
+------- ------ -------------------------------------- ------- -------------- -------- ---------- 
+0       1      _actor_actor_0_Gemm_output_0 (dense)       896   smul_f32_f32      896     0.0000 
+1       2      _actor_actor_1_Relu_output_0 (nl)           64     op_f32_f32          
+2       3      _actor_actor_2_Gemm_output_0 (dense)     4,160   smul_f32_f32    4,160     0.0000 
+3       4      _actor_actor_1_1_Relu_output_0 (nl)         64     op_f32_f32          
+4       5      actions (dense)                            130   smul_f32_f32      130     0.0000 
+5       6      actions_tanh (nl)                           20     op_f32_f32          
+6       7      current_a (eltwise/mul)                      2     op_f32_f32        1     0.0000 
+------- ------ -------------------------------------- ------- -------------- -------- ---------- 
+total                                                   5,336                   5,187     0.0000 
+
+Number of operation types
+---------------- ------- ----------- 
+operation type         #           % 
+---------------- ------- ----------- 
+smul_f32_f32       5,186       97.2% 
+op_f32_f32           150        2.8% 
+
+Complexity report (model)
+------ -------------------------------- ------------------------- ------------------------- ------ 
+m_id   name                             c_macc                    c_rom                     c_id   
+------ -------------------------------- ------------------------- ------------------------- ------ 
+1      actor_0_weight                   ||||              16.8%   ||||              17.3%   [0]    
+3      actor_2_weight                   ||||||||||||||||  78.0%   ||||||||||||||||  80.2%   [2]    
+5      actor_4_weight                   |                  2.4%   |                  2.5%   [4]    
+7      output_scale                     |                  0.0%   |                  0.0%   [6]    
+2      _actor_actor_1_Relu_output_0     |                  1.2%   |                  0.0%   [1]    
+4      _actor_actor_1_1_Relu_output_0   |                  1.2%   |                  0.0%   [3]    
+6      actions_tanh                     |                  0.4%   |                  0.0%   [5]    
+------ -------------------------------- ------------------------- ------------------------- ------ 
+macc=5,336 weights=20,748 act=512 ram_io=0
+
+Generated files (7)
+------------------------------------------------------------------------------ 
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point_config.h        
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point.h               
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point.c               
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point_data_params.h   
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point_data_params.c   
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point_data.h          
+C:\Users\jon\.stm32cubemx\nn_arm_a_point_output\nn_arm_a_point_data.c          

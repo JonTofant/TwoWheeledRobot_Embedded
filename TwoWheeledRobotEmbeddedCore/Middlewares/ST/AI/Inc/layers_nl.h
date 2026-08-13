@@ -14,16 +14,19 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef LAYERS_NL_H
 #define LAYERS_NL_H
+#pragma once
 
 #include "layers_common.h"
-#include "lite_internal_apis.h"
 
 /*!
  * @defgroup layers_nl Normalization Layers Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 
@@ -49,11 +52,7 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_nl_ {
  *
  * It is a sequential layer. see @ref ai_layer
  */
-typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_sm_ {
-  AI_LAYER_COMMON_FIELDS_DECLARE
-  AI_CONST ai_array* nl_params;  /*!< associated parameters array */
-  ai_i16   axis;
-} ai_layer_sm;
+typedef ai_layer_nl ai_layer_sm;
 
 /*!
  * @typedef (*func_nl)
@@ -216,18 +215,6 @@ void nl_func_swish_array_f32(ai_tensor *out, const ai_tensor *in,
 AI_INTERNAL_API
 void nl_func_hard_swish_array_f32(ai_tensor *out, const ai_tensor *in,
                                   const ai_size size, const ai_handle params);
-
-/*!
- * @brief Computes the gelu function on a float data array
- * @ingroup layers_nl
- * @param in opaque handler to float, size should be 1
- * @param out opaque handler to float output elem
- * @param size number of elements in the input buffer
- * @param params opaque handler to optional nl parameters
- */
-AI_INTERNAL_API
-void nl_func_gelu_array_f32(ai_tensor *out, const ai_tensor *in,
-                             const ai_size size, const ai_handle params);
 
 /*!
  * @brief Computes the absolute value function on a float data array
@@ -733,7 +720,7 @@ void forward_relu(ai_layer* layer);
  * @ingroup layers_nl
  * @param layer the nonlinear (nl) layer
  */
-AI_INTERNAL_API
+AI_INTERNAL_API 
 void forward_relu_fixed(ai_layer *pLayer);
 
 /*!
@@ -741,7 +728,7 @@ void forward_relu_fixed(ai_layer *pLayer);
  * @ingroup layers_nl
  * @param layer the nonlinear (nl) layer
  */
-AI_INTERNAL_API
+AI_INTERNAL_API 
 void forward_relu_integer(ai_layer *pLayer);
 
 /*!
@@ -765,7 +752,7 @@ void forward_relu_thresholded(ai_layer* layer);
  * @ingroup layers_nl
  * @param layer the nonlinear (nl) layer
  */
-AI_INTERNAL_API
+AI_INTERNAL_API 
 void forward_relu_max_fixed(ai_layer *pLayer);
 
 
@@ -848,14 +835,6 @@ void forward_swish(ai_layer* layer);
  */
 AI_INTERNAL_API
 void forward_hard_swish(ai_layer* layer);
-
-/*!
- * @brief Computes the activations of a gelu nonlinear layer.
- * @ingroup layers_nl
- * @param layer the nonlinear (nl) layer
- */
-AI_INTERNAL_API
-void forward_gelu(ai_layer* layer);
 
 /*!
  * @brief Computes the activations of an exponential nonlinear layer.
@@ -1107,7 +1086,7 @@ void forward_sm_integer(ai_layer* layer);
 
 /*!
  * @brief Computes the activations of an integer quantized nonlinear layer.
- *        Non linear operation is function of used LUT defined through
+ *        Non linear operation is function of used LUT defined through 
  *        (pLayer->nl_params->data)
  * @ingroup layers_nl
  * @param layer the nonlinear (nl) layer
@@ -1117,7 +1096,7 @@ void forward_nl_integer(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of an integer quantized PReLu.
- *        Slope params are located like weights, not params because they are
+ *        Slope params are located like weights, not params because they are 
  *        quantized
  * @ingroup layers_nl
  * @param layer the nonlinear (nl) layer

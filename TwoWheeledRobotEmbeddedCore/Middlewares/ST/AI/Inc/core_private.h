@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    core_private.h
   * @author  AST Embedded Analytics Research Platform
-  * @brief   private header file of common private core private module defines
+  * @brief   private header file of common private core module defines
   ******************************************************************************
   * @attention
   *
@@ -14,22 +14,25 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
+
 #ifndef CORE_PRIVATE_H
 #define CORE_PRIVATE_H
+#pragma once
 
-#include "ai_datatypes_format.h"
-#include "ai_datatypes_internal.h"
 #include "ai_math_helpers.h"
+#include "ai_datatypes_internal.h"
 
-#include "core_assert.h"
 #include "core_log.h"
 
 /*!
  * @defgroup core_private Core Library Private macros and datatypes
  * @brief Common macros, datatypes and routines for core private rounites
  * @details This module contains the definitons and implementations of some
- * internal routines and datatypes that are supposed to not be exposed as
+ * internal routines and datatypes that are supposed to not be exposed as 
  * public headers. So usually this file should be include only on .c files or
  * headers that are private as well
  */
@@ -169,7 +172,7 @@ do { \
     AI_BUFFER_FMT_GET_TYPE(AI_ARRAY_OBJ(t_->data)->format)
 
 #define AI_TENSOR_GET_FMT(t_) \
-    AI_FMT_OBJ(AI_ARRAY_OBJ(t_->data)->format)
+    (AI_ARRAY_OBJ(t_->data)->format)
 
 
 /*****************************************************************************/
@@ -186,10 +189,7 @@ do { \
 /** Network Arrays Handlers                                                 **/
 /*****************************************************************************/
 #define AI_ARRAY_OBJ_FMT(array_) \
-  AI_FMT_OBJ(AI_ARRAY_OBJ(array_)->format)
-
-#define AI_ARRAY_OBJ_FMT_GET(array_) \
-  AI_FMT_GET(AI_ARRAY_OBJ_FMT(array_))
+  AI_CAST(ai_array_format, AI_ARRAY_OBJ(array_)->format)
 
 #define AI_ARRAY_OBJ_SIZE(array_) \
   (AI_ARRAY_OBJ(array_)->size)
@@ -270,11 +270,11 @@ ai_address_range core_address_range_init(
   const ai_handle start, const ai_handle end)
 {
   ai_address_range r;
-
-  r.start = (ai_ptr)((start<end) ? start : end);
-  r.size  = (ai_size) ((start<end)
+  
+  r.start = (start<end) ? start : end;
+  r.size  = (ai_size) ((start<end) 
     ? ((ai_uptr)end-(ai_uptr)start) : ((ai_uptr)start-(ai_uptr)end));
-  return r;
+  return r;  
 }
 
 AI_DECLARE_STATIC

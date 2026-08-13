@@ -56,6 +56,14 @@ typedef struct __attribute__((packed)) {
 	// DESIRED VELOCITIES
 	float desired_velocity_right;
 	float desired_velocity_left;
+
+	// NN POLICY (NNDriveFixedStance, STM32_DEPLOYMENT.md): 13 obs fed to the network this
+	// tick, and its 2 raw wheel-current outputs (pre sign-flip/clamp - see main.c's
+	// ddsm_NN_current_command[] for the sent value). Add a GRU hidden-state sanity field
+	// here (e.g. an L2 norm, not the full 64 floats) once the GRU policy is wired in.
+	float nn_obs[13];
+	float nn_action_left_A;
+	float nn_action_right_A;
 } TelemetryPayload_t;
 
 // This structure defines the full packet, including SOF and checksum.

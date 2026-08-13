@@ -1,23 +1,6 @@
-/**
-  ******************************************************************************
-  * @file    lite_dense_is1.h
-  * @author  AIS
-  * @brief   header file of AI platform lite argmin argmax funcions
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-#ifndef LITE_DENSE_IS1_H
-#define LITE_DENSE_IS1_H
-
+#ifndef _LITE_DENSE_IS1_H
+#define _LITE_DENSE_IS1_H
+#pragma once
 
 #include "ai_lite_interface.h"
 
@@ -68,4 +51,4 @@ void forward_lite_dense_is1of32wf32_bn(
   const ai_u32 n_channel_in, const ai_u32 n_channel_out
 );
 
-#endif    /* LITE_DENSE_IS1_H */
+#endif    /*_LITE_DENSE_IS1_H*/

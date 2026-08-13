@@ -14,9 +14,13 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 #ifndef LAYERS_POOL_H
 #define LAYERS_POOL_H
+#pragma once
 
 #include "layers_common.h"
 #include "lite_maxpool_dqnn.h"
@@ -24,7 +28,7 @@
 
 /*!
  * @defgroup layers_pool Pooling Layers Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 
@@ -44,8 +48,6 @@ typedef AI_ALIGNED_TYPE(struct, 4) ai_layer_pool_ {
   ai_shape_2d pool_stride;          /*!< pooling stride */
   ai_shape    pool_pad;             /*!< pooling pad, y,x border sizes */
   ai_u8       count_include_pad;    /*!< include pad flag */
-  ai_u16      hsp_bram_size;        /*!< hsp_bram_size                              */ 
-
 } ai_layer_pool;
 
 
@@ -73,8 +75,8 @@ void pool_func_mp_array_fixed(ai_handle in,
                       const ai_u16 ch_im_in,
                       const ai_u16 dim_kernel_x, const ai_u16 dim_kernel_y,
                       const ai_u16 padding_x, const ai_u16 padding_y,
-                      const ai_u16 stride_x, const ai_u16 stride_y,
-                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y,
+                      const ai_u16 stride_x, const ai_u16 stride_y, 
+                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y, 
                       ai_handle out);
 
 /*!
@@ -100,8 +102,8 @@ void pool_func_mp_array_integer(ai_handle in,
                       const ai_u16 ch_im_in,
                       const ai_u16 dim_kernel_x, const ai_u16 dim_kernel_y,
                       const ai_u16 padding_x, const ai_u16 padding_y,
-                      const ai_u16 stride_x, const ai_u16 stride_y,
-                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y,
+                      const ai_u16 stride_x, const ai_u16 stride_y, 
+                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y, 
                       ai_handle out);
 
 /*!
@@ -127,8 +129,8 @@ void pool_func_mp_array_integer_INT8(ai_handle in,
                       const ai_u16 ch_im_in,
                       const ai_u16 dim_kernel_x, const ai_u16 dim_kernel_y,
                       const ai_u16 padding_x, const ai_u16 padding_y,
-                      const ai_u16 stride_x, const ai_u16 stride_y,
-                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y,
+                      const ai_u16 stride_x, const ai_u16 stride_y, 
+                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y, 
                       ai_handle out);
 
 /*!
@@ -154,8 +156,8 @@ void pool_func_mp_array_integer_UINT8(ai_handle in,
                       const ai_u16 ch_im_in,
                       const ai_u16 dim_kernel_x, const ai_u16 dim_kernel_y,
                       const ai_u16 padding_x, const ai_u16 padding_y,
-                      const ai_u16 stride_x, const ai_u16 stride_y,
-                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y,
+                      const ai_u16 stride_x, const ai_u16 stride_y, 
+                      const ai_u16 dim_im_out_x, const ai_u16 dim_im_out_y, 
                       ai_handle out);
 
 /*!
@@ -305,26 +307,6 @@ void forward_mp_integer_INT8(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of an integer-quantized max pooling layer
- *        with int8 I/O. Optimized for HSP
- * @ingroup layers_pool
- * @param layer the pooling (pool) layer
- */
-AI_INTERNAL_API
-void forward_mp_hsp0_INT8(ai_layer *pLayer);
-
-
-/*!
- * @brief Computes the activations of an integer-quantized max pooling layer
- *        with int8 I/O. Optimized for HSP: 1 Step variant for bigger tensors
- * @ingroup layers_pool
- * @param layer the pooling (pool) layer
- */
-AI_INTERNAL_API
-void forward_mp_hsp1_INT8(ai_layer *pLayer);
-
-
-/*!
- * @brief Computes the activations of an integer-quantized max pooling layer
  *        with uint8 I/O
  * @ingroup layers_pool
  * @param layer the pooling (pool) layer
@@ -358,7 +340,6 @@ void forward_mp_integer_UINT16(ai_layer *pLayer);
 AI_INTERNAL_API
 void forward_ap(ai_layer* layer);
 
-
 /*!
  * @brief Computes the activations of a fixed point average pooling layer.
  * @ingroup layers_pool
@@ -374,23 +355,6 @@ void forward_ap_fixed(ai_layer *pLayer);
  */
 AI_INTERNAL_API
 void forward_ap_integer(ai_layer *pLayer);
-
-/*!
- * @brief Computes the activations of an average pooling layer. Optimized for HSP
- * @ingroup layers_pool
- * @param layer the pooling (pool) layer
- */
-AI_INTERNAL_API
-void forward_ap_hsp0_INT8(ai_layer *pLayer);
-
-/*!
- * @brief Computes the activations of an average pooling layer. Optimized for HSP
- * Variant for larger tensors
- * @ingroup layers_pool
- * @param layer the pooling (pool) layer,
- */
-AI_INTERNAL_API
-void forward_ap_hsp1_INT8(ai_layer *pLayer);
 
 /*!
  * @brief Computes the activations of an integer-quantized average pooling layer

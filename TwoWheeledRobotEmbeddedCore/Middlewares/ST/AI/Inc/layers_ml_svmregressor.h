@@ -14,16 +14,20 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
+  @verbatim
+  @endverbatim
+  ******************************************************************************
   */
 
 #ifndef LAYERS_SVMREGRESSOR_H
 #define LAYERS_SVMREGRESSOR_H
+#pragma once
 
 #include "layers_common.h"
 
 /*!
  * @defgroup layers_svmreg Layers Definitions
- * @brief definition
+ * @brief definition 
  *
  */
 
