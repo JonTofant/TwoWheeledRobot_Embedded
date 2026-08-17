@@ -192,10 +192,10 @@ void BNO08x_Init(I2C_HandleTypeDef *hi2c, uint16_t intPin)
 // App tick — call every main-loop iteration; no-ops unless the INT pin
 // has signaled new data.
 // ----------------------------------------------------------------
-void BNO08x_Service(void)
+bool BNO08x_Service(void)
 {
     if (!_bnoIntFlag)
-        return;
+        return false;
 
     uint32_t timeout = DWT_GetMicros();
     do {
@@ -207,6 +207,7 @@ void BNO08x_Service(void)
 
     HAL_NVIC_ClearPendingIRQ(EXTI1_IRQn);
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    return true;
 }
 
 // ----------------------------------------------------------------

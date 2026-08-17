@@ -44,6 +44,7 @@
 #include "state_machine.h"
 #include "JumpStrategy.h"
 #include "bno08x.h"
+#include "paper_metrics.h"
 
 /* USER CODE END Includes */
 
@@ -172,7 +173,7 @@ volatile float DBG_desired_yawrate_radps = 0.0f;
 // for this robot's physical wiring - re-verify if the wiring ever changes.
 #define DDSM_CURRENT_SIGN_LEFT     (+1.0f)
 #define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
-#define STM32_TEST_CURRENT_LIMIT_A (1.0f)   // firmware safety ceiling, independent of policy
+#define NNDRIVE_CURRENT_LIMIT_A (2.0f)      // Matches the exported policy action range (already scaled to amperes)
 
 #define NNDRIVE_TICK_DT_S         (0.015f)  // 15ms TIM4 tick (matches MET_SAMPLE_DT_S)
 
@@ -219,9 +220,8 @@ volatile float   MET_run_time_s        = 0.0f;  // elapsed time since MET_reset 
 // obs_0..obs_12 are the exact 13 floats fed to the network (nn_in_obs, normalized) -
 // adjust LOG_Update() if your training env logged obs in a different order/units.
 // action_L/R are the network's raw wheel-current output (pre sign-flip, pre safety clamp).
-// I_L/R_cmd_A and I_L/R_meas_A are both the same commanded current actually sent to
-// the DDSM115 (post sign-flip and clamping) - there's no separate current feedback
-// from the drive, so "measured" just mirrors "commanded".
+// I_L/R_cmd_A is the command actually sent to the DDSM115 (post sign-flip/clamp).
+// I_L/R_meas_A uses reply bytes 2-3 and the Appendix-B 4067.9-count/A calibration.
 volatile float   LOG_theta_deg      = 0.0f;  // instantaneous pitch (deg); first recorded sample -> initial_theta_deg
 volatile float   LOG_obs[NNDRIVE_OBS_DIM] = {0};   // -> obs_0..obs_12
 volatile float   LOG_action_L       = 0.0f;  // -> action_L (raw wheel-current network output)
@@ -274,6 +274,7 @@ static float clamp_float(float value, float min_value, float max_value);
 static float wrap_pi(float angle_rad);
 static void MET_Update(void);
 static void LOG_Update(void);
+static void PAPER_SendTelemetry(void);
 #if CYBERGEAR_INDEX_BENCH_TEST
 static void CyberGear_IndexBenchTest(void);
 #endif
@@ -284,6 +285,7 @@ static void CyberGear_IndexBenchTest(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uint8_t sendUart2Data = 0;
+static uint8_t paper_uart_rx_byte;
 /* USER CODE END 0 */
 
 /**
@@ -362,11 +364,12 @@ int main(void)
   // Enable the cycle counter
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-  //------------------------------------------------
+  // Dedicated paper telemetry link: USART1, PA9 TX / PA10 RX, 3 Mbaud, 8N1.
+  // Sending uses DMA and starts after the measured control section.
+  PaperMetrics_Init(&huart1);
+  HAL_UART_Receive_IT(&huart1, &paper_uart_rx_byte, 1);
 
-  // BNO08x IMU, wired directly to I2C3 (PA8/PC9) - see bno08x.h. Depends on the DWT
-  // cycle counter enabled just above.
-  BNO08x_Init(&hi2c3, BNO080_INT_Pin);
+  //------------------------------------------------
 
 
 // SEND QUERY TO DDSM115
@@ -432,6 +435,11 @@ int main(void)
 
   	  System_Init();
 
+  // BNO08x IMU, wired directly to I2C3 (PA8/PC9) - see bno08x.h. Keep this
+  // after the startup stabilization delay and System_Init(), matching the
+  // known-working WalkingRobot startup order.
+  BNO08x_Init(&hi2c3, BNO080_INT_Pin);
+
   	//start TIM2 for USART2 data transfer
   		HAL_TIM_Base_Start_IT(&htim2);
 		  // Enable Timer 3 interupt
@@ -461,8 +469,13 @@ int main(void)
 	 // Service the BNO08x (no-ops unless its INT pin has signaled new data) and
 	 // refresh the derived pitch/roll/yaw state every pass, before anything below
 	 // reads it (isFallen(), posture/startup/jump strategies, NN_ReadImu()).
-	 BNO08x_Service();
+	 uint32_t imu_read_start = PaperMetrics_CycleNow();
+	 bool imu_updated = BNO08x_Service();
 	 StateEstimator_UpdateFromBNO();
+	 if (imu_updated) {
+		 PaperMetrics_RecordDuration(PAPER_Q_IMU_READ, imu_read_start);
+		 PaperMetrics_MarkImuUpdate();
+	 }
 
 	 // Pump the non-blocking DDSM115 RS485 command sequencer every pass. It walks
 	 // through the currents queued by DDSM115_QueueCurrents(), turning the half-duplex
@@ -542,6 +555,7 @@ int main(void)
 	 // commands run at ~66.7Hz instead of 10Hz.
 	 if (isDDSM115Ready) {
 	     isDDSM115Ready = false;
+	     uint32_t control_cycle_start = PaperMetrics_BeginControl();
 
 #if CYBERGEAR_INDEX_BENCH_TEST
 	     if (CG_BENCH_start || CG_BENCH_active_index >= 0) {
@@ -552,7 +566,9 @@ int main(void)
 #endif
 	     {
 	         // Run policy locally
+	         PaperMetrics_UpdateObservationAges();
 	         ANN_Run();
+	         uint32_t motor_write_start = PaperMetrics_CycleNow();
 
 	         // DEBUG: NNDRIVE_OUTPUT_DISABLE=1 stops all motor output (CyberGear MIT
 	         // commands and DDSM115 currents) while still running ANN_Run()/MET_Update()/
@@ -586,13 +602,17 @@ int main(void)
 	             // and there is no fixed inter-command delay.
 	             DDSM115_QueueCurrents(0x11, 1 * ddsm_NN_current_command[0],
 	                                   0x10, 1 * ddsm_NN_current_command[1]);
+	             PaperMetrics_BeginRs485Cycle();
 	         }
 #endif // !NNDRIVE_OUTPUT_DISABLE
+	         PaperMetrics_RecordDuration(PAPER_Q_MOTOR_WRITE, motor_write_start);
 	     }
+	     PaperMetrics_EndControl(control_cycle_start);
 
 	     // Bench metrics/telemetry for STM Studio (see MET_/LOG_ globals above), same 15ms tick.
 	     MET_Update();
 	     LOG_Update();
+	     PAPER_SendTelemetry();
 	 }
 
 	 // Debug telemetry to ESP32, on the slower 100ms tick so UART2/DMA
@@ -988,7 +1008,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
+  huart1.Init.BaudRate = 3000000;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -1276,7 +1296,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             	   CyberGearMotorList[i].torque = torque;
             	   CyberGearMotorList[i].temperature = temperature;
             	   //CyberGearMotorList[i].errorFlag = false;
-            	   CyberGearMotorList[i].update_flag = true;
+				   CyberGearMotorList[i].update_flag = true;
+				   PaperMetrics_MarkLegUpdate((uint8_t)i);
 
 
                    break;  // No need to check further once a match is found
@@ -1324,6 +1345,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	if (huart->Instance == USART1) {
+		if (paper_uart_rx_byte == 'R' || paper_uart_rx_byte == 'r') {
+			PaperMetrics_Reset();
+			MET_reset = 1;
+		}
+		HAL_UART_Receive_IT(&huart1, &paper_uart_rx_byte, 1);
+		return;
+	}
+
 	if(huart->Instance == USART2){
 
 		if(uart2RxBuffer[0] == 0xAA && uart2RxBuffer[1] == 0x55)
@@ -1362,13 +1392,19 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
 	   if (huart->Instance == UART5)
 	    {
+	        uint32_t encoder_read_start = PaperMetrics_CycleNow();
 	        uint8_t motor_id = RS485_RxBuffer[0];
 
 	        for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
 	            if (DDSM115MotorList[i].motorID == motor_id) {
 	            	update_ddsm115_state(&DDSM115MotorList[i], RS485_RxBuffer, 0.0505f);
+				PaperMetrics_RecordDuration(PAPER_Q_ENCODER_READ, encoder_read_start);
+				PaperMetrics_MarkWheelUpdate((uint8_t)i);
 	                break;
 	            }
+	        }
+	        if (motor_id == 0x10u) {
+			PaperMetrics_EndRs485Cycle();
 	        }
 
 	        // Tell the non-blocking sequencer this wheel's reply has landed so it can
@@ -1381,6 +1417,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 
 
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	PaperMetrics_UART_TxCpltCallback(huart);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -1400,6 +1441,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	if (htim->Instance == TIM4)
 	{
+		PaperMetrics_OnControlRelease();
 		isDDSM115Ready = true;
 		isCYBERGEARReady = true;
 	}
@@ -1499,6 +1541,8 @@ void ANN_Run(void)
         return;
     }
 
+	uint32_t observation_start = PaperMetrics_CycleNow();
+
     // ---- odometry (obs[0]/[1]) ----
     float phi_left  = WHEEL_POS_SIGN_LEFT  * DDSM115MotorList[0].phi_rad;
     float phi_right = WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad;
@@ -1561,8 +1605,10 @@ void ANN_Run(void)
             nn_in_obs[i] = -10.0f;
         }
     }
+	PaperMetrics_RecordDuration(PAPER_Q_OBSERVATION, observation_start);
 
     // ---- run network ----
+	uint32_t inference_start = PaperMetrics_CycleNow();
 #if ACTIVE_NN_POLICY == POLICY_RANGE_GRU
     ai_i32 batch = ai_nn_arm_c_range_gru_run(nn_policy, nn_input, nn_output);
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_MLP
@@ -1570,9 +1616,12 @@ void ANN_Run(void)
 #else
     ai_i32 batch = ai_nn_arm_a_point_run(nn_policy, nn_input, nn_output);
 #endif
+	PaperMetrics_RecordDuration(PAPER_Q_INFERENCE, inference_start);
+	uint32_t action_start = PaperMetrics_CycleNow();
     if (batch != 1 || !isfinite(nn_out_action[0]) || !isfinite(nn_out_action[1])) {
         ddsm_NN_current_command[0] = 0.0f;
         ddsm_NN_current_command[1] = 0.0f;
+		PaperMetrics_RecordDuration(PAPER_Q_ACTION, action_start);
         return;
     }
 #if ACTIVE_NN_POLICY == POLICY_RANGE_GRU
@@ -1581,15 +1630,16 @@ void ANN_Run(void)
 
     // ---- actions: raw ONNX output IS the current command, no scaling ----
     ddsm_NN_current_command[0] = clamp_float(DDSM_CURRENT_SIGN_LEFT  * nn_out_action[0],
-                                             -STM32_TEST_CURRENT_LIMIT_A,
-                                             STM32_TEST_CURRENT_LIMIT_A);
+	                                             -NNDRIVE_CURRENT_LIMIT_A,
+	                                             NNDRIVE_CURRENT_LIMIT_A);
     ddsm_NN_current_command[1] = clamp_float(DDSM_CURRENT_SIGN_RIGHT * nn_out_action[1],
-                                             -STM32_TEST_CURRENT_LIMIT_A,
-                                             STM32_TEST_CURRENT_LIMIT_A);
+	                                             -NNDRIVE_CURRENT_LIMIT_A,
+	                                             NNDRIVE_CURRENT_LIMIT_A);
     // obs[9]/[10] next tick must be what was actually sent to the register (post
     // sign-flip, post-clamp), per STM32_DEPLOYMENT.md's literal wording.
     prev_wheel_current_A[0] = ddsm_NN_current_command[0];
     prev_wheel_current_A[1] = ddsm_NN_current_command[1];
+	PaperMetrics_RecordDuration(PAPER_Q_ACTION, action_start);
 }
 
 #if CYBERGEAR_INDEX_BENCH_TEST
@@ -1756,11 +1806,12 @@ static void MET_Update(void)
                  WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad) - x_ref_m;
     MET_x_final_m = x_m;
 
-    float i_avg_A = 0.5f * (fabsf(ddsm_NN_current_command[0]) + fabsf(ddsm_NN_current_command[1]));
+    float i_left_A = DDSM115MotorList[0].current_feedback_A;
+    float i_right_A = DDSM115MotorList[1].current_feedback_A;
 
     sample_count++;
     sum_theta_sq += theta_deg * theta_deg;
-    sum_I_sq     += i_avg_A * i_avg_A;
+    sum_I_sq     += 0.5f * (i_left_A * i_left_A + i_right_A * i_right_A);
     MET_theta_rms_deg = sqrtf(sum_theta_sq / (float)sample_count);
     MET_I_rms_A       = sqrtf(sum_I_sq     / (float)sample_count);
 
@@ -1809,9 +1860,67 @@ static void LOG_Update(void)
     LOG_I_L_cmd_A = ddsm_NN_current_command[0];
     LOG_I_R_cmd_A = ddsm_NN_current_command[1];
 
-    // No current feedback from the DDSM115 drives - mirror the commanded value.
-    LOG_I_L_meas_A = ddsm_NN_current_command[0];
-    LOG_I_R_meas_A = ddsm_NN_current_command[1];
+    LOG_I_L_meas_A = DDSM115MotorList[0].current_feedback_A;
+    LOG_I_R_meas_A = DDSM115MotorList[1].current_feedback_A;
+}
+
+static void PAPER_SendTelemetry(void)
+{
+	PaperTelemetryState sample = {0};
+	float pitch_rad, pitch_rate_radps, roll_rad, roll_rate_radps, yaw_rad, yaw_rate_radps;
+	NN_ReadImu(&pitch_rad, &pitch_rate_radps, &roll_rad, &roll_rate_radps,
+	           &yaw_rad, &yaw_rate_radps);
+
+	if (bno_data_valid) sample.flags |= (1u << 0);
+	if (isFallen()) sample.flags |= (1u << 1);
+	if (isStartupStrategy) sample.flags |= (1u << 2);
+#if CYBERGEAR_INDEX_BENCH_TEST
+	if (CG_BENCH_active_index >= 0) sample.flags |= (1u << 3);
+#endif
+#if NNDRIVE_OUTPUT_DISABLE
+	sample.flags |= (1u << 4);
+#endif
+	sample.flags |= ((uint32_t)ACTIVE_NN_POLICY & 0x03u) << 8;
+
+	sample.attitude[0] = pitch_rad;
+	sample.attitude[1] = pitch_rate_radps;
+	sample.attitude[2] = roll_rad;
+	sample.attitude[3] = roll_rate_radps;
+	sample.attitude[4] = yaw_rad;
+	sample.attitude[5] = yaw_rate_radps;
+
+	float phi_left = WHEEL_POS_SIGN_LEFT * DDSM115MotorList[0].phi_rad;
+	float phi_right = WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad;
+	float omega_left = WHEEL_VEL_SIGN_LEFT * DDSM115MotorList[0].phi_dot_rad_s;
+	float omega_right = WHEEL_VEL_SIGN_RIGHT * DDSM115MotorList[1].phi_dot_rad_s;
+	sample.position_m = WHEEL_RADIUS_R * 0.5f * (phi_left + phi_right);
+	sample.velocity_mps = WHEEL_RADIUS_R * 0.5f * (omega_left + omega_right);
+
+	for (uint32_t i = 0; i < PAPER_METRICS_WHEEL_COUNT; i++) {
+		sample.wheel_position_rad[i] = DDSM115MotorList[i].phi_rad;
+		sample.wheel_velocity_radps[i] = DDSM115MotorList[i].phi_dot_rad_s;
+		sample.wheel_current_command_A[i] = ddsm_NN_current_command[i];
+		sample.wheel_current_measured_A[i] = DDSM115MotorList[i].current_feedback_A;
+	}
+	for (uint32_t i = 0; i < PAPER_METRICS_LEG_COUNT; i++) {
+		sample.leg_angle_rad[i] = CyberGearMotorList[i].angle;
+	}
+	for (uint32_t i = 0; i < NNDRIVE_OBS_DIM; i++) {
+		sample.observation[i] = nn_in_obs[i];
+	}
+	for (uint32_t i = 0; i < NNDRIVE_ACT_DIM; i++) {
+		sample.action[i] = nn_out_action[i];
+	}
+
+	sample.run_value[0] = MET_theta_deg;
+	sample.run_value[1] = MET_theta_init_deg;
+	sample.run_value[2] = MET_theta_max_abs_deg;
+	sample.run_value[3] = MET_theta_rms_deg;
+	sample.run_value[4] = MET_I_rms_A;
+	sample.run_value[5] = MET_t_rec_s;
+	sample.run_value[6] = MET_x_final_m;
+	sample.run_value[7] = MET_run_time_s;
+	PaperMetrics_Send(&sample);
 }
 
 /* USER CODE END 4 */

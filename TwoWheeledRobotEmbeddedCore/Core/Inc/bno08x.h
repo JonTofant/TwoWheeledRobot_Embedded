@@ -18,7 +18,8 @@
 #define BNO08X_I2C_ADDR  (0x4B << 1)
 
 void BNO08x_Init(I2C_HandleTypeDef *hi2c, uint16_t intPin);
-void BNO08x_Service(void);
+/* Returns true when an asserted INT caused one or more reports to be read. */
+bool BNO08x_Service(void);
 void BNO08x_EXTI_Callback(uint16_t GPIO_Pin);
 
 // Body-frame gravity vector [m/s^2] (SH2_GRAVITY report). Feeds

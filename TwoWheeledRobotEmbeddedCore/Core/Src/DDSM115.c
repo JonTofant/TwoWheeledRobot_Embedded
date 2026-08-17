@@ -22,6 +22,9 @@ const float ENCODER_HALF_RANGE_COUNTS = 16384.0f;
 const float COUNTS_TO_RADIANS_FACTOR_PHI = (2.0f * M_PI) / (float)ENCODER_FULL_RANGE_COUNTS;
 const float RPM_TO_RAD_PER_SEC = (2.0f * M_PI) / 60.0f; // ≈ 0.104719755f
 
+/* Appendix B: 4.0679 counts/mA = 4067.9 counts/A. */
+#define DDSM_CURRENT_FEEDBACK_COUNTS_PER_A 4067.9f
+
 
 float DZ_RIGHT_POS = 0.04f;
 float DZ_RIGHT_NEG = 0.04f;
@@ -278,6 +281,11 @@ void DDSM115ChangeID(uint8_t motorID, uint8_t newID){
 void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_radius)
 {
     if (Buffer[0] != motor->motorID) return;
+
+    // 0. Current feedback (reply bytes 2-3, signed big-endian).
+    motor->current_feedback_raw = (int16_t)(((uint16_t)Buffer[2] << 8) | Buffer[3]);
+    motor->current_feedback_A = (float)motor->current_feedback_raw /
+                                DDSM_CURRENT_FEEDBACK_COUNTS_PER_A;
 
     // 1. Velocity
     uint16_t raw_velocity = ((uint16_t)Buffer[4] << 8) | Buffer[5];

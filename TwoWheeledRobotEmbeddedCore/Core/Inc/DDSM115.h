@@ -54,6 +54,11 @@ typedef struct {
     float x_dot;
     float x_ddot;
 
+    /* Raw reply field and calibrated engineering value. The scale is the
+     * 12-unit below-deadzone fit reported in paper Appendix B. */
+    int16_t current_feedback_raw;
+    float current_feedback_A;
+
     float prev_x_dot;
 
     // Internal
