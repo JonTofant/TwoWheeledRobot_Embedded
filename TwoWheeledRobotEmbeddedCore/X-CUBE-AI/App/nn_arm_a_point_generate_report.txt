@@ -1,6 +1,6 @@
 Neural Network Tools for STM32 family v1.7.0 (stm.ai v8.1.0-19520)
-Created date          : 2026-08-13 09:04:32
-Parameters            : generate --name nn_arm_a_point -m C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/AI_Policies/Paper 2026/policy_candidate_a_point.onnx --type onnx --compression none --verbosity 1 --workspace C:\Users\jon\AppData\Local\Temp\mxAI_workspace1278201286045008328593660250487931 --output C:\Users\jon\.stm32cubemx\nn_arm_a_point_output --allocate-inputs --series stm32f4 --allocate-outputs
+Created date          : 2026-08-14 16:02:53
+Parameters            : generate --name nn_arm_a_point -m C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/AI_Policies/Paper 2026/policy_candidate_a_point.onnx --type onnx --compression none --verbosity 1 --workspace C:\Users\jon\AppData\Local\Temp\mxAI_workspace23929988471590014527658305470652686 --output C:\Users\jon\.stm32cubemx\nn_arm_a_point_output --allocate-inputs --series stm32f4 --allocate-outputs
 
 Exec/report summary (generate)
 ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ compression        :   none
 options            :   allocate-inputs, allocate-outputs                                                                                              
 optimization       :   balanced                                                                                                                       
 target/series      :   stm32f4                                                                                                                        
-workspace dir      :   C:\Users\jon\AppData\Local\Temp\mxAI_workspace1278201286045008328593660250487931                                               
+workspace dir      :   C:\Users\jon\AppData\Local\Temp\mxAI_workspace23929988471590014527658305470652686                                              
 output dir         :   C:\Users\jon\.stm32cubemx\nn_arm_a_point_output                                                                                
 model_fmt          :   float                                                                                                                          
 model_name         :   policy_candidate_a_point                                                                                                       
