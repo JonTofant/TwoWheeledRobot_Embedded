@@ -92,7 +92,7 @@ quantity, or the integrated joystick reference.**
 | 3 | `pitch_rate` | 4.0 rad/s | gyro, axis matching pitch | from BNO085 |
 | 4 | `sin(yaw - yaw_ref)` | 1.0 (already [-1,1]) | `sinf(yaw - yaw_ref)` | **raw difference — do NOT `wrap_pi()` first** |
 | 5 | `cos(yaw - yaw_ref)` | 1.0 (already [-1,1]) | `cosf(yaw - yaw_ref)` | same |
-| 6 | `yaw_rate` | 4.0 rad/s | gyro, yaw axis | from BNO085 |
+| 6 | `yaw_rate` | 4.0 rad/s | complete body gyro vector rotated into world-frame Z | matches training `root_ang_vel_w[:, 2]` |
 | 7 | `velocity_cmd` | 1.0 m/s | `v_cmd` (slew-limited joystick, see below) | |
 | 8 | `yaw_rate_cmd` | 2.0 rad/s | `w_cmd` (slew-limited joystick, see below) | |
 | 9 | `prev_current_left` | 2.0 A | previous tick's **actually-sent** left current command | see note below |
@@ -195,6 +195,14 @@ torque_right =  current_right * DDSM115_KT;
 
 Match this to the physical wiring, not blindly to the USD.
 
+On the current hardware, the 2026-08-18 yaw captures showed that applying the
+logical left/right outputs to the same-named physical wheels created positive
+yaw feedback. Firmware therefore swaps the two logical outputs only at the
+physical DDSM destination boundary. This preserves the common-mode pitch
+command and reverses only the differential yaw command. Observation 9/10
+feedback remains in the network's original logical `[left, right]` order,
+before the physical swap and wiring signs.
+
 ### What the motor-model randomization means for firmware: nothing to implement
 
 Training randomizes per-episode motor gain (±3%), deadzone (0.031-0.078 A,
@@ -249,6 +257,14 @@ outputs: commands  float32[1, 2]   -- same current-command contract as the MLP
          h_out     float32[1, 1, 64]
 ```
 
+The native training/export graph uses the shapes above. The STM32AI-compatible
+expanded export (`policy_arm_c_range_gru_stm32ai.onnx`) removes the two
+singleton dimensions from the recurrent-state ports, so X-CUBE-AI exposes
+`h_in` and `h_out` as `float32[1, 64]`. This is the same ordered block of 64
+state values; only its tensor shape is flattened. The expanded graph replaces
+the unsupported native GRU node with equivalent primitive operations and was
+validated over recurrent sequences against the native export.
+
 Firmware must:
 1. Hold a persistent `h` buffer, `64` floats, zero-initialized at boot and at
    any deliberate policy reset (e.g. re-arming after an E-stop or picking the
@@ -263,11 +279,11 @@ Firmware must:
    FixedStance and any other GRU-shaped export — the buffer is only valid
    paired with the exact ONNX graph that produced it.
 
-Check `graph.output` count on any exported `policy_drive.onnx` before wiring
-it up: 2 outputs = plain MLP (this section's simple contract), 3 outputs =
-GRU (this section), 4 = LSTM (not currently used, but the export script
-supports it) with an additional `c_in`/`c_out` cell-state pair following the
-same rule as `h`.
+Check both `graph.input` and `graph.output` counts on any exported
+`policy_drive.onnx` before wiring it up: 1 input + 1 output = plain MLP;
+2 inputs + 2 outputs = GRU (this section); 3 inputs + 3 outputs = LSTM (not
+currently used, but the export script supports it), with an additional
+`c_in`/`c_out` cell-state pair following the same rule as `h`.
 
 ### Quick reference: what firmware implements vs. doesn't
 

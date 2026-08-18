@@ -18,9 +18,6 @@
 // Motor Parameters
 extern const float MOTOR_TORQUE_CONSTANT_KT; // Nm/A (DDSM115)
 
-// Defined motor variables for either RS485 comm protocol or the motor itself
-#define RS485_BUFFER_SIZE 10
-
 #define RAW_POS_MAX_COUNT 32768.0f // Max raw value + 1 (0 to 32767 = 32768 distinct values), use float for division
 #define RAW_POS_HALF_RANGE (RAW_POS_MAX_COUNT / 2) // Threshold for wrap detection = 16384
 
@@ -87,25 +84,24 @@ extern volatile uint8_t DDSM115_last_rx[10];
 extern volatile uint16_t DDSM115_last_rx_size;
 extern volatile uint32_t DDSM115_rx_frame_count;
 extern volatile uint8_t DDSM115_last_rx_crc_ok;
-extern volatile uint8_t DDSM115_id_query_tx_status;
+extern volatile uint8_t DDSM115_startup_found_mask;
+extern volatile uint8_t DDSM115_startup_ready;
+extern volatile uint8_t DDSM115_startup_mode_before[MAX_MOTORS_DDSM115];
+extern volatile uint8_t DDSM115_startup_mode_after[MAX_MOTORS_DDSM115];
+extern volatile uint32_t DDSM115_transaction_count;
+extern volatile uint32_t DDSM115_reply_count;
+extern volatile uint32_t DDSM115_timeout_count;
+extern volatile uint32_t DDSM115_bad_frame_count;
 
 
 uint8_t compute_crc8(uint8_t *data, uint8_t len);
 void sendPositionCommand(uint8_t motorID, float angle_deg);
 uint16_t angleToValue(float angle_deg);
 void DDMS115setMode(uint8_t motorID, uint8_t mode);
-HAL_StatusTypeDef DDSM115QueryID(void);
-void DDSM115CaptureRx(const uint8_t *buffer, uint16_t size);
 void DDSM115setCurrent(uint8_t motorID, float current_amp);
+bool DDSM115InitializeCurrentMode(void);
+bool DDSM115TransactCurrent(uint8_t motorID, float current_amp);
 void DDSM115ChangeID(uint8_t motorID, uint8_t newID);
 void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_radius);
-
-// Non-blocking half-duplex command sequencer (see DDSM115.c). Queue the per-wheel
-// currents once per control tick, pump DDSM115_Service() every superloop pass, and
-// call DDSM115_NotifyReply() from the RS485 RX-complete callback.
-void DDSM115_QueueCurrents(uint8_t id0, float c0, uint8_t id1, float c1);
-void DDSM115_Service(void);
-void DDSM115_NotifyReply(uint8_t motorID);
-
 
 #endif /* INC_DDSM115_H_ */

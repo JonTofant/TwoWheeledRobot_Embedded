@@ -15,6 +15,7 @@
 #define PAPER_METRICS_ACTION_DIM     2u
 #define PAPER_METRICS_WHEEL_COUNT    2u
 #define PAPER_METRICS_LEG_COUNT      4u
+#define PAPER_METRICS_DIAGNOSTIC_COUNT 4u
 #define PAPER_METRICS_RUN_VALUE_COUNT 8u
 
 /* Order is part of the UART protocol. Keep in sync with
@@ -39,6 +40,7 @@ typedef enum {
 typedef struct {
 	uint32_t flags;
 	float attitude[6];       /* pitch, pitch rate, roll, roll rate, yaw, yaw rate */
+	float diagnostic[PAPER_METRICS_DIAGNOSTIC_COUNT];
 	float position_m;
 	float velocity_mps;
 	float wheel_position_rad[PAPER_METRICS_WHEEL_COUNT];

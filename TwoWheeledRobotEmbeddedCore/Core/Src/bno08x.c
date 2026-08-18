@@ -22,6 +22,8 @@ static volatile bool      _bnoIntFlag = false;
 volatile float bno_gravity_x, bno_gravity_y, bno_gravity_z;
 volatile float bno_gx, bno_gy, bno_gz;
 volatile float bno_qw, bno_qx, bno_qy, bno_qz;
+volatile uint32_t bno_rotation_update_count;
+volatile uint64_t bno_rotation_timestamp_us;
 volatile float bno_yaw_rad;
 volatile bool  bno_data_valid = false;
 
@@ -122,6 +124,8 @@ static void sensorCallback(void *cookie, sh2_SensorEvent_t *event)
                 float cosy_cosp = 1.0f - 2.0f * (bno_qy * bno_qy + bno_qz * bno_qz);
                 bno_yaw_rad = atan2f(siny_cosp, cosy_cosp);
             }
+            bno_rotation_timestamp_us = val.timestamp;
+            bno_rotation_update_count++;
             _haveRotation = true;
             break;
 
@@ -143,6 +147,8 @@ static void eventCallback(void *cookie, sh2_AsyncEvent_t *event)
     {
         bno_data_valid = false;
         _haveGravity = _haveGyro = _haveRotation = false;
+        bno_rotation_update_count = 0u;
+        bno_rotation_timestamp_us = 0u;
 
         sh2_SensorConfig_t cfg = {0};
         cfg.reportInterval_us = 5000;
@@ -159,6 +165,8 @@ void BNO08x_Init(I2C_HandleTypeDef *hi2c, uint16_t intPin)
 {
     _i2c    = hi2c;
     _intPin = intPin;
+    bno_rotation_update_count = 0u;
+    bno_rotation_timestamp_us = 0u;
 
     HAL_GPIO_WritePin(BNO080_RST_GPIO_Port, BNO080_RST_Pin, GPIO_PIN_RESET);
     HAL_Delay(10);

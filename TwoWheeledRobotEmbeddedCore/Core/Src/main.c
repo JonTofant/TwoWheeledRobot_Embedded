@@ -18,11 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-// Classic ai_platform codegen for the active NN policy (see ACTIVE_NN_POLICY below).
-// Only the point-MLP is code-genned so far; add the equivalent includes for
-// nn_arm_b_range.h/nn_arm_c_range_gru.h once those are generated via CubeMX.
-#include "nn_arm_a_point.h"
-#include "nn_arm_a_point_data.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -45,6 +40,12 @@
 #include "JumpStrategy.h"
 #include "bno08x.h"
 #include "paper_metrics.h"
+#include "nn_arm_a_point.h"
+#include "nn_arm_a_point_data.h"
+#include "nn_arm_a_range.h"
+#include "nn_arm_a_range_data.h"
+#include "nn_arm_c_range_gru.h"
+#include "nn_arm_c_range_gru_data.h"
 
 /* USER CODE END Includes */
 
@@ -57,12 +58,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-// Set to 1 to re-enable the UART2 debug telemetry print to the ESP32.
-// Disabled by default to save loop time for the 15ms ANN/DDSM115 update.
-#define ENABLE_UART2_DEBUG_TELEMETRY 0
-
-
 
 /* USER CODE END PD */
 
@@ -114,16 +109,14 @@ uint8_t RxSingleByte;
 uint16_t angle_u;
 int16_t velocityDDSM_RPM = 0;
 
-uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
-
 // ===== NN policy selection (compile-time, one active per build) =====
 // Template-Twowheeledrobot-NNDriveFixedStance-v0 family (STM32_DEPLOYMENT.md): 13 obs -> 2
 // actions (left/right DDSM115 wheel current, A). Legs are NOT policy-controlled - see
 // NNDRIVE_LEG_TARGET_RAD below. Switching policies means rebuilding/reflashing.
-#define POLICY_POINT_MLP  0   // nn_arm_a_point  - code-genned, 13 in / 2 out
-#define POLICY_RANGE_MLP  1   // nn_arm_b_range  - NOT YET code-genned
-#define POLICY_RANGE_GRU  2   // nn_arm_c_range_gru - NOT YET code-genned, 2in/2out incl. h state
-#define ACTIVE_NN_POLICY  POLICY_POINT_MLP
+#define POLICY_POINT_MLP  0   // nn_arm_a_point - point-training baseline, 13 in / 2 out
+#define POLICY_RANGE_MLP  1   // nn_arm_a_range - range-randomized policy B, 13 in / 2 out
+#define POLICY_RANGE_GRU  2   // nn_arm_c_range_gru - range-randomized recurrent policy C
+#define ACTIVE_NN_POLICY  POLICY_RANGE_GRU
 
 #define NNDRIVE_OBS_DIM    13
 #define NNDRIVE_ACT_DIM    2
@@ -132,9 +125,9 @@ uint8_t RS485_RxBuffer[RS485_BUFFER_SIZE];
 #if ACTIVE_NN_POLICY == POLICY_POINT_MLP
 #define NN_ACTIVATIONS_SIZE AI_NN_ARM_A_POINT_DATA_ACTIVATION_1_SIZE
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_MLP
-#error "nn_arm_b_range not yet code-genned - run CubeMX generation, add its includes near the top of this file, then define NN_ACTIVATIONS_SIZE from AI_NN_ARM_B_RANGE_DATA_ACTIVATION_1_SIZE"
+#define NN_ACTIVATIONS_SIZE AI_NN_ARM_A_RANGE_DATA_ACTIVATION_1_SIZE
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_GRU
-#error "nn_arm_c_range_gru not yet code-genned - run CubeMX generation, add its includes near the top of this file, then define NN_ACTIVATIONS_SIZE from AI_NN_ARM_C_RANGE_GRU_DATA_ACTIVATION_1_SIZE"
+#define NN_ACTIVATIONS_SIZE AI_NN_ARM_C_RANGE_GRU_DATA_ACTIVATION_1_SIZE
 #endif
 
 static ai_handle nn_policy = AI_HANDLE_NULL;
@@ -164,34 +157,20 @@ volatile float DBG_desired_yawrate_radps = 0.0f;
 #define WHEEL_VEL_SIGN_LEFT        (-1.0f)
 #define WHEEL_VEL_SIGN_RIGHT       (+1.0f)
 
-#define PITCH_SIGN                 (+1.0f)
-#define PITCH_RATE_SIGN            (+1.0f)
-#define YAW_SIGN                   (-1.0f)
-#define YAW_RATE_SIGN              (-1.0f)
-
 // Wheel-direction sign convention (STM32_DEPLOYMENT.md): kept as previously bench-verified
 // for this robot's physical wiring - re-verify if the wiring ever changes.
 #define DDSM_CURRENT_SIGN_LEFT     (+1.0f)
 #define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
+// Hardware yaw convention: applying logical [left,right] directly produced a
+// measured positive-feedback yaw loop. Swapping only the physical destinations
+// reverses the differential command while preserving the pitch/common command.
 #define NNDRIVE_CURRENT_LIMIT_A (2.0f)      // Matches the exported policy action range (already scaled to amperes)
-
-// Temporary A/B test against ERK commit 227f5ed. When enabled, bypass the
-// non-blocking DDSM sequencer and restore the known-working blocking send order.
-#define DDSM_LEGACY_BLOCKING_TX_TEST 1
 
 #define NNDRIVE_TICK_DT_S         (0.015f)  // 15ms TIM4 tick (matches MET_SAMPLE_DT_S)
 
-static float prev_wheel_current_A[2] = {0.0f, 0.0f}; // obs[9]/[10]: post-sign-flip, post-clamp -
-                                                       // literally what was last sent to the DDSM115
-
-// One-shot bench routine to verify which CyberGearMotorList[] index drives which physical
-// corner. Write CG_BENCH_start = 1 (e.g. via STM Studio) with the robot hand-held/on a
-// stand (not standing on its own wheels) to run it.
-#define CYBERGEAR_INDEX_BENCH_TEST 1
-#if CYBERGEAR_INDEX_BENCH_TEST
-volatile uint8_t CG_BENCH_start = 0;  // write 1 to begin the sweep; clears itself when done
-volatile int8_t  CG_BENCH_active_index = -1; // -1 = idle, else 0..3 = CyberGearMotorList index currently being tested
-#endif
+// obs[9]/[10]: previous logical policy currents. The physical DDSM direction
+// signs are an actuator/wiring mapping and must not be fed back into the policy.
+static float prev_wheel_current_A[2] = {0.0f, 0.0f};
 
 // ===== Bench metrics for STM Studio (metrics_per_run_template.csv columns) =====
 // All "MET_" variables are updated once per 15ms control tick (see MET_Update()).
@@ -263,12 +242,7 @@ volatile uint16_t rxReadIndex = 0;       // Your software read pointer
 
 
 
-#define UART2_RX_BUFFER_SIZE 10
-static uint8_t uart2RxBuffer[UART2_RX_BUFFER_SIZE];
-
 float ddsm_NN_current_command[2] = {0};
-
-char NN_buffer[80] = {0};
 
 void ANN_Init(void);
 void ANN_Run(void);
@@ -279,16 +253,12 @@ static float wrap_pi(float angle_rad);
 static void MET_Update(void);
 static void LOG_Update(void);
 static void PAPER_SendTelemetry(void);
-#if CYBERGEAR_INDEX_BENCH_TEST
-static void CyberGear_IndexBenchTest(void);
-#endif
 
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t sendUart2Data = 0;
 static uint8_t paper_uart_rx_byte;
 /* USER CODE END 0 */
 
@@ -348,15 +318,6 @@ int main(void)
   HAL_UART_Transmit(&huart3, (uint8_t*)boot, strlen(boot), 100);
   HAL_Delay(100);*/
 
-  // Enable UART DMA for uart2
-  HAL_UART_Receive_DMA(&huart2, uart2RxBuffer, UART2_RX_BUFFER_SIZE);
-
-
-
-  // Enable UART DMA for uart4
-  HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
-
-
   // ------ PRECISE SAMPLE TIME MEASUREMENTS ------
 
   // Enable TRC (Trace control) - needed to use DWT
@@ -368,10 +329,10 @@ int main(void)
   // Enable the cycle counter
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-  // Dedicated paper telemetry link: USART1, PA9 TX / PA10 RX, 3 Mbaud, 8N1.
-  // Sending uses DMA and starts after the measured control section.
-  PaperMetrics_Init(&huart1);
-  HAL_UART_Receive_IT(&huart1, &paper_uart_rx_byte, 1);
+  // Paper telemetry through the Nucleo ST-Link VCP: USART2 PA2/PA3,
+  // 921600 baud, 8N1. Sending uses DMA after the measured control section.
+  PaperMetrics_Init(&huart2);
+  HAL_UART_Receive_IT(&huart2, &paper_uart_rx_byte, 1);
 
   //------------------------------------------------
 
@@ -421,8 +382,6 @@ int main(void)
   // known-working WalkingRobot startup order.
   BNO08x_Init(&hi2c3, BNO080_INT_Pin);
 
-  	//start TIM2 for USART2 data transfer
-  		HAL_TIM_Base_Start_IT(&htim2);
 		  // Enable Timer 3 interupt
 		  HAL_TIM_Base_Start_IT(&htim3);
 		  // Enable Timer 4 interupt
@@ -457,12 +416,6 @@ int main(void)
 		 PaperMetrics_RecordDuration(PAPER_Q_IMU_READ, imu_read_start);
 		 PaperMetrics_MarkImuUpdate();
 	 }
-
-	 // Pump the non-blocking DDSM115 RS485 command sequencer every pass. It walks
-	 // through the currents queued by DDSM115_QueueCurrents(), turning the half-duplex
-	 // line around to the next wheel only once the current wheel's reply has arrived.
-	 DDSM115_Service();
-
 
 	 if (isCANReady) {
 		 isCANReady = false;
@@ -504,60 +457,15 @@ int main(void)
 	 }
 
 
-	/* if (sendUart2Data){
-
-
-		 sprintf(NN_buffer, "%d%d%.2f%.2f%.2f%.2f%.2f%.2f%.2f\r\n",
-				 0xAA, 0x55, pitch_esp32, roll_esp32, gx_esp32, gy_esp32, gz_esp32, DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot);
-		 sendUart2Data = 0;
-		 HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
-
-
-
-		 if(!isFallen() || isStartupStrategy){
-
-		 // calculate_cascaded_motor_currents(desired_v_left,desired_v_right, &current_motor1_out, &current_motor2_out, &total_force_out);
-
-		 //current_motor1_out = 0.0f;
-		 //current_motor2_out = 0.0f;
-
-		 DDSM115setCurrent(0x11, -1* ddsm_NN_current_command[0]);
-		 HAL_Delay(2);
-		 DDSM115setCurrent(0x10, -1* ddsm_NN_current_command[1]);
-		 }
-		 else{}
-
-		 isDDSM115Ready = false;
-	 }*/
-
-	 //ANN UPDATED SENDING FUNCTION
-	 // Now gated on the 15ms TIM4 tick (isDDSM115Ready) instead of the 100ms
-	 // TIM2 tick (sendUart2Data), so the policy and the DDSM115 current
-	 // commands run at ~66.7Hz instead of 10Hz.
+	 // Run the policy and both DDSM115 transactions on the 15ms TIM4 tick.
 	 if (isDDSM115Ready) {
 	     isDDSM115Ready = false;
 	     uint32_t control_cycle_start = PaperMetrics_BeginControl();
 
-#if CYBERGEAR_INDEX_BENCH_TEST
-	     if (CG_BENCH_start || CG_BENCH_active_index >= 0) {
-	         // Bench test owns the CyberGear motors this tick - skip the normal
-	         // NN-drive policy entirely so nothing fights over MIT commands.
-	         CyberGear_IndexBenchTest();
-	     } else
-#endif
-	     {
-	         // Run policy locally
-	         PaperMetrics_UpdateObservationAges();
-	         ANN_Run();
-	         uint32_t motor_write_start = PaperMetrics_CycleNow();
+	     PaperMetrics_UpdateObservationAges();
+	     ANN_Run();
+	     uint32_t motor_write_start = PaperMetrics_CycleNow();
 
-	         // DEBUG: NNDRIVE_OUTPUT_DISABLE=1 stops all motor output (CyberGear MIT
-	         // commands and DDSM115 currents) while still running ANN_Run()/MET_Update()/
-	         // LOG_Update() every tick, so the raw network outputs can be inspected via
-	         // STM Studio (LOG_obs[], LOG_action_L/R) or a debugger watch on nn_out_action[]
-	         // with the legs held still. Revert to 0 to resume normal operation.
-#define NNDRIVE_OUTPUT_DISABLE 1
-#if !NNDRIVE_OUTPUT_DISABLE
 	         if (!isFallen() || isStartupStrategy) {
 	             // Legs are not policy-controlled - hold the fixed hardware-failsafe pose
 	             // every tick (STM32_DEPLOYMENT.md "Legs (not policy-controlled)").
@@ -576,23 +484,21 @@ int main(void)
 	         // else: fallen and not in startup strategy - don't send new MIT commands
 	         // this tick, legs hold their last state per the CyberGear's own timeout.
 
-	         if (!isFallen() || isStartupStrategy) {
+	         if ((!isFallen() || isStartupStrategy) && DDSM115_startup_ready) {
 	             PaperMetrics_BeginRs485Cycle();
-#if DDSM_LEGACY_BLOCKING_TX_TEST
-	             DDSM115setCurrent(0x11, ddsm_NN_current_command[0]);
-	             HAL_Delay(5);
-	             DDSM115setCurrent(0x10, ddsm_NN_current_command[1]);
-#else
-	             // Queue both wheel currents; the non-blocking sequencer (pumped by
-	             // DDSM115_Service() in the superloop) sends the second only after the
-	             // first wheel's RS485 reply lands, so neither wheel's feedback is lost.
-	             DDSM115_QueueCurrents(0x11, ddsm_NN_current_command[0],
-	                                   0x10, ddsm_NN_current_command[1]);
-#endif
+	             uint32_t wheel_read_start = PaperMetrics_CycleNow();
+	             if (DDSM115TransactCurrent(0x11, ddsm_NN_current_command[0])) {
+	                 PaperMetrics_RecordDuration(PAPER_Q_ENCODER_READ, wheel_read_start);
+	                 PaperMetrics_MarkWheelUpdate(0u);
+	             }
+	             wheel_read_start = PaperMetrics_CycleNow();
+	             if (DDSM115TransactCurrent(0x10, ddsm_NN_current_command[1])) {
+	                 PaperMetrics_RecordDuration(PAPER_Q_ENCODER_READ, wheel_read_start);
+	                 PaperMetrics_MarkWheelUpdate(1u);
+	             }
+	             PaperMetrics_EndRs485Cycle();
 	         }
-#endif // !NNDRIVE_OUTPUT_DISABLE
-	         PaperMetrics_RecordDuration(PAPER_Q_MOTOR_WRITE, motor_write_start);
-	     }
+	     PaperMetrics_RecordDuration(PAPER_Q_MOTOR_WRITE, motor_write_start);
 	     PaperMetrics_EndControl(control_cycle_start);
 
 	     // Bench metrics/telemetry for STM Studio (see MET_/LOG_ globals above), same 15ms tick.
@@ -600,29 +506,7 @@ int main(void)
 	     LOG_Update();
 	     PAPER_SendTelemetry();
 	 }
-
-	 // Debug telemetry to ESP32, on the slower 100ms tick so UART2/DMA
-	 // isn't loaded at the full 66.7Hz control rate.
-	 // Disabled for now (ENABLE_UART2_DEBUG_TELEMETRY == 0) to free up loop
-	 // time for the faster ANN/DDSM115 update above.
-#if ENABLE_UART2_DEBUG_TELEMETRY
-	 if (sendUart2Data) {
-	     sendUart2Data = 0;
-
-	     sprintf(NN_buffer, "%d%d %.2f %.2f %.2f %.2f %.2f %.2f %.2f | NN: %.3f %.3f\r\n",
-	             0xAA, 0x55, body_roll_rad, body_pitch_rad, body_pitch_rate_rad_s,
-	             body_roll_rate_rad_s, body_yaw_rate_rad_s,
-	             DDSM115MotorList[0].x_dot, DDSM115MotorList[1].x_dot,
-	             nn_out_action[0], nn_out_action[1]);
-	     HAL_UART_Transmit_DMA(&huart2, (uint8_t*)NN_buffer, strlen(NN_buffer));
-	 }
-#else
-	 sendUart2Data = 0;
-#endif
-
-
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -1027,7 +911,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 921600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -1331,26 +1215,13 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart->Instance == USART1) {
+	if (huart->Instance == USART2) {
 		if (paper_uart_rx_byte == 'R' || paper_uart_rx_byte == 'r') {
 			PaperMetrics_Reset();
 			MET_reset = 1;
 		}
-		HAL_UART_Receive_IT(&huart1, &paper_uart_rx_byte, 1);
+		HAL_UART_Receive_IT(&huart2, &paper_uart_rx_byte, 1);
 		return;
-	}
-
-	if(huart->Instance == USART2){
-
-		if(uart2RxBuffer[0] == 0xAA && uart2RxBuffer[1] == 0x55)
-		{
-			// Copy from buffer into current command array
-			memcpy(ddsm_NN_current_command, uart2RxBuffer + 2, 8);
-
-			// Re-arm DMA
-			HAL_UART_Receive_DMA(&huart2, uart2RxBuffer, UART2_RX_BUFFER_SIZE);
-		}
-
 	}
 	if(huart->Instance == UART4){
 		//HAL_UART_Transmit(&huart2, &RxSingleByte, 1, 10);
@@ -1373,43 +1244,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	        HAL_UART_Receive_IT(&huart3, &uart3_controller_byte, 1);  // Re-arm
 	    }
 }
-
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
-{
-	   if (huart->Instance == UART5)
-	    {
-	        uint32_t encoder_read_start = PaperMetrics_CycleNow();
-	        DDSM115CaptureRx(RS485_RxBuffer, Size);
-	        if (Size != RS485_BUFFER_SIZE) {
-	            HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
-	            return;
-	        }
-	        uint8_t motor_id = RS485_RxBuffer[0];
-
-	        for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
-	            if (DDSM115MotorList[i].motorID == motor_id) {
-	            	update_ddsm115_state(&DDSM115MotorList[i], RS485_RxBuffer, 0.0505f);
-				PaperMetrics_RecordDuration(PAPER_Q_ENCODER_READ, encoder_read_start);
-				PaperMetrics_MarkWheelUpdate((uint8_t)i);
-	                break;
-	            }
-	        }
-	        if (motor_id == 0x10u) {
-			PaperMetrics_EndRs485Cycle();
-	        }
-
-	        // Tell the non-blocking sequencer this wheel's reply has landed so it can
-	        // turn the line around and command the next wheel.
-	        DDSM115_NotifyReply(motor_id);
-
-	        // Restart reception for next frame
-	        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
-	    }
-
-
-
-}
-
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	PaperMetrics_UART_TxCpltCallback(huart);
@@ -1436,12 +1270,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		isDDSM115Ready = true;
 		isCYBERGEARReady = true;
 	}
-
-	if (htim->Instance == TIM2) {
-		sendUart2Data = 1;
-		//HAL_GPIO_TogglePin(GPIOA, LED_BUILTIN_Pin);  // ← visible blink
-	}
-
 
 }
 
@@ -1483,9 +1311,27 @@ void ANN_Init(void)
     nn_input[0].data  = (ai_handle)nn_in_obs;
     nn_output[0].data = (ai_handle)nn_out_action;
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_MLP
-#error "nn_arm_b_range not yet code-genned - run CubeMX generation, then mirror the POINT_MLP branch above with ai_nn_arm_b_range_* symbols"
+    err = ai_nn_arm_a_range_create_and_init(&nn_policy, act_addr, NULL);
+    if (err.type != AI_ERROR_NONE) {
+        Error_Handler();
+    }
+    nn_input  = ai_nn_arm_a_range_inputs_get(nn_policy, NULL);
+    nn_output = ai_nn_arm_a_range_outputs_get(nn_policy, NULL);
+    nn_input[0].data  = (ai_handle)nn_in_obs;
+    nn_output[0].data = (ai_handle)nn_out_action;
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_GRU
-#error "nn_arm_c_range_gru not yet code-genned - once generated: create_and_init the same way, then wire nn_input[0].data=nn_in_obs, nn_input[1].data=nn_gru_h, nn_output[0].data=nn_out_action, nn_output[1].data=nn_gru_h_out, and zero nn_gru_h[] here"
+    err = ai_nn_arm_c_range_gru_create_and_init(&nn_policy, act_addr, NULL);
+    if (err.type != AI_ERROR_NONE) {
+        Error_Handler();
+    }
+    nn_input  = ai_nn_arm_c_range_gru_inputs_get(nn_policy, NULL);
+    nn_output = ai_nn_arm_c_range_gru_outputs_get(nn_policy, NULL);
+    nn_input[0].data  = (ai_handle)nn_in_obs;
+    nn_input[1].data  = (ai_handle)nn_gru_h;
+    nn_output[0].data = (ai_handle)nn_out_action;
+    nn_output[1].data = (ai_handle)nn_gru_h_out;
+    memset(nn_gru_h, 0, sizeof(nn_gru_h));
+    memset(nn_gru_h_out, 0, sizeof(nn_gru_h_out));
 #endif
 }
 
@@ -1501,12 +1347,13 @@ void ANN_Init(void)
 static void NN_ReadImu(float *pitch, float *pitch_rate, float *roll, float *roll_rate,
                         float *yaw, float *yaw_rate)
 {
-    *pitch      = PITCH_SIGN * body_pitch_rad;
-    *pitch_rate = PITCH_RATE_SIGN * body_pitch_rate_rad_s;
+    *pitch      = body_pitch_rad;
+    *pitch_rate = body_pitch_rate_rad_s;
     *roll       = body_roll_rad;
     *roll_rate  = body_roll_rate_rad_s;
-    *yaw        = YAW_SIGN * body_yaw_rad;
-    *yaw_rate   = YAW_RATE_SIGN * body_yaw_rate_rad_s;
+    *yaw        = body_yaw_rad;
+    // Training uses root_ang_vel_w[:, 2], so observation 6 must use world Z.
+    *yaw_rate   = body_yaw_rate_world_rad_s;
 }
 
 // ----- NNDriveFixedStance policy: 13 obs -> 2 actions (left/right DDSM115 wheel current,
@@ -1603,15 +1450,28 @@ void ANN_Run(void)
 #if ACTIVE_NN_POLICY == POLICY_RANGE_GRU
     ai_i32 batch = ai_nn_arm_c_range_gru_run(nn_policy, nn_input, nn_output);
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_MLP
-    ai_i32 batch = ai_nn_arm_b_range_run(nn_policy, nn_input, nn_output);
+    ai_i32 batch = ai_nn_arm_a_range_run(nn_policy, nn_input, nn_output);
 #else
     ai_i32 batch = ai_nn_arm_a_point_run(nn_policy, nn_input, nn_output);
 #endif
 	PaperMetrics_RecordDuration(PAPER_Q_INFERENCE, inference_start);
 	uint32_t action_start = PaperMetrics_CycleNow();
-    if (batch != 1 || !isfinite(nn_out_action[0]) || !isfinite(nn_out_action[1])) {
+    bool inference_valid =
+        (batch == 1) && isfinite(nn_out_action[0]) && isfinite(nn_out_action[1]);
+#if ACTIVE_NN_POLICY == POLICY_RANGE_GRU
+    for (uint32_t i = 0; i < NNDRIVE_GRU_HIDDEN && inference_valid; i++) {
+        inference_valid = isfinite(nn_gru_h_out[i]);
+    }
+#endif
+    if (!inference_valid) {
         ddsm_NN_current_command[0] = 0.0f;
         ddsm_NN_current_command[1] = 0.0f;
+		prev_wheel_current_A[0] = 0.0f;
+		prev_wheel_current_A[1] = 0.0f;
+#if ACTIVE_NN_POLICY == POLICY_RANGE_GRU
+        memset(nn_gru_h, 0, sizeof(nn_gru_h));
+        memset(nn_gru_h_out, 0, sizeof(nn_gru_h_out));
+#endif
 		PaperMetrics_RecordDuration(PAPER_Q_ACTION, action_start);
         return;
     }
@@ -1619,98 +1479,26 @@ void ANN_Run(void)
     memcpy(nn_gru_h, nn_gru_h_out, sizeof(nn_gru_h));   // thread forward, never re-zero per-tick
 #endif
 
-    // ---- actions: raw ONNX output IS the current command, no scaling ----
-    ddsm_NN_current_command[0] = clamp_float(DDSM_CURRENT_SIGN_LEFT  * nn_out_action[0],
-	                                             -NNDRIVE_CURRENT_LIMIT_A,
-	                                             NNDRIVE_CURRENT_LIMIT_A);
-    ddsm_NN_current_command[1] = clamp_float(DDSM_CURRENT_SIGN_RIGHT * nn_out_action[1],
-	                                             -NNDRIVE_CURRENT_LIMIT_A,
-	                                             NNDRIVE_CURRENT_LIMIT_A);
-    // obs[9]/[10] next tick must be what was actually sent to the register (post
-    // sign-flip, post-clamp), per STM32_DEPLOYMENT.md's literal wording.
-    prev_wheel_current_A[0] = ddsm_NN_current_command[0];
-    prev_wheel_current_A[1] = ddsm_NN_current_command[1];
+    // ---- actions: raw ONNX output IS the logical current, no scaling ----
+    float logical_current_left_A = clamp_float(nn_out_action[0],
+	                                               -NNDRIVE_CURRENT_LIMIT_A,
+	                                               NNDRIVE_CURRENT_LIMIT_A);
+    float logical_current_right_A = clamp_float(nn_out_action[1],
+	                                                -NNDRIVE_CURRENT_LIMIT_A,
+	                                                NNDRIVE_CURRENT_LIMIT_A);
+
+    // Convert logical policy directions to the physical motor/wiring directions
+    // only at the actuator boundary. On this chassis the physical yaw response
+    // is opposite the simulation convention, so cross the two destinations.
+    ddsm_NN_current_command[0] = DDSM_CURRENT_SIGN_LEFT  * logical_current_right_A;
+    ddsm_NN_current_command[1] = DDSM_CURRENT_SIGN_RIGHT * logical_current_left_A;
+
+    // Training feeds back CurrentActionProcessor.command_current before the
+    // mirrored-wheel physical torque sign or physical destination swap is applied.
+    prev_wheel_current_A[0] = logical_current_left_A;
+    prev_wheel_current_A[1] = logical_current_right_A;
 	PaperMetrics_RecordDuration(PAPER_Q_ACTION, action_start);
 }
-
-#if CYBERGEAR_INDEX_BENCH_TEST
-// One-shot, non-blocking bench routine to identify which CyberGearMotorList[] index
-// drives which physical corner. Robot must be hand-held or resting unloaded on a stand
-// (NOT standing on its own wheels) while this runs. Write CG_BENCH_start = 1 to begin;
-// it sweeps index 0->3, nudging each one at a time by CG_BENCH_STEP_RAD and back, with
-// CG_BENCH_active_index showing which index is currently being tested so you can watch
-// the robot and note which corner moves. Call this once per 15ms tick in place of the
-// normal NN-drive control while it's active.
-#define CG_BENCH_STEP_RAD (0.12f)  // ~6.9deg - safe/visible under any possible corner's real limits
-#define CG_BENCH_HOLD_S    (2.0f)  // time spent at the nudged-out angle, and again back at start
-#define CG_BENCH_PAUSE_S   (1.5f)  // pause between motors so the transition is easy to see
-
-typedef enum {
-    CG_BENCH_PHASE_IDLE = 0,
-    CG_BENCH_PHASE_OUT,
-    CG_BENCH_PHASE_BACK,
-    CG_BENCH_PHASE_PAUSE,
-} CG_BenchPhase;
-
-static void CyberGear_IndexBenchTest(void)
-{
-    static CG_BenchPhase phase = CG_BENCH_PHASE_IDLE;
-    static float phase_timer_s = 0.0f;
-    static float base_angle_rad = 0.0f;
-    static int   index = 0;
-
-    if (CG_BENCH_start && phase == CG_BENCH_PHASE_IDLE) {
-        CG_BENCH_start = 0;
-        // Safety: make sure the wheels aren't still driving from a previous run.
-        DDSM115setCurrent(0x10, 0);
-        DDSM115setCurrent(0x11, 0);
-        index = 0;
-        base_angle_rad = CyberGearMotorList[index].angle;
-        CG_BENCH_active_index = index;
-        phase = CG_BENCH_PHASE_OUT;
-        phase_timer_s = 0.0f;
-    }
-
-    if (phase == CG_BENCH_PHASE_IDLE) {
-        return;
-    }
-
-    phase_timer_s += NNDRIVE_TICK_DT_S;
-
-    float target = (phase == CG_BENCH_PHASE_OUT) ? (base_angle_rad + CG_BENCH_STEP_RAD) : base_angle_rad;
-
-    if (phase != CG_BENCH_PHASE_PAUSE) {
-        CyberGearMotorList[index].desired_angle = target;
-        Motor_SendMITCommand(&CyberGearMotorList[index]);
-    }
-
-    switch (phase) {
-        case CG_BENCH_PHASE_OUT:
-            if (phase_timer_s >= CG_BENCH_HOLD_S) { phase = CG_BENCH_PHASE_BACK; phase_timer_s = 0.0f; }
-            break;
-        case CG_BENCH_PHASE_BACK:
-            if (phase_timer_s >= CG_BENCH_HOLD_S) { phase = CG_BENCH_PHASE_PAUSE; phase_timer_s = 0.0f; }
-            break;
-        case CG_BENCH_PHASE_PAUSE:
-            if (phase_timer_s >= CG_BENCH_PAUSE_S) {
-                index++;
-                if (index >= 4) {
-                    phase = CG_BENCH_PHASE_IDLE;
-                    CG_BENCH_active_index = -1;
-                } else {
-                    base_angle_rad = CyberGearMotorList[index].angle;
-                    CG_BENCH_active_index = index;
-                    phase = CG_BENCH_PHASE_OUT;
-                    phase_timer_s = 0.0f;
-                }
-            }
-            break;
-        default:
-            break;
-    }
-}
-#endif // CYBERGEAR_INDEX_BENCH_TEST
-
 static float clamp_float(float value, float min_value, float max_value)
 {
     if (value < min_value) {
@@ -1865,12 +1653,6 @@ static void PAPER_SendTelemetry(void)
 	if (bno_data_valid) sample.flags |= (1u << 0);
 	if (isFallen()) sample.flags |= (1u << 1);
 	if (isStartupStrategy) sample.flags |= (1u << 2);
-#if CYBERGEAR_INDEX_BENCH_TEST
-	if (CG_BENCH_active_index >= 0) sample.flags |= (1u << 3);
-#endif
-#if NNDRIVE_OUTPUT_DISABLE
-	sample.flags |= (1u << 4);
-#endif
 	sample.flags |= ((uint32_t)ACTIVE_NN_POLICY & 0x03u) << 8;
 
 	sample.attitude[0] = pitch_rad;
@@ -1878,12 +1660,18 @@ static void PAPER_SendTelemetry(void)
 	sample.attitude[2] = roll_rad;
 	sample.attitude[3] = roll_rate_radps;
 	sample.attitude[4] = yaw_rad;
-	sample.attitude[5] = yaw_rate_radps;
+	// Keep the legacy CSV column as raw body gyro Z; diagnostic[0] below is the
+	// world-Z value actually consumed by NN observation 6.
+	sample.attitude[5] = body_yaw_rate_rad_s;
 
 	float phi_left = WHEEL_POS_SIGN_LEFT * DDSM115MotorList[0].phi_rad;
 	float phi_right = WHEEL_POS_SIGN_RIGHT * DDSM115MotorList[1].phi_rad;
 	float omega_left = WHEEL_VEL_SIGN_LEFT * DDSM115MotorList[0].phi_dot_rad_s;
 	float omega_right = WHEEL_VEL_SIGN_RIGHT * DDSM115MotorList[1].phi_dot_rad_s;
+	sample.diagnostic[0] = body_yaw_rate_world_rad_s;
+	sample.diagnostic[1] = body_yaw_rate_quat_rad_s;
+	sample.diagnostic[2] = omega_left;
+	sample.diagnostic[3] = omega_right;
 	sample.position_m = WHEEL_RADIUS_R * 0.5f * (phi_left + phi_right);
 	sample.velocity_mps = WHEEL_RADIUS_R * 0.5f * (omega_left + omega_right);
 

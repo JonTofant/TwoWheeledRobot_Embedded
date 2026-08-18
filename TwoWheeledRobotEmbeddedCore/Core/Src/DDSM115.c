@@ -40,7 +40,19 @@ volatile uint8_t DDSM115_last_rx[10];
 volatile uint16_t DDSM115_last_rx_size;
 volatile uint32_t DDSM115_rx_frame_count;
 volatile uint8_t DDSM115_last_rx_crc_ok;
-volatile uint8_t DDSM115_id_query_tx_status = (uint8_t)HAL_ERROR;
+volatile uint8_t DDSM115_startup_found_mask;
+volatile uint8_t DDSM115_startup_ready;
+volatile uint8_t DDSM115_startup_mode_before[MAX_MOTORS_DDSM115];
+volatile uint8_t DDSM115_startup_mode_after[MAX_MOTORS_DDSM115];
+volatile uint32_t DDSM115_transaction_count;
+volatile uint32_t DDSM115_reply_count;
+volatile uint32_t DDSM115_timeout_count;
+volatile uint32_t DDSM115_bad_frame_count;
+
+#define DDSM_NORMAL_REPLY_TIMEOUT_MS    10u
+#define DDSM_DISCOVERY_REPLY_TIMEOUT_MS 20u
+#define DDSM_DISCOVERY_RETRIES           3u
+#define DDSM_COMMAND_LIMIT_A             2.0f
 
 
 uint8_t position_mode[10] = {
@@ -131,37 +143,16 @@ void DDMS115setMode(uint8_t motorID, uint8_t mode) {
     // Set RS485 transceiver to transmit mode
     HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
     HAL_UART_Transmit(&huart5, cmd, 10, HAL_MAX_DELAY);
-    HAL_Delay(10);  // Short delay to allow command processing
+    while (__HAL_UART_GET_FLAG(&huart5, UART_FLAG_TC) == RESET) {
+        // Do not release DE before the final stop bit leaves the UART.
+    }
     // Return RS485 transceiver to receive mode
     HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
+    HAL_Delay(20);  // Same processing delay as the proven characterization firmware.
 }
 
 
-// Broadcast ID query. Only one DDSM115 may be connected while this command is
-// used; otherwise multiple replies collide on the shared RS485 bus.
-HAL_StatusTypeDef DDSM115QueryID(void)
-{
-    uint8_t cmd[10] = {0};
-    cmd[0] = 0xC8;
-    cmd[1] = 0x64;
-    cmd[9] = compute_crc8(cmd, 9);  // 0xDE
-
-    DDSM115_last_rx_size = 0;
-    DDSM115_rx_frame_count = 0;
-    DDSM115_last_rx_crc_ok = 0;
-    for (uint32_t i = 0; i < sizeof(DDSM115_last_rx); i++) {
-        DDSM115_last_rx[i] = 0;
-    }
-
-    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
-    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart5, cmd, sizeof(cmd),
-                                                  HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
-    DDSM115_id_query_tx_status = (uint8_t)status;
-    return status;
-}
-
-void DDSM115CaptureRx(const uint8_t *buffer, uint16_t size)
+static void DDSM115CaptureRx(const uint8_t *buffer, uint16_t size)
 {
     uint16_t copy_size = size;
     if (copy_size > sizeof(DDSM115_last_rx)) {
@@ -182,11 +173,11 @@ void DDSM115CaptureRx(const uint8_t *buffer, uint16_t size)
 // In current loop mode, the motor expects a signed 16-bit value representing current,
 // where -32767 corresponds to -8 A and +32767 corresponds to +8 A.
 void DDSM115setCurrent(uint8_t motorID, float current_amp) {
-    // Clamp current_amp to the range [-8.0, 8.0]
-    if (current_amp > 8.0f) {
-        current_amp = 8.0f;
-    } else if (current_amp < -8.0f) {
-        current_amp = -8.0f;
+    // Protocol range is +/-8 A; the robot application is limited to +/-2 A.
+    if (current_amp > DDSM_COMMAND_LIMIT_A) {
+        current_amp = DDSM_COMMAND_LIMIT_A;
+    } else if (current_amp < -DDSM_COMMAND_LIMIT_A) {
+        current_amp = -DDSM_COMMAND_LIMIT_A;
     }
 
     // Convert desired current to a signed 16-bit value:
@@ -214,78 +205,164 @@ void DDSM115setCurrent(uint8_t motorID, float current_amp) {
     // Set RS485 transceiver to transmit mode
     HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
     HAL_UART_Transmit(&huart5, cmd, 10, HAL_MAX_DELAY);
+    while (__HAL_UART_GET_FLAG(&huart5, UART_FLAG_TC) == RESET) {
+    }
     // Return RS485 transceiver to receive mode
     HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
 }
 
-// ---------------------------------------------------------------------------
-// Non-blocking half-duplex request/response sequencer
-// ---------------------------------------------------------------------------
-// All DDSM115s share one RS485 (MAX485) line, and every drive command triggers
-// a 10-byte reply frame from the addressed motor. Because the transceiver is
-// half-duplex, we must NOT turn it back to transmit (to command the next motor)
-// until the current motor's reply has fully arrived on the idle line - doing so
-// drives DE over the incoming reply and that wheel's feedback is lost. The old
-// fixed HAL_Delay() between the two commands was a blind guess at that turnaround.
-//
-// This sequencer instead advances to the next motor only when its predecessor's
-// reply has actually been received (flagged from HAL_UARTEx_RxEventCallback via
-// DDSM115_NotifyReply) or after a short safety timeout, without ever blocking the
-// superloop on a fixed delay. Call DDSM115_QueueCurrents() once per control tick
-// with the desired per-wheel currents, and DDSM115_Service() every superloop pass.
-#define DDSM_REPLY_TIMEOUT_MS 3u   // fallback if a motor never answers (unplugged/off)
-
-static uint8_t  ddsm_seq_id[MAX_MOTORS_DDSM115];
-static float    ddsm_seq_current[MAX_MOTORS_DDSM115];
-static uint8_t  ddsm_seq_len = 0;   // number of motors queued this cycle
-static uint8_t  ddsm_seq_pos = 0;   // next motor to command; >= len means cycle done
-static uint8_t  ddsm_seq_busy = 0;  // 1 while waiting for the current motor's reply
-static uint8_t  ddsm_seq_wait_id = 0;
-static uint32_t ddsm_seq_tx_tick = 0;
-
-static volatile uint8_t ddsm_reply_id = 0;    // motorID of the most recent reply
-static volatile uint8_t ddsm_reply_flag = 0;  // set by the RX ISR, cleared before each TX
-
-// Load a fresh command cycle. Any unfinished previous cycle is abandoned (turnaround
-// is a few ms, well inside the ~15ms control tick, so this normally never happens).
-void DDSM115_QueueCurrents(uint8_t id0, float c0, uint8_t id1, float c1)
+static void DDSM115ClearUartErrors(void)
 {
-    ddsm_seq_id[0] = id0; ddsm_seq_current[0] = c0;
-    ddsm_seq_id[1] = id1; ddsm_seq_current[1] = c1;
-    ddsm_seq_len = 2;
-    ddsm_seq_pos = 0;
-    ddsm_seq_busy = 0;
+    __HAL_UART_CLEAR_OREFLAG(&huart5);
+    __HAL_UART_CLEAR_NEFLAG(&huart5);
+    __HAL_UART_CLEAR_FEFLAG(&huart5);
+    __HAL_UART_CLEAR_PEFLAG(&huart5);
 }
 
-// Called from HAL_UARTEx_RxEventCallback when a DDSM115 reply frame has been parsed.
-void DDSM115_NotifyReply(uint8_t motorID)
+static void DDSM115FlushRx(void)
 {
-    ddsm_reply_id = motorID;
-    ddsm_reply_flag = 1;
+    while (__HAL_UART_GET_FLAG(&huart5, UART_FLAG_RXNE) != RESET) {
+        volatile uint8_t discarded = (uint8_t)(huart5.Instance->DR & 0xFFu);
+        (void)discarded;
+    }
 }
 
-// Advance the sequencer. Sends the next motor's command when the line is free
-// (previous reply received, or timed out); otherwise returns immediately so the
-// superloop keeps running during the bus turnaround.
-void DDSM115_Service(void)
+static HAL_StatusTypeDef DDSM115TransactFrame(uint8_t motorID,
+                                              const uint8_t command[10],
+                                              uint8_t reply[10],
+                                              uint32_t reply_timeout_ms)
 {
-    if (ddsm_seq_pos >= ddsm_seq_len) {
-        return;  // cycle complete / nothing queued
+    DDSM115ClearUartErrors();
+    DDSM115FlushRx();
+
+    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
+    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart5, (uint8_t *)command,
+                                                  10u, 10u);
+    if (status == HAL_OK) {
+        while (__HAL_UART_GET_FLAG(&huart5, UART_FLAG_TC) == RESET) {
+            // Wait for the final stop bit before changing bus direction.
+        }
+    }
+    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
+    DDSM115_transaction_count++;
+
+    if (status != HAL_OK) {
+        DDSM115_timeout_count++;
+        return status;
     }
 
-    if (!ddsm_seq_busy) {
-        // Line is free: send this motor's command and start waiting for its reply.
-        ddsm_seq_wait_id = ddsm_seq_id[ddsm_seq_pos];
-        ddsm_reply_flag = 0;  // discard any stale reply before we listen for this one
-        DDSM115setCurrent(ddsm_seq_id[ddsm_seq_pos], ddsm_seq_current[ddsm_seq_pos]);
-        ddsm_seq_tx_tick = HAL_GetTick();
-        ddsm_seq_busy = 1;
-    } else if ((ddsm_reply_flag && ddsm_reply_id == ddsm_seq_wait_id) ||
-               ((HAL_GetTick() - ddsm_seq_tx_tick) >= DDSM_REPLY_TIMEOUT_MS)) {
-        // Reply captured (feedback safe) or motor never answered: move to the next.
-        ddsm_seq_busy = 0;
-        ddsm_seq_pos++;
+    status = HAL_UART_Receive(&huart5, reply, 10u, reply_timeout_ms);
+    if (status != HAL_OK) {
+        DDSM115_timeout_count++;
+        DDSM115ClearUartErrors();
+        return status;
     }
+
+    DDSM115CaptureRx(reply, 10u);
+    if (reply[0] != motorID || compute_crc8(reply, 9u) != reply[9]) {
+        DDSM115_bad_frame_count++;
+        return HAL_ERROR;
+    }
+
+    DDSM115_reply_count++;
+    return HAL_OK;
+}
+
+static HAL_StatusTypeDef DDSM115ReadStatus(uint8_t motorID, uint8_t *mode,
+                                           uint8_t *error)
+{
+    uint8_t command[10] = {0};
+    uint8_t reply[10];
+    command[0] = motorID;
+    command[1] = 0x74u;
+    command[9] = compute_crc8(command, 9u);
+
+    HAL_StatusTypeDef status = HAL_ERROR;
+    for (uint32_t attempt = 0; attempt < DDSM_DISCOVERY_RETRIES; attempt++) {
+        status = DDSM115TransactFrame(motorID, command, reply,
+                                      DDSM_DISCOVERY_REPLY_TIMEOUT_MS);
+        if (status == HAL_OK) {
+            *mode = reply[1];
+            *error = reply[8];
+            return HAL_OK;
+        }
+        HAL_Delay(2u);
+    }
+    return status;
+}
+
+bool DDSM115TransactCurrent(uint8_t motorID, float current_amp)
+{
+    if (current_amp > DDSM_COMMAND_LIMIT_A) {
+        current_amp = DDSM_COMMAND_LIMIT_A;
+    } else if (current_amp < -DDSM_COMMAND_LIMIT_A) {
+        current_amp = -DDSM_COMMAND_LIMIT_A;
+    }
+
+    int16_t current_value = (int16_t)((current_amp / 8.0f) * 32767.0f);
+    uint8_t command[10] = {0};
+    uint8_t reply[10];
+    command[0] = motorID;
+    command[1] = 0x64u;
+    command[2] = (uint8_t)(((uint16_t)current_value) >> 8);
+    command[3] = (uint8_t)((uint16_t)current_value & 0xFFu);
+    command[9] = compute_crc8(command, 9u);
+
+    if (DDSM115TransactFrame(motorID, command, reply,
+                             DDSM_NORMAL_REPLY_TIMEOUT_MS) != HAL_OK) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < MAX_MOTORS_DDSM115; i++) {
+        if (DDSM115MotorList[i].motorID == motorID) {
+            update_ddsm115_state(&DDSM115MotorList[i], reply, WHEEL_RADIUS_R);
+            DDSM115MotorList[i].errorFlag = (reply[8] != 0u);
+            break;
+        }
+    }
+    return true;
+}
+
+bool DDSM115InitializeCurrentMode(void)
+{
+    DDSM115_startup_found_mask = 0u;
+    DDSM115_startup_ready = 0u;
+    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
+    HAL_Delay(100u);
+
+    for (uint32_t i = 0; i < MAX_MOTORS_DDSM115; i++) {
+        uint8_t mode = 0xFFu;
+        uint8_t error = 0xFFu;
+        DDSM115_startup_mode_before[i] = 0xFFu;
+        DDSM115_startup_mode_after[i] = 0xFFu;
+        if (DDSM115ReadStatus(DDSM115MotorList[i].motorID, &mode, &error) == HAL_OK) {
+            DDSM115_startup_found_mask |= (uint8_t)(1u << i);
+            DDSM115_startup_mode_before[i] = mode;
+            DDSM115MotorList[i].errorFlag = (error != 0u);
+        }
+    }
+
+    for (uint32_t i = 0; i < MAX_MOTORS_DDSM115; i++) {
+        if ((DDSM115_startup_found_mask & (uint8_t)(1u << i)) != 0u) {
+            DDMS115setMode(DDSM115MotorList[i].motorID, 0x01u);
+        }
+    }
+
+    bool all_ready =
+        (DDSM115_startup_found_mask == (uint8_t)((1u << MAX_MOTORS_DDSM115) - 1u));
+    for (uint32_t i = 0; i < MAX_MOTORS_DDSM115; i++) {
+        if ((DDSM115_startup_found_mask & (uint8_t)(1u << i)) == 0u ||
+            !DDSM115TransactCurrent(DDSM115MotorList[i].motorID, 0.0f)) {
+            all_ready = false;
+            continue;
+        }
+        DDSM115_startup_mode_after[i] = DDSM115_last_rx[1];
+        if (DDSM115_startup_mode_after[i] != 0x01u) {
+            all_ready = false;
+        }
+    }
+    DDSM115_startup_ready = all_ready ? 1u : 0u;
+    return all_ready;
 }
 
 // --- Change Motor ID Function ---

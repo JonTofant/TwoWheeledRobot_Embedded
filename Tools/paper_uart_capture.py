@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Capture STM32 paper telemetry from USART6 and write plot-ready CSV.
+"""Capture STM32 paper telemetry from the ST-Link VCP and write plot-ready CSV.
 
 Example:
-    python Tools/paper_uart_capture.py COM7 --duration 30 --reset \
+    python Tools/paper_uart_capture.py COM3 --duration 30 --reset \
         --output Results/paper/run_01.csv --plot Results/paper/run_01.png
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 
 MAGIC = b"\xA5\x5A"
-VERSION = 1
+VERSION = 2
 SAMPLE_TYPE = 1
 HEADER = struct.Struct("<2sBBH")
 CRC = struct.Struct("<H")
@@ -46,6 +46,10 @@ STATE_FLOATS = [
     "roll_rate_radps",
     "yaw_rad",
     "yaw_rate_radps",
+    "yaw_rate_world_radps",
+    "yaw_rate_from_quat_radps",
+    "wheel_left_logical_velocity_radps",
+    "wheel_right_logical_velocity_radps",
     "position_m",
     "velocity_mps",
     "wheel_left_position_rad",
@@ -175,7 +179,7 @@ def make_plot(csv_path: Path, plot_path: Path) -> None:
     t = [value - t0 for value in series("time_s")]
     rad_to_deg = 180.0 / math.pi
 
-    figure, axes = plt.subplots(2, 2, figsize=(12, 8), constrained_layout=True)
+    figure, axes = plt.subplots(3, 2, figsize=(12, 11), constrained_layout=True)
     axes[0, 0].plot(t, [value * rad_to_deg for value in series("pitch_rad")])
     axes[0, 0].set(title="Platform pitch", ylabel="deg")
 
@@ -198,6 +202,17 @@ def make_plot(csv_path: Path, plot_path: Path) -> None:
     axes[1, 1].set(title="Observation age at inference", ylabel="us")
     axes[1, 1].legend(fontsize="small")
 
+    axes[2, 0].plot(t, series("yaw_rate_radps"), label="body gyro Z (diagnostic)")
+    axes[2, 0].plot(t, series("yaw_rate_world_radps"), label="gyro transformed to world Z (policy)")
+    axes[2, 0].plot(t, series("yaw_rate_from_quat_radps"), label="fused-yaw derivative")
+    axes[2, 0].set(title="Yaw-rate frame diagnostic", ylabel="rad/s")
+    axes[2, 0].legend(fontsize="small")
+
+    axes[2, 1].plot(t, series("wheel_left_logical_velocity_radps"), label="left logical")
+    axes[2, 1].plot(t, series("wheel_right_logical_velocity_radps"), label="right logical")
+    axes[2, 1].set(title="Policy-frame wheel velocity", ylabel="rad/s")
+    axes[2, 1].legend(fontsize="small")
+
     for axis in axes.flat:
         axis.set_xlabel("time (s)")
         axis.grid(True, alpha=0.3)
@@ -208,8 +223,8 @@ def make_plot(csv_path: Path, plot_path: Path) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("port", help="serial port, for example COM7 or /dev/ttyUSB0")
-    parser.add_argument("--baud", type=int, default=3_000_000)
+    parser.add_argument("port", help="serial port, for example COM3 or /dev/ttyACM0")
+    parser.add_argument("--baud", type=int, default=921_600)
     parser.add_argument("--duration", type=float, default=0.0, help="seconds; 0 records until Ctrl+C")
     parser.add_argument("--output", type=Path, required=True, help="destination CSV")
     parser.add_argument("--plot", type=Path, help="optional summary PNG written after capture")

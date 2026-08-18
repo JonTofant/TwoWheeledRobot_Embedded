@@ -12,7 +12,7 @@
 
 #define PAPER_UART_MAGIC_0        0xA5u
 #define PAPER_UART_MAGIC_1        0x5Au
-#define PAPER_UART_VERSION        1u
+#define PAPER_UART_VERSION        2u
 #define PAPER_UART_SAMPLE_TYPE    1u
 
 typedef struct {
@@ -33,6 +33,7 @@ typedef struct __attribute__((packed)) {
 	float timing_wcet_us[PAPER_Q_COUNT];
 	float timing_jitter_us[PAPER_Q_COUNT];
 	float attitude[6];
+	float diagnostic[PAPER_METRICS_DIAGNOSTIC_COUNT];
 	float position_m;
 	float velocity_mps;
 	float wheel_position_rad[PAPER_METRICS_WHEEL_COUNT];
@@ -54,8 +55,8 @@ typedef struct __attribute__((packed)) {
 	uint16_t crc16;
 } PaperTelemetryPacket;
 
-typedef char PaperPayloadSizeMustRemain396Bytes[
-	(sizeof(PaperTelemetryPayload) == 396u) ? 1 : -1];
+typedef char PaperPayloadSizeMustRemain412Bytes[
+	(sizeof(PaperTelemetryPayload) == 412u) ? 1 : -1];
 
 static UART_HandleTypeDef *paper_uart;
 static PaperTimingAccumulator timing[PAPER_Q_COUNT];
@@ -272,6 +273,7 @@ bool PaperMetrics_Send(const PaperTelemetryState *state)
 	}
 
 	memcpy(tx_packet.payload.attitude, state->attitude, sizeof(state->attitude));
+	memcpy(tx_packet.payload.diagnostic, state->diagnostic, sizeof(state->diagnostic));
 	tx_packet.payload.position_m = state->position_m;
 	tx_packet.payload.velocity_mps = state->velocity_mps;
 	memcpy(tx_packet.payload.wheel_position_rad, state->wheel_position_rad,

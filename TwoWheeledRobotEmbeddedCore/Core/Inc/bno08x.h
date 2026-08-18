@@ -33,6 +33,11 @@ extern volatile float bno_gx, bno_gy, bno_gz;
 // avoids interference from the nearby CyberGear CAN wiring/motors).
 extern volatile float bno_qw, bno_qx, bno_qy, bno_qz;
 
+// Sequence/timestamp of the most recently decoded game-rotation-vector report.
+// The timestamp comes from SH-2 and is in microseconds.
+extern volatile uint32_t bno_rotation_update_count;
+extern volatile uint64_t bno_rotation_timestamp_us;
+
 // Yaw [rad], derived from the quaternion above. Will drift slowly over
 // long runs since there's no magnetometer correction — accepted tradeoff.
 extern volatile float bno_yaw_rad;

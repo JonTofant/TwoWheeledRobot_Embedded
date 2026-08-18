@@ -1,20 +1,21 @@
 # Paper experiment telemetry
 
-The firmware streams one binary sample per 15 ms control release on the dedicated
-USART1 link. This stream contains the raw values needed for plots and the running
-mean, WCET, and jitter for every timing row in Table 9 of the paper.
+The firmware streams one binary sample per 15 ms control release through USART2,
+connected to the Nucleo ST-Link Virtual COM Port. This stream contains the raw
+values needed for plots and the running mean, WCET, and jitter for every timing
+row in Table 9 of the paper. While this experiment build is active, USART2 is not
+available for the legacy ESP32/joystick packet receiver.
 
 ## Connection and capture
 
-- STM32 USART1 TX: PA9
-- STM32 USART1 RX: PA10 (optional, used for the reset command)
-- Serial format: 3,000,000 baud, 8 data bits, no parity, 1 stop bit
-- Logic level: 3.3 V TTL; connect a common ground
+- Nucleo USB connection: ST-Link Virtual COM Port (COM3 on the current PC)
+- STM32 USART2 TX/RX: PA2/PA3, already routed to ST-Link VCP on the Nucleo
+- Serial format: 921,600 baud, 8 data bits, no parity, 1 stop bit
 
-Use a USB-UART adapter that explicitly supports 3 Mbaud. Capture a run with:
+Capture a run with:
 
 ```powershell
-python Tools/paper_uart_capture.py COM7 --duration 30 --reset `
+python Tools/paper_uart_capture.py COM3 --duration 30 --reset `
   --output Results/paper/run_01.csv `
   --plot Results/paper/run_01.png
 ```
@@ -56,11 +57,16 @@ The CSV also includes pitch/roll/yaw and rates, wheel odometry, both wheel encod
 states, command and measured wheel currents, four leg angles, the exact 13
 normalized network inputs, two raw network outputs, and the running paper metrics:
 initial/max/RMS pitch, RMS measured current, recovery time, final displacement, and
-run time.
+run time. Protocol version 2 additionally logs `yaw_rate_world_radps` (the complete
+body gyro vector rotated into world Z and consumed by NN observation 6),
+`yaw_rate_from_quat_radps` (an independent
+finite difference using SH-2 timestamps), and the left/right wheel velocities after
+the policy-layer direction signs. The raw body gyro and fused-yaw derivative remain
+diagnostics; the world-Z rate is the policy input required by the training contract.
 
-`flags` is a bit field: bit 0 means valid BNO data, bit 1 fallen, bit 2 startup
-strategy active, bit 3 CyberGear bench test active, and bit 4 motor output disabled.
-Bits 8-9 hold the active policy ID (`0` point MLP, `1` range MLP, `2` range GRU).
+`flags` is a bit field: bit 0 means valid BNO data, bit 1 fallen, and bit 2
+startup strategy active. Bits 8-9 hold the active policy ID (`0` point MLP,
+`1` range MLP, `2` range GRU).
 
 ## Filling Table 9
 

@@ -24,7 +24,12 @@ extern volatile float body_pitch_rate_rad_s;
 extern volatile float body_roll_rad;
 extern volatile float body_roll_rate_rad_s;
 extern volatile float body_yaw_rad;
+// Raw sensor/body gyro Z retained for diagnostics.
 extern volatile float body_yaw_rate_rad_s;
+// World-frame angular-velocity Z consumed by NN observation 6.
+extern volatile float body_yaw_rate_world_rad_s;
+// Independent fused-yaw finite-difference diagnostic.
+extern volatile float body_yaw_rate_quat_rad_s;
 
 void StateEstimator_UpdateFromBNO(void);
 

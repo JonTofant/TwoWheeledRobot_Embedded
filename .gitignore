@@ -9,3 +9,6 @@ TwoWheeledRobotEmbeddedCore/Release/
 # a duplicate of Core/Startup/startup_stm32f446retx.s and has been dropped from
 # the build. A fresh clone doesn't need this to build or run.
 TwoWheeledRobotEmbeddedCore/.ai/
+
+# CubeMX writes this disposable backup beside the source .ioc file.
+TwoWheeledRobotEmbeddedCore/*.ioc_bkp
