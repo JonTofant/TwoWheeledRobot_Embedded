@@ -82,11 +82,20 @@ typedef struct {
 // Extern declaration of motor array.
 extern DDSM115 DDSM115MotorList[MAX_MOTORS_DDSM115];
 
+/* Raw RS485 diagnostics, captured before filtering on a configured motor ID. */
+extern volatile uint8_t DDSM115_last_rx[10];
+extern volatile uint16_t DDSM115_last_rx_size;
+extern volatile uint32_t DDSM115_rx_frame_count;
+extern volatile uint8_t DDSM115_last_rx_crc_ok;
+extern volatile uint8_t DDSM115_id_query_tx_status;
+
 
 uint8_t compute_crc8(uint8_t *data, uint8_t len);
 void sendPositionCommand(uint8_t motorID, float angle_deg);
 uint16_t angleToValue(float angle_deg);
 void DDMS115setMode(uint8_t motorID, uint8_t mode);
+HAL_StatusTypeDef DDSM115QueryID(void);
+void DDSM115CaptureRx(const uint8_t *buffer, uint16_t size);
 void DDSM115setCurrent(uint8_t motorID, float current_amp);
 void DDSM115ChangeID(uint8_t motorID, uint8_t newID);
 void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_radius);

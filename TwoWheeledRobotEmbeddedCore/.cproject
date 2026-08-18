@@ -185,14 +185,6 @@
 		<project id="Diablo_robot_source.null.499774826" name="Diablo_robot_source"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.237232707;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.237232707.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.648017955;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1074675610">
-			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1005514019;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1005514019.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.464048721;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.395340279">
-			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="scannerConfiguration"/>
 </cproject>

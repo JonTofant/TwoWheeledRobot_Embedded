@@ -144,9 +144,9 @@ void System_Init(void)
 
 		  HAL_Delay(3000);*/
 
-	  	  // Set DDSM115 motor to current mode
-	  	  DDMS115setMode(0x10, 0x01);  // 0x01 => current mode
-	  	  HAL_Delay(10);
-	  	  DDMS115setMode(0x11, 0x01);  // 0x01 => current mode
+	// Diagnostic build: broadcast a read-only ID query. Connect exactly one
+	// DDSM115 to the RS485 bus; its 10-byte reply remains in RS485_RxBuffer.
+	HAL_Delay(100);
+	DDSM115QueryID();
 
 }

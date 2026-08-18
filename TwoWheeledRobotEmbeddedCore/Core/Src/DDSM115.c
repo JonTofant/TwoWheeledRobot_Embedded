@@ -36,6 +36,12 @@ DDSM115 DDSM115MotorList[MAX_MOTORS_DDSM115] = {
 	{ .motorID = 0x10, .target_angle = 0.0f, .min_angle = -6.283f, .max_angle = 6.283f, .errorFlag = true, .x = 0, .x_dot = 0, .x_ddot = 0, .prev_x_dot = 0}
 };
 
+volatile uint8_t DDSM115_last_rx[10];
+volatile uint16_t DDSM115_last_rx_size;
+volatile uint32_t DDSM115_rx_frame_count;
+volatile uint8_t DDSM115_last_rx_crc_ok;
+volatile uint8_t DDSM115_id_query_tx_status = (uint8_t)HAL_ERROR;
+
 
 uint8_t position_mode[10] = {
     0x01,  // Motor ID
@@ -128,6 +134,47 @@ void DDMS115setMode(uint8_t motorID, uint8_t mode) {
     HAL_Delay(10);  // Short delay to allow command processing
     // Return RS485 transceiver to receive mode
     HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
+}
+
+
+// Broadcast ID query. Only one DDSM115 may be connected while this command is
+// used; otherwise multiple replies collide on the shared RS485 bus.
+HAL_StatusTypeDef DDSM115QueryID(void)
+{
+    uint8_t cmd[10] = {0};
+    cmd[0] = 0xC8;
+    cmd[1] = 0x64;
+    cmd[9] = compute_crc8(cmd, 9);  // 0xDE
+
+    DDSM115_last_rx_size = 0;
+    DDSM115_rx_frame_count = 0;
+    DDSM115_last_rx_crc_ok = 0;
+    for (uint32_t i = 0; i < sizeof(DDSM115_last_rx); i++) {
+        DDSM115_last_rx[i] = 0;
+    }
+
+    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
+    HAL_StatusTypeDef status = HAL_UART_Transmit(&huart5, cmd, sizeof(cmd),
+                                                  HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
+    DDSM115_id_query_tx_status = (uint8_t)status;
+    return status;
+}
+
+void DDSM115CaptureRx(const uint8_t *buffer, uint16_t size)
+{
+    uint16_t copy_size = size;
+    if (copy_size > sizeof(DDSM115_last_rx)) {
+        copy_size = sizeof(DDSM115_last_rx);
+    }
+
+    for (uint16_t i = 0; i < copy_size; i++) {
+        DDSM115_last_rx[i] = buffer[i];
+    }
+    DDSM115_last_rx_size = size;
+    DDSM115_last_rx_crc_ok =
+        (size == sizeof(DDSM115_last_rx) && compute_crc8((uint8_t *)buffer, 9) == buffer[9]) ? 1u : 0u;
+    DDSM115_rx_frame_count++;
 }
 
 

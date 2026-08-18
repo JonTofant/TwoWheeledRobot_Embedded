@@ -175,6 +175,10 @@ volatile float DBG_desired_yawrate_radps = 0.0f;
 #define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
 #define NNDRIVE_CURRENT_LIMIT_A (2.0f)      // Matches the exported policy action range (already scaled to amperes)
 
+// Temporary A/B test against ERK commit 227f5ed. When enabled, bypass the
+// non-blocking DDSM sequencer and restore the known-working blocking send order.
+#define DDSM_LEGACY_BLOCKING_TX_TEST 1
+
 #define NNDRIVE_TICK_DT_S         (0.015f)  // 15ms TIM4 tick (matches MET_SAMPLE_DT_S)
 
 static float prev_wheel_current_A[2] = {0.0f, 0.0f}; // obs[9]/[10]: post-sign-flip, post-clamp -
@@ -372,29 +376,6 @@ int main(void)
   //------------------------------------------------
 
 
-// SEND QUERY TO DDSM115
-  uint8_t cmd[10] = {0};
-  cmd[0] = 0xAA;  // Motor ID
-  cmd[1] = 0x64;
-  cmd[2] = 0x00;  // High byte
-  cmd[3] = 0x00;  // Low byte
-  cmd[4] = 0x00;
-  cmd[5] = 0x00;
-  cmd[6] = 0x00;
-  cmd[7] = 0x00;
-  cmd[8] = 0x00;
-  cmd[9] = compute_crc8(cmd, 9);
-  // Set GPIO pin to transmit mode
-
-  HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_SET);
-  HAL_UART_Transmit(&huart5, cmd, 10, HAL_MAX_DELAY);
-  HAL_Delay(10);  // Allow time for the command to be processed
-  // Set GPIO pin to receive mode
-  HAL_GPIO_WritePin(RS485_DIR_GPIO_Port, RS485_DIR_Pin, GPIO_PIN_RESET);
-
-
-
-
   // CAN
   // 1) Configure the CAN filter to accept *all* extended frames
   CAN_FilterTypeDef sFilterConfig;
@@ -575,7 +556,7 @@ int main(void)
 	         // LOG_Update() every tick, so the raw network outputs can be inspected via
 	         // STM Studio (LOG_obs[], LOG_action_L/R) or a debugger watch on nn_out_action[]
 	         // with the legs held still. Revert to 0 to resume normal operation.
-#define NNDRIVE_OUTPUT_DISABLE 0
+#define NNDRIVE_OUTPUT_DISABLE 1
 #if !NNDRIVE_OUTPUT_DISABLE
 	         if (!isFallen() || isStartupStrategy) {
 	             // Legs are not policy-controlled - hold the fixed hardware-failsafe pose
@@ -596,13 +577,18 @@ int main(void)
 	         // this tick, legs hold their last state per the CyberGear's own timeout.
 
 	         if (!isFallen() || isStartupStrategy) {
+	             PaperMetrics_BeginRs485Cycle();
+#if DDSM_LEGACY_BLOCKING_TX_TEST
+	             DDSM115setCurrent(0x11, ddsm_NN_current_command[0]);
+	             HAL_Delay(5);
+	             DDSM115setCurrent(0x10, ddsm_NN_current_command[1]);
+#else
 	             // Queue both wheel currents; the non-blocking sequencer (pumped by
 	             // DDSM115_Service() in the superloop) sends the second only after the
-	             // first wheel's RS485 reply lands, so neither wheel's feedback is lost
-	             // and there is no fixed inter-command delay.
-	             DDSM115_QueueCurrents(0x11, 1 * ddsm_NN_current_command[0],
-	                                   0x10, 1 * ddsm_NN_current_command[1]);
-	             PaperMetrics_BeginRs485Cycle();
+	             // first wheel's RS485 reply lands, so neither wheel's feedback is lost.
+	             DDSM115_QueueCurrents(0x11, ddsm_NN_current_command[0],
+	                                   0x10, ddsm_NN_current_command[1]);
+#endif
 	         }
 #endif // !NNDRIVE_OUTPUT_DISABLE
 	         PaperMetrics_RecordDuration(PAPER_Q_MOTOR_WRITE, motor_write_start);
@@ -1393,6 +1379,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	   if (huart->Instance == UART5)
 	    {
 	        uint32_t encoder_read_start = PaperMetrics_CycleNow();
+	        DDSM115CaptureRx(RS485_RxBuffer, Size);
+	        if (Size != RS485_BUFFER_SIZE) {
+	            HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
+	            return;
+	        }
 	        uint8_t motor_id = RS485_RxBuffer[0];
 
 	        for (int i = 0; i < MAX_MOTORS_DDSM115; i++) {
