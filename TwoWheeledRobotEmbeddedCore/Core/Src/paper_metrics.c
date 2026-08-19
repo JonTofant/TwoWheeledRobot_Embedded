@@ -164,6 +164,12 @@ void PaperMetrics_RecordDuration(PaperMetricQuantity quantity, uint32_t start_cy
 	record_us(quantity, cycles_to_us(PaperMetrics_CycleNow() - start_cycle));
 }
 
+void PaperMetrics_RecordInterval(PaperMetricQuantity quantity,
+                                 uint32_t start_cycle, uint32_t end_cycle)
+{
+	record_us(quantity, cycles_to_us(end_cycle - start_cycle));
+}
+
 void PaperMetrics_OnControlRelease(void)
 {
 	uint32_t now = PaperMetrics_CycleNow();
@@ -196,8 +202,13 @@ void PaperMetrics_MarkImuUpdate(void)
 
 void PaperMetrics_MarkWheelUpdate(uint8_t wheel_index)
 {
+	PaperMetrics_MarkWheelUpdateAt(wheel_index, PaperMetrics_CycleNow());
+}
+
+void PaperMetrics_MarkWheelUpdateAt(uint8_t wheel_index, uint32_t update_cycle)
+{
 	if (wheel_index < PAPER_METRICS_WHEEL_COUNT) {
-		source_wheel_cycle[wheel_index] = PaperMetrics_CycleNow();
+		source_wheel_cycle[wheel_index] = update_cycle;
 	}
 }
 
@@ -233,8 +244,14 @@ void PaperMetrics_BeginRs485Cycle(void)
 
 void PaperMetrics_EndRs485Cycle(void)
 {
+	PaperMetrics_EndRs485CycleAt(PaperMetrics_CycleNow());
+}
+
+void PaperMetrics_EndRs485CycleAt(uint32_t end_cycle)
+{
 	if (rs485_start_cycle != 0u) {
-		PaperMetrics_RecordDuration(PAPER_Q_RS485_CYCLE, rs485_start_cycle);
+		PaperMetrics_RecordInterval(PAPER_Q_RS485_CYCLE, rs485_start_cycle,
+		                            end_cycle);
 		rs485_start_cycle = 0u;
 	}
 }

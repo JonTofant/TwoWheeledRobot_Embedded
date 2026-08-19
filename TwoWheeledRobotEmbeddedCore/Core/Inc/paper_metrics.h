@@ -59,6 +59,8 @@ void PaperMetrics_Init(UART_HandleTypeDef *huart);
 void PaperMetrics_Reset(void);
 uint32_t PaperMetrics_CycleNow(void);
 void PaperMetrics_RecordDuration(PaperMetricQuantity quantity, uint32_t start_cycle);
+void PaperMetrics_RecordInterval(PaperMetricQuantity quantity,
+                                 uint32_t start_cycle, uint32_t end_cycle);
 
 void PaperMetrics_OnControlRelease(void);
 uint32_t PaperMetrics_BeginControl(void);
@@ -66,11 +68,13 @@ void PaperMetrics_EndControl(uint32_t start_cycle);
 
 void PaperMetrics_MarkImuUpdate(void);
 void PaperMetrics_MarkWheelUpdate(uint8_t wheel_index);
+void PaperMetrics_MarkWheelUpdateAt(uint8_t wheel_index, uint32_t update_cycle);
 void PaperMetrics_MarkLegUpdate(uint8_t leg_index);
 void PaperMetrics_UpdateObservationAges(void);
 
 void PaperMetrics_BeginRs485Cycle(void);
 void PaperMetrics_EndRs485Cycle(void);
+void PaperMetrics_EndRs485CycleAt(uint32_t end_cycle);
 
 bool PaperMetrics_Send(const PaperTelemetryState *state);
 void PaperMetrics_UART_TxCpltCallback(UART_HandleTypeDef *huart);

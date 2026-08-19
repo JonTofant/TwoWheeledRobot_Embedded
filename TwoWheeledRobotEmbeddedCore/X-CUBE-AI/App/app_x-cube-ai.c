@@ -199,37 +199,17 @@ int post_process(ai_i8* data[])
 void MX_X_CUBE_AI_Init(void)
 {
     /* USER CODE BEGIN 5 */
-  printf("\r\nTEMPLATE - initialization\r\n");
-
-  ai_boostrap(data_activations0);
+  /* The live policy is initialized by ANN_Init() in main.c. Keep this
+   * generated hook inert so it cannot initialize a second network. */
+  return;
     /* USER CODE END 5 */
 }
 
 void MX_X_CUBE_AI_Process(void)
 {
     /* USER CODE BEGIN 6 */
-  int res = -1;
-
-  printf("TEMPLATE - run - main loop\r\n");
-
-  if (nn_arm_a_point) {
-
-    do {
-      /* 1 - acquire and pre-process input data */
-      res = acquire_and_process_data(data_ins);
-      /* 2 - process the data - call inference engine */
-      if (res == 0)
-        res = ai_run();
-      /* 3- post-process the predictions */
-      if (res == 0)
-        res = post_process(data_outs);
-    } while (res==0);
-  }
-
-  if (res) {
-    ai_error err = {AI_ERROR_INVALID_STATE, AI_ERROR_CODE_NETWORK};
-    ai_log_err(err, "Process has FAILED");
-  }
+  /* ANN_Run() owns inference scheduling on the 15 ms control release. */
+  return;
     /* USER CODE END 6 */
 }
 #ifdef __cplusplus

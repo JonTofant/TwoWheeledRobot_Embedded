@@ -92,6 +92,32 @@ extern volatile uint32_t DDSM115_transaction_count;
 extern volatile uint32_t DDSM115_reply_count;
 extern volatile uint32_t DDSM115_timeout_count;
 extern volatile uint32_t DDSM115_bad_frame_count;
+extern volatile uint32_t DDSM115_queue_full_count;
+/* Runtime DMA diagnostics. Array index 0 is motor 0x11; index 1 is 0x10. */
+extern volatile uint32_t DDSM115_timeout_by_motor[MAX_MOTORS_DDSM115];
+extern volatile uint32_t DDSM115_bad_frame_by_motor[MAX_MOTORS_DDSM115];
+extern volatile uint32_t DDSM115_reply_last_us[MAX_MOTORS_DDSM115];
+extern volatile uint32_t DDSM115_reply_max_us[MAX_MOTORS_DDSM115];
+extern volatile uint32_t DDSM115_bad_crc_count;
+extern volatile uint32_t DDSM115_unexpected_id_count;
+extern volatile uint32_t DDSM115_uart_error_count;
+extern volatile uint32_t DDSM115_uart_parity_error_count;
+extern volatile uint32_t DDSM115_uart_noise_error_count;
+extern volatile uint32_t DDSM115_uart_framing_error_count;
+extern volatile uint32_t DDSM115_uart_overrun_error_count;
+extern volatile uint32_t DDSM115_uart_dma_error_count;
+extern volatile uint32_t DDSM115_uart_last_error_code;
+extern volatile uint32_t DDSM115_timeout_no_data_count;
+extern volatile uint32_t DDSM115_timeout_partial_frame_count;
+extern volatile uint8_t DDSM115_last_timeout_rx_bytes;
+extern volatile uint32_t DDSM115_retry_attempt_count;
+extern volatile uint32_t DDSM115_retry_success_count;
+extern volatile uint32_t DDSM115_retry_failed_count;
+extern volatile uint32_t DDSM115_unrecovered_failure_count;
+extern volatile uint8_t DDSM115_last_bad_expected_id;
+extern volatile uint8_t DDSM115_last_bad_received_id;
+extern volatile uint8_t DDSM115_last_bad_received_crc;
+extern volatile uint8_t DDSM115_last_bad_computed_crc;
 
 
 uint8_t compute_crc8(uint8_t *data, uint8_t len);
@@ -101,6 +127,18 @@ void DDMS115setMode(uint8_t motorID, uint8_t mode);
 void DDSM115setCurrent(uint8_t motorID, float current_amp);
 bool DDSM115InitializeCurrentMode(void);
 bool DDSM115TransactCurrent(uint8_t motorID, float current_amp);
+/* Runtime, non-blocking current-command API. The UART5 callbacks below must be
+ * forwarded from the corresponding HAL callbacks. */
+bool DDSM115QueueCurrent(uint8_t motorID, float current_amp);
+void DDSM115Service(void);
+bool DDSM115IsIdle(void);
+uint8_t DDSM115TakeCompletedMask(void);
+uint32_t DDSM115GetCompletionStartCycle(uint8_t motor_index);
+uint32_t DDSM115GetCompletionEndCycle(uint8_t motor_index);
+uint32_t DDSM115GetLastTransactionEndCycle(void);
+void DDSM115_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+void DDSM115_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+void DDSM115_UART_ErrorCallback(UART_HandleTypeDef *huart);
 void DDSM115ChangeID(uint8_t motorID, uint8_t newID);
 void update_ddsm115_state(DDSM115* motor, const uint8_t* Buffer, float wheel_radius);
 

@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "app_x-cube-ai.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -213,6 +214,7 @@ volatile float   LOG_I_L_cmd_A      = 0.0f;  // -> I_L_cmd_A
 volatile float   LOG_I_R_cmd_A      = 0.0f;  // -> I_R_cmd_A
 volatile float   LOG_I_L_meas_A     = 0.0f;  // -> I_L_meas_A
 volatile float   LOG_I_R_meas_A     = 0.0f;  // -> I_R_meas_A
+static bool      ddsm_metrics_cycle_active = false;
 
 /* USER CODE END PV */
 
@@ -235,6 +237,8 @@ static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
 volatile uint16_t rxReadIndex = 0;       // Your software read pointer
 
 
@@ -253,6 +257,7 @@ static float wrap_pi(float angle_rad);
 static void MET_Update(void);
 static void LOG_Update(void);
 static void PAPER_SendTelemetry(void);
+static void DDSM115_UpdateCompletedMetrics(void);
 
 
 /* USER CODE END PFP */
@@ -309,6 +314,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_CRC_Init();
+  MX_X_CUBE_AI_Init();
   /* USER CODE BEGIN 2 */
 
   ANN_Init();
@@ -406,6 +412,11 @@ int main(void)
 	  // ----- MAIN CONTROL LOOP -----
 	  // Seperated by flags for auxiliary tasks and a state machine
 
+	 // UART5 DMA transactions advance from IRQ callbacks. This service only
+	 // enforces the bounded no-reply deadline; it never waits for a motor.
+	 DDSM115Service();
+	 DDSM115_UpdateCompletedMetrics();
+
 	 // Service the BNO08x (no-ops unless its INT pin has signaled new data) and
 	 // refresh the derived pitch/roll/yaw state every pass, before anything below
 	 // reads it (isFallen(), posture/startup/jump strategies, NN_ReadImu()).
@@ -443,10 +454,11 @@ int main(void)
 		 }
 
 		 if (isFallen()) {
-			 // Safety stop: both wheels to zero. No turnaround wait needed - we
-			 // don't care about the feedback frame while stopping.
-			 DDSM115setCurrent(0x10, 0);
-			 DDSM115setCurrent(0x11, 0);
+			 // Safety stop uses the same bounded DMA path as normal control.
+			 if (DDSM115_startup_ready && DDSM115IsIdle()) {
+				 (void)DDSM115QueueCurrent(0x10, 0.0f);
+				 (void)DDSM115QueueCurrent(0x11, 0.0f);
+			 }
 		 }
 
 		 if (isJumpStrategy) {
@@ -460,6 +472,10 @@ int main(void)
 	 // Run the policy and both DDSM115 transactions on the 15ms TIM4 tick.
 	 if (isDDSM115Ready) {
 	     isDDSM115Ready = false;
+	     /* Catch a reply or deadline reached while the IMU was being serviced,
+	      * before observation ages and wheel state are consumed. */
+	     DDSM115Service();
+	     DDSM115_UpdateCompletedMetrics();
 	     uint32_t control_cycle_start = PaperMetrics_BeginControl();
 
 	     PaperMetrics_UpdateObservationAges();
@@ -485,19 +501,13 @@ int main(void)
 	         // this tick, legs hold their last state per the CyberGear's own timeout.
 
 	         if ((!isFallen() || isStartupStrategy) && DDSM115_startup_ready) {
-	             PaperMetrics_BeginRs485Cycle();
-	             uint32_t wheel_read_start = PaperMetrics_CycleNow();
-	             if (DDSM115TransactCurrent(0x11, ddsm_NN_current_command[0])) {
-	                 PaperMetrics_RecordDuration(PAPER_Q_ENCODER_READ, wheel_read_start);
-	                 PaperMetrics_MarkWheelUpdate(0u);
-	             }
-	             wheel_read_start = PaperMetrics_CycleNow();
-	             if (DDSM115TransactCurrent(0x10, ddsm_NN_current_command[1])) {
-	                 PaperMetrics_RecordDuration(PAPER_Q_ENCODER_READ, wheel_read_start);
-	                 PaperMetrics_MarkWheelUpdate(1u);
-	             }
-	             PaperMetrics_EndRs485Cycle();
-	         }
+		     if (DDSM115IsIdle()) {
+		         PaperMetrics_BeginRs485Cycle();
+		         ddsm_metrics_cycle_active = true;
+		         (void)DDSM115QueueCurrent(0x11, ddsm_NN_current_command[0]);
+		         (void)DDSM115QueueCurrent(0x10, ddsm_NN_current_command[1]);
+		     }
+		 }
 	     PaperMetrics_RecordDuration(PAPER_Q_MOTOR_WRITE, motor_write_start);
 	     PaperMetrics_EndControl(control_cycle_start);
 
@@ -507,6 +517,8 @@ int main(void)
 	     PAPER_SendTelemetry();
 	 }
     /* USER CODE END WHILE */
+
+  MX_X_CUBE_AI_Process();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -1116,6 +1128,27 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+static void DDSM115_UpdateCompletedMetrics(void)
+{
+	uint8_t completed = DDSM115TakeCompletedMask();
+	for (uint8_t motor_index = 0u; motor_index < MAX_MOTORS_DDSM115; motor_index++) {
+		if ((completed & (uint8_t)(1u << motor_index)) != 0u) {
+			uint32_t transaction_start =
+				DDSM115GetCompletionStartCycle(motor_index);
+			uint32_t transaction_end =
+				DDSM115GetCompletionEndCycle(motor_index);
+			PaperMetrics_RecordInterval(PAPER_Q_ENCODER_READ,
+			                            transaction_start, transaction_end);
+			PaperMetrics_MarkWheelUpdateAt(motor_index, transaction_end);
+		}
+	}
+
+	if (ddsm_metrics_cycle_active && DDSM115IsIdle()) {
+		PaperMetrics_EndRs485CycleAt(DDSM115GetLastTransactionEndCycle());
+		ddsm_metrics_cycle_active = false;
+	}
+}
+
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
@@ -1215,6 +1248,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	if (huart->Instance == UART5) {
+		DDSM115_UART_RxCpltCallback(huart);
+		return;
+	}
 	if (huart->Instance == USART2) {
 		if (paper_uart_rx_byte == 'R' || paper_uart_rx_byte == 'r') {
 			PaperMetrics_Reset();
@@ -1246,7 +1283,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
+	if (huart->Instance == UART5) {
+		DDSM115_UART_TxCpltCallback(huart);
+		return;
+	}
 	PaperMetrics_UART_TxCpltCallback(huart);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+	if (huart->Instance == UART5) {
+		DDSM115_UART_ErrorCallback(huart);
+	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
