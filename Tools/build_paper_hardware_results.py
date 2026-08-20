@@ -184,6 +184,44 @@ def make_scenario_bar(
     print(f"wrote {out_path}")
 
 
+def make_combined_scenario_figure(
+    all_metrics: dict[str, dict[str, dict[str, float]]], out_path: Path
+) -> None:
+    """Velocity-error panel over reverse/spin panel, one figure for both halves
+    of the command-tracking table (paper figure, paired with tab:hardware-tracking)."""
+    import matplotlib.pyplot as plt
+
+    labels = list(RUN_COLORS.keys())
+    display_name = {"range_mlp": "B: range DR, MLP", "range_gru": "C: range DR, GRU"}
+    vel_stage_keys = [s[0] for s in STAGES if s[2] == "velocity" and s[0] in all_metrics]
+    yaw_stage_keys = [s[0] for s in STAGES if s[2] == "yaw" and s[0] in all_metrics]
+
+    fig, (ax_v, ax_w) = plt.subplots(2, 1, figsize=(6.0, 5.6), constrained_layout=True)
+    width = 0.35
+
+    for ax, stage_keys, metric_key, ylabel in (
+        (ax_v, vel_stage_keys, "rms_velocity_error_mps", "RMS velocity error (m/s)"),
+        (ax_w, yaw_stage_keys, "rms_yawrate_error_radps", "RMS yaw-rate error (rad/s)"),
+    ):
+        x = range(len(stage_keys))
+        for j, label in enumerate(labels):
+            vals = [all_metrics[s][label][metric_key] for s in stage_keys]
+            offset = (j - 0.5) * width
+            ax.bar([i + offset for i in x], vals, width, color=RUN_COLORS[label], label=display_name[label])
+        ax.set_ylabel(ylabel)
+        ax.set_xticks(list(x))
+        ax.set_xticklabels([STAGE_LABELS.get(s, s) for s in stage_keys], rotation=20, ha="right", fontsize=8)
+        ax.axhline(0, color=COLOR_AXIS, linewidth=0.7)
+
+    ax_v.legend(loc="upper right", fontsize=8)
+    ax_v.set_title("Hardware command-tracking error by test-bench scenario", fontsize=10)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+    print(f"wrote {out_path}")
+
+
 # ------------------------------------------------------------- transients --
 
 def make_transient_figure(
@@ -328,6 +366,7 @@ def main() -> int:
     all_metrics = collect_all_metrics(runs)
 
     make_aggregate_figure(all_metrics, OUT_DIR / "fig_hw_aggregate.pdf")
+    make_combined_scenario_figure(all_metrics, OUT_DIR / "fig_hw_scenario_combined.pdf")
 
     vel_stage_keys = [s[0] for s in STAGES if s[2] == "velocity" and s[0] in all_metrics]
     yaw_stage_keys = [s[0] for s in STAGES if s[2] == "yaw" and s[0] in all_metrics]
