@@ -12,3 +12,6 @@ TwoWheeledRobotEmbeddedCore/.ai/
 
 # CubeMX writes this disposable backup beside the source .ioc file.
 TwoWheeledRobotEmbeddedCore/*.ioc_bkp
+
+# Python bytecode cache from running the Tools/*.py plotting scripts.
+__pycache__/

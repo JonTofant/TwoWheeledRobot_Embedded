@@ -1,0 +1,14 @@
+quantity,label,MLP (A/B)_mean_us,MLP (A/B)_wcet_us,MLP (A/B)_jitter_us,GRU (C)_mean_us,GRU (C)_wcet_us,GRU (C)_jitter_us
+imu_read,IMU read,2158.77,5310.33,289.86,2309.00,6052.24,497.69
+encoder_read,Wheel encoder read,2369.06,9239.54,455.56,2370.57,9449.81,463.38
+observation,Observation assembly,22.85,28.87,1.98,22.32,46.15,1.82
+inference,Policy inference,567.32,570.95,1.76,2914.55,2995.01,3.60
+action,Action processing,2.86,6.35,0.11,57.62,61.20,0.25
+motor_write,Motor command write,238.07,245.11,1.08,238.25,244.08,0.86
+total,Total task,864.81,872.23,1.81,3266.66,3350.64,3.44
+control_period,Control period,15000.00,15004.10,0.29,15000.00,15034.93,0.82
+release_latency,Task release latency,949.49,2631.29,646.59,954.11,2722.48,699.17
+rs485_cycle,Two-wheel RS485 cycle,4778.30,12037.33,646.03,4777.62,12477.10,640.98
+imu_age,IMU sample age,60.74,5614.29,221.49,66.06,5411.68,190.72
+wheel_age,Wheel sample age,11808.57,24139.05,970.34,9420.06,22670.58,997.41
+leg_age,Leg sample age,13648.40,16189.93,829.04,11246.88,13812.21,814.36

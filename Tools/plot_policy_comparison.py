@@ -226,23 +226,69 @@ def make_overview(run: Run, out_path: Path) -> None:
 
 # ------------------------------------------------------------ stage plots --
 
+def compute_stage_metrics(
+    runs: dict[str, Run], stage_name: str, kind: str
+) -> tuple[dict[str, tuple[int, int]], dict[str, dict[str, float]]] | None:
+    """Per-run (span, metrics) for one test-bench stage, no plotting."""
+    spans = {}
+    for label, run in runs.items():
+        span = run.find_stage(stage_name)
+        if span is None:
+            return None
+        spans[label] = span
+
+    metrics: dict[str, dict[str, float]] = {}
+    for label, run in runs.items():
+        i0, i1 = spans[label]
+
+        pitch_deg = [math.degrees(v) for v in run.f("pitch_rad", i0, i1)]
+        roll_deg = [math.degrees(v) for v in run.f("roll_rad", i0, i1)]
+        cur_l = run.f("wheel_left_current_measured_A", i0, i1)
+        cur_r = run.f("wheel_right_current_measured_A", i0, i1)
+        cur_avg = [0.5 * (abs(a) + abs(b)) for a, b in zip(cur_l, cur_r)]
+
+        m = {
+            "duration_s": run.t[i1] - run.t[i0],
+            "max_abs_pitch_deg": max(abs(v) for v in pitch_deg),
+            "rms_pitch_deg": rms(pitch_deg),
+            "max_abs_roll_deg": max(abs(v) for v in roll_deg),
+            "rms_roll_deg": rms(roll_deg),
+            "rms_current_A": rms(cur_avg),
+        }
+
+        if kind == "balance":
+            pos = run.f("position_m", i0, i1)
+            drift = [p - pos[0] for p in pos]
+            m["max_abs_drift_m"] = max(abs(v) for v in drift)
+        elif kind == "velocity":
+            v_cmd = run.f("obs_7", i0, i1)
+            v_meas = run.f("velocity_mps", i0, i1)
+            err = [meas - cmd for meas, cmd in zip(v_meas, v_cmd)]
+            m["rms_velocity_error_mps"] = rms(err)
+        elif kind == "yaw":
+            w_cmd = [v * 2.0 for v in run.f("obs_8", i0, i1)]
+            w_meas = run.f("yaw_rate_world_radps", i0, i1)
+            err = [meas - cmd for meas, cmd in zip(w_meas, w_cmd)]
+            m["rms_yawrate_error_radps"] = rms(err)
+
+        metrics[label] = m
+
+    return spans, metrics
+
+
 def make_stage_figure(
     runs: dict[str, Run], stage_name: str, title: str, kind: str, out_path: Path
 ) -> dict[str, dict[str, float]] | None:
     import matplotlib.pyplot as plt
 
-    spans = {}
-    for label, run in runs.items():
-        span = run.find_stage(stage_name)
-        if span is None:
-            print(f"  ! {stage_name}: missing from {label}, skipping figure")
-            return None
-        spans[label] = span
+    result = compute_stage_metrics(runs, stage_name, kind)
+    if result is None:
+        print(f"  ! {stage_name}: missing from one or more runs, skipping figure")
+        return None
+    spans, metrics = result
 
     fig, axes = plt.subplots(4, 1, figsize=(6.5, 8.0), constrained_layout=True, sharex=False)
     ax_pitch, ax_roll, ax_cur, ax_track = axes
-
-    metrics: dict[str, dict[str, float]] = {}
 
     for label, run in runs.items():
         i0, i1 = spans[label]
@@ -259,38 +305,22 @@ def make_stage_figure(
         ax_roll.plot(t_rel, roll_deg, color=color, linewidth=1.0, label=run.name)
         ax_cur.plot(t_rel, cur_avg, color=color, linewidth=1.0, label=run.name)
 
-        m = {
-            "duration_s": run.t[i1] - run.t[i0],
-            "max_abs_pitch_deg": max(abs(v) for v in pitch_deg),
-            "rms_pitch_deg": rms(pitch_deg),
-            "max_abs_roll_deg": max(abs(v) for v in roll_deg),
-            "rms_roll_deg": rms(roll_deg),
-            "rms_current_A": rms(cur_avg),
-        }
-
         if kind == "balance":
             pos = run.f("position_m", i0, i1)
             drift = [p - pos[0] for p in pos]
             ax_track.plot(t_rel, drift, color=color, linewidth=1.0, label=run.name)
-            m["max_abs_drift_m"] = max(abs(v) for v in drift)
         elif kind == "velocity":
             v_cmd = run.f("obs_7", i0, i1)
             v_meas = run.f("velocity_mps", i0, i1)
-            err = [meas - cmd for meas, cmd in zip(v_meas, v_cmd)]
             ax_track.plot(t_rel, v_meas, color=color, linewidth=1.0, label=f"{run.name} measured")
             if label == next(iter(runs)):
                 ax_track.plot(t_rel, v_cmd, color=COLOR_CMD, linewidth=1.0, linestyle="--", label="commanded")
-            m["rms_velocity_error_mps"] = rms(err)
         elif kind == "yaw":
             w_cmd = [v * 2.0 for v in run.f("obs_8", i0, i1)]
             w_meas = run.f("yaw_rate_world_radps", i0, i1)
-            err = [meas - cmd for meas, cmd in zip(w_meas, w_cmd)]
             ax_track.plot(t_rel, w_meas, color=color, linewidth=1.0, label=f"{run.name} measured")
             if label == next(iter(runs)):
                 ax_track.plot(t_rel, w_cmd, color=COLOR_CMD, linewidth=1.0, linestyle="--", label="commanded")
-            m["rms_yawrate_error_radps"] = rms(err)
-
-        metrics[label] = m
 
     for ax in axes:
         ax.axhline(0, color=COLOR_AXIS, linewidth=0.7)
