@@ -15,7 +15,7 @@ available for the legacy ESP32/joystick packet receiver.
 Capture a run with:
 
 ```powershell
-python Tools/paper_uart_capture.py COM3 --duration 30 --reset `
+python Tools/paper_uart_capture.py COM3 --duration 0 --reset `
   --output Results/paper/run_01.csv `
   --plot Results/paper/run_01.png
 ```
@@ -66,7 +66,69 @@ diagnostics; the world-Z rate is the policy input required by the training contr
 
 `flags` is a bit field: bit 0 means valid BNO data, bit 1 fallen, and bit 2
 startup strategy active. Bits 8-9 hold the active policy ID (`0` point MLP,
-`1` range MLP, `2` range GRU).
+`1` range MLP, `2` range GRU). Bit 3 means the automatic test bench is
+running, bit 4 means it is paused (either a manual checkpoint or fall recovery),
+and bit 5 distinguishes fall recovery. Bits 16-23 hold its stage ID and bits
+24-31 hold the run's saturated fall count. The capture script decodes these into the
+human-readable CSV columns `active_policy_name`, `testbench_running`,
+`testbench_waiting`, `testbench_recovering`, `testbench_fall_count`,
+`testbench_stage`, and `testbench_stage_name`.
+
+## Automatic comparison test bench
+
+Start the serial capture first, then write `DBG_testbench_start = 1` in Live
+Expressions. The firmware resets the run/timing accumulators and executes the
+same sequence for any of the three compiled policies. Write the variable back
+to `0` to abort; it also returns to `0` automatically when the sequence ends.
+
+The test waits at six manual checkpoints before the forward/reverse travel
+segments. When `DBG_testbench_waiting` becomes `1`, wait for the robot to stop,
+reposition it, then write `DBG_testbench_continue = 1`. Firmware clears the
+continue flag automatically. It re-anchors the position and heading once when
+entering a checkpoint so the robot holds position, then re-anchors again and
+resets recurrent policy state before starting the next segment. Use
+`--duration 0` and press Ctrl+C after the complete test because checkpoint time
+depends on the operator.
+
+Checkpoint samples remain in the CSV with `testbench_waiting = 1` and a named
+checkpoint stage, so exclude them from motion-segment analysis. Repositioning
+does not invalidate execution-time measurements. Motion results must be reported
+as segmented trials, not as one continuous trajectory, and the same checkpoint
+procedure must be used for every policy.
+
+The editable Live Expressions amplitudes are:
+
+- `DBG_testbench_linear_mps` (default `0.5` m/s)
+- `DBG_testbench_yaw_rate_radps` (default `1.0` rad/s)
+- `DBG_testbench_leg_degrees` (default `35` degrees relative to nominal)
+
+Stage durations and ordering are kept together in `testbench_steps[]` near the
+top of `Core/Src/main.c`. The four leg commands use opposed joint directions:
+`[+left, -left, +right, -right]`. Logical zero is a physical 10-degree extension
+on both legs, including during normal policy operation and manual checkpoints.
+The 35-degree test amplitude is relative to this nominal pose, so a fully moving
+joint reaches 45 physical degrees. A fall during an active motion marks that
+stage as failed (`testbench_recovering = 1`), zeros the velocity and yaw-rate
+targets, returns the legs to nominal, and pauses without aborting the run. Stand
+the robot upright and write `DBG_testbench_continue = 1`; firmware advances past
+the failed stage and resets recurrent policy state. The fall remains identifiable
+in the CSV by the recovery flag, stage ID, and incremented fall count. At a manual
+checkpoint the robot may be lifted or tilted for repositioning; the next segment
+cannot start until it is upright again.
+
+The final `crossed_asymmetric_hold` stage moves the left-back and right-front
+actuators by 35 relative degrees over 1 second (45 physical degrees) while the
+other two remain at the 10-degree nominal pose, then holds that crossed pose for
+4 seconds.
+
+The `sine_legs_forward` and `sine_legs_reverse` stages each complete two
+2-second symmetric leg cycles while driving for 4 seconds, with a manual
+repositioning checkpoint between directions.
+
+After the crossed pose returns smoothly to nominal, `one_leg_sine_forward` and
+`one_leg_sine_reverse` move only the left leg through the same 2-second sine
+pattern for 4 seconds in each direction, again with a repositioning checkpoint
+between them. The right leg stays at the 10-degree nominal pose.
 
 ## Filling Table 9
 

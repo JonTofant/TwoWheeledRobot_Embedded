@@ -81,6 +81,42 @@ TIMING_FLOAT_COUNT = len(QUANTITIES) * 4
 PAYLOAD = struct.Struct(f"<4I{TIMING_FLOAT_COUNT + len(STATE_FLOATS)}f")
 EXPECTED_PAYLOAD_SIZE = PAYLOAD.size
 
+POLICY_NAMES = {
+    0: "point_mlp",
+    1: "range_mlp",
+    2: "range_gru",
+}
+
+TESTBENCH_STAGE_NAMES = {
+    0: "idle",
+    1: "settle",
+    2: "left_leg",
+    3: "neutral_after_left",
+    4: "right_leg",
+    5: "neutral_after_right",
+    6: "checkpoint_before_forward",
+    7: "forward",
+    8: "hold_after_forward",
+    9: "checkpoint_before_reverse",
+    10: "reverse",
+    11: "hold_after_reverse",
+    12: "spin_positive",
+    13: "hold_after_positive_spin",
+    14: "spin_negative",
+    15: "hold_after_negative_spin",
+    16: "checkpoint_before_sine_forward",
+    17: "sine_legs_forward",
+    18: "checkpoint_before_sine_reverse",
+    19: "sine_legs_reverse",
+    20: "final_hold",
+    21: "crossed_asymmetric_hold",
+    22: "neutral_after_crossed",
+    23: "checkpoint_before_one_leg_forward",
+    24: "one_leg_sine_forward",
+    25: "checkpoint_before_one_leg_reverse",
+    26: "one_leg_sine_reverse",
+}
+
 
 def crc16_ccitt(data: bytes) -> int:
     crc = 0xFFFF
@@ -92,22 +128,49 @@ def crc16_ccitt(data: bytes) -> int:
 
 
 def csv_columns() -> list[str]:
-    columns = ["sequence", "timestamp_us", "time_s", "flags", "dropped_frames"]
+    columns = [
+        "sequence",
+        "timestamp_us",
+        "time_s",
+        "flags",
+        "active_policy_id",
+        "active_policy_name",
+        "testbench_running",
+        "testbench_waiting",
+        "testbench_recovering",
+        "testbench_fall_count",
+        "testbench_stage",
+        "testbench_stage_name",
+        "dropped_frames",
+    ]
     for statistic in ("last", "mean", "wcet", "jitter"):
         columns.extend(f"{quantity}_{statistic}_us" for quantity in QUANTITIES)
     columns.extend(STATE_FLOATS)
     return columns
 
 
-def decode_payload(payload: bytes) -> dict[str, int | float]:
+def decode_payload(payload: bytes) -> dict[str, int | float | str]:
     values = PAYLOAD.unpack(payload)
     sequence, timestamp_us, flags, dropped_frames = values[:4]
     floats = values[4:]
-    row: dict[str, int | float] = {
+    policy_id = (flags >> 8) & 0x03
+    testbench_stage = (flags >> 16) & 0xFF
+    testbench_fall_count = (flags >> 24) & 0xFF
+    row: dict[str, int | float | str] = {
         "sequence": sequence,
         "timestamp_us": timestamp_us,
         "time_s": timestamp_us * 1.0e-6,
         "flags": flags,
+        "active_policy_id": policy_id,
+        "active_policy_name": POLICY_NAMES.get(policy_id, f"unknown_{policy_id}"),
+        "testbench_running": 1 if flags & (1 << 3) else 0,
+        "testbench_waiting": 1 if flags & (1 << 4) else 0,
+        "testbench_recovering": 1 if flags & (1 << 5) else 0,
+        "testbench_fall_count": testbench_fall_count,
+        "testbench_stage": testbench_stage,
+        "testbench_stage_name": TESTBENCH_STAGE_NAMES.get(
+            testbench_stage, f"unknown_{testbench_stage}"
+        ),
         "dropped_frames": dropped_frames,
     }
 
@@ -242,7 +305,7 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     buffer = bytearray()
     rows_written = 0
-    last_row: dict[str, int | float] | None = None
+    last_row: dict[str, int | float | str] | None = None
     started = time.monotonic()
 
     with serial.Serial(args.port, args.baud, timeout=0.1) as uart, args.output.open(

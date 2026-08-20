@@ -53,12 +53,54 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+typedef enum {
+	TESTBENCH_STAGE_IDLE = 0,
+	TESTBENCH_STAGE_SETTLE,
+	TESTBENCH_STAGE_LEFT_LEG,
+	TESTBENCH_STAGE_NEUTRAL_AFTER_LEFT,
+	TESTBENCH_STAGE_RIGHT_LEG,
+	TESTBENCH_STAGE_NEUTRAL_AFTER_RIGHT,
+	TESTBENCH_STAGE_CHECKPOINT_BEFORE_FORWARD,
+	TESTBENCH_STAGE_FORWARD,
+	TESTBENCH_STAGE_HOLD_AFTER_FORWARD,
+	TESTBENCH_STAGE_CHECKPOINT_BEFORE_REVERSE,
+	TESTBENCH_STAGE_REVERSE,
+	TESTBENCH_STAGE_HOLD_AFTER_REVERSE,
+	TESTBENCH_STAGE_SPIN_POSITIVE,
+	TESTBENCH_STAGE_HOLD_AFTER_POSITIVE_SPIN,
+	TESTBENCH_STAGE_SPIN_NEGATIVE,
+	TESTBENCH_STAGE_HOLD_AFTER_NEGATIVE_SPIN,
+	TESTBENCH_STAGE_CHECKPOINT_BEFORE_SINE_FORWARD,
+	TESTBENCH_STAGE_SINE_LEGS_FORWARD,
+	TESTBENCH_STAGE_CHECKPOINT_BEFORE_SINE_REVERSE,
+	TESTBENCH_STAGE_SINE_LEGS_REVERSE,
+	TESTBENCH_STAGE_FINAL_HOLD,
+	TESTBENCH_STAGE_CROSSED_ASYMMETRIC_HOLD,
+	TESTBENCH_STAGE_NEUTRAL_AFTER_CROSSED,
+	TESTBENCH_STAGE_CHECKPOINT_BEFORE_ONE_LEG_FORWARD,
+	TESTBENCH_STAGE_ONE_LEG_SINE_FORWARD,
+	TESTBENCH_STAGE_CHECKPOINT_BEFORE_ONE_LEG_REVERSE,
+	TESTBENCH_STAGE_ONE_LEG_SINE_REVERSE
+} TestBenchStage;
+
+typedef struct {
+	float duration_s;
+	float velocity_scale;
+	float yaw_rate_scale;
+	float left_leg_scale;
+	float right_leg_scale;
+	bool sine_legs;
+} TestBenchStep;
 
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define TESTBENCH_LEG_RAMP_S       1.0f
+#define TESTBENCH_SINE_PERIOD_S    2.0f
+#define TESTBENCH_DEG_TO_RAD       (3.14159265358979323846f / 180.0f)
 
 /* USER CODE END PD */
 
@@ -113,7 +155,7 @@ int16_t velocityDDSM_RPM = 0;
 // ===== NN policy selection (compile-time, one active per build) =====
 // Template-Twowheeledrobot-NNDriveFixedStance-v0 family (STM32_DEPLOYMENT.md): 13 obs -> 2
 // actions (left/right DDSM115 wheel current, A). Legs are NOT policy-controlled - see
-// NNDRIVE_LEG_TARGET_RAD below. Switching policies means rebuilding/reflashing.
+// NNDRIVE_LEG_NOMINAL_RAD below. Switching policies means rebuilding/reflashing.
 #define POLICY_POINT_MLP  0   // nn_arm_a_point - point-training baseline, 13 in / 2 out
 #define POLICY_RANGE_MLP  1   // nn_arm_a_range - range-randomized policy B, 13 in / 2 out
 #define POLICY_RANGE_GRU  2   // nn_arm_c_range_gru - range-randomized recurrent policy C
@@ -144,14 +186,72 @@ AI_ALIGNED(32) static uint8_t nn_activations_pool[NN_ACTIVATIONS_SIZE];
 
 // Legs are held at a constant pose, not policy-controlled (STM32_DEPLOYMENT.md
 // "Legs (not policy-controlled)") - normal MIT position control, kp=30/kd=3 already the
-// compiled-in default for every CyberGearMotorList[] entry (cybergear.c).
-#define NNDRIVE_LEG_TARGET_RAD (0.0f)
+// compiled-in default for every CyberGearMotorList[] entry (cybergear.c). Physical
+// 10 degrees is the logical zero/nominal stance; test-bench motion is relative to it.
+#define NNDRIVE_LEG_NOMINAL_DEG (10.0f)
+#define NNDRIVE_LEG_NOMINAL_RAD (NNDRIVE_LEG_NOMINAL_DEG * TESTBENCH_DEG_TO_RAD)
 
 // Debug/STM-Studio-tunable stand-ins for the joystick velocity/yaw-rate commands (no
 // joystick wired up yet). Run through the exact same slew-limit + integration pipeline
 // STM32_DEPLOYMENT.md specifies for v_joy/w_joy.
 volatile float DBG_desired_velocity_mps  = 0.0f;
 volatile float DBG_desired_yawrate_radps = 0.0f;
+
+// Write DBG_testbench_start = 1 in Live Expressions to start. At a manual
+// checkpoint, reposition and write DBG_testbench_continue = 1. Write start
+// back to 0 at any time to abort. The amplitudes can be edited before each run.
+volatile uint8_t DBG_testbench_start = 0u;
+volatile uint8_t DBG_testbench_running = 0u;
+volatile uint8_t DBG_testbench_waiting = 0u;
+volatile uint8_t DBG_testbench_recovering = 0u;
+volatile uint8_t DBG_testbench_continue = 0u;
+volatile uint8_t DBG_testbench_fall_count = 0u;
+volatile uint8_t DBG_testbench_stage = TESTBENCH_STAGE_IDLE;
+volatile float DBG_testbench_stage_time_s = 0.0f;
+volatile float DBG_testbench_linear_mps = 0.5f;
+volatile float DBG_testbench_yaw_rate_radps = 1.0f;
+volatile float DBG_testbench_leg_degrees = 35.0f;
+static volatile uint8_t testbench_policy_reset_requested = 0u;
+
+// Edit this table to change ordering or timing. Velocity/yaw/leg entries are
+// multipliers for the three DBG_testbench_* amplitudes above.
+// A negative duration marks a manual checkpoint. Set DBG_testbench_continue=1
+// after repositioning to start the next movement segment.
+static const TestBenchStep testbench_steps[] = {
+	/* duration  velocity  yaw   left leg  right leg  sine */
+	{ 3.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // settle
+	{ 5.0f,       0.0f,   0.0f,    1.0f,      0.0f,    false }, // left leg extend/hold
+	{ 2.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // neutral
+	{ 5.0f,       0.0f,   0.0f,    0.0f,      1.0f,    false }, // right leg extend/hold
+	{ 2.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // neutral
+	{-1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // checkpoint: reposition before forward
+	{ 3.0f,      +1.0f,   0.0f,    0.0f,      0.0f,    false }, // forward
+	{ 3.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // hold position
+	{-1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // checkpoint: reposition before reverse
+	{ 3.0f,      -1.0f,   0.0f,    0.0f,      0.0f,    false }, // reverse
+	{ 3.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // hold position
+	{ 5.0f,       0.0f,  +1.0f,    0.0f,      0.0f,    false }, // positive yaw
+	{ 3.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // hold heading
+	{ 5.0f,       0.0f,  -1.0f,    0.0f,      0.0f,    false }, // negative yaw
+	{ 3.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // hold heading
+	{-1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // checkpoint: symmetric-leg forward
+	{ 4.0f,      +1.0f,   0.0f,    1.0f,      1.0f,    true  }, // two symmetric leg cycles forward
+	{-1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // checkpoint: symmetric-leg reverse
+	{ 4.0f,      -1.0f,   0.0f,    1.0f,      1.0f,    true  }, // two symmetric leg cycles reverse
+	{ 3.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // final hold
+	{ 5.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // 1 s move + 4 s crossed asymmetric hold
+	{ 1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // smooth return from crossed pose
+	{-1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // checkpoint: one-leg forward
+	{ 4.0f,      +1.0f,   0.0f,    1.0f,      0.0f,    false }, // two left-leg bump cycles forward
+	{-1.0f,       0.0f,   0.0f,    0.0f,      0.0f,    false }, // checkpoint: one-leg reverse
+	{ 4.0f,      -1.0f,   0.0f,    1.0f,      0.0f,    false }  // two left-leg bump cycles reverse
+};
+
+static float testbench_leg_target_rad[MAX_MOTORS] = {0.0f};
+static float testbench_left_extension_deg = 0.0f;
+static float testbench_right_extension_deg = 0.0f;
+static float testbench_stage_start_left_deg = 0.0f;
+static float testbench_stage_start_right_deg = 0.0f;
 
 #define WHEEL_POS_SIGN_LEFT        (-1.0f)
 #define WHEEL_POS_SIGN_RIGHT       (+1.0f)
@@ -258,6 +358,8 @@ static void MET_Update(void);
 static void LOG_Update(void);
 static void PAPER_SendTelemetry(void);
 static void DDSM115_UpdateCompletedMetrics(void);
+static void TestBench_Update(void);
+static void TestBench_Stop(void);
 
 
 /* USER CODE END PFP */
@@ -476,6 +578,7 @@ int main(void)
 	      * before observation ages and wheel state are consumed. */
 	     DDSM115Service();
 	     DDSM115_UpdateCompletedMetrics();
+	     TestBench_Update();
 	     uint32_t control_cycle_start = PaperMetrics_BeginControl();
 
 	     PaperMetrics_UpdateObservationAges();
@@ -485,10 +588,14 @@ int main(void)
 	         if (!isFallen() || isStartupStrategy) {
 	             // Legs are not policy-controlled - hold the fixed hardware-failsafe pose
 	             // every tick (STM32_DEPLOYMENT.md "Legs (not policy-controlled)").
-	             CyberGearMotorList[0].desired_angle = NNDRIVE_LEG_TARGET_RAD;
-	             CyberGearMotorList[1].desired_angle = NNDRIVE_LEG_TARGET_RAD;
-	             CyberGearMotorList[2].desired_angle = NNDRIVE_LEG_TARGET_RAD;
-	             CyberGearMotorList[3].desired_angle = NNDRIVE_LEG_TARGET_RAD;
+	             CyberGearMotorList[0].desired_angle = DBG_testbench_running ?
+	                 testbench_leg_target_rad[0] : +NNDRIVE_LEG_NOMINAL_RAD;
+	             CyberGearMotorList[1].desired_angle = DBG_testbench_running ?
+	                 testbench_leg_target_rad[1] : -NNDRIVE_LEG_NOMINAL_RAD;
+	             CyberGearMotorList[2].desired_angle = DBG_testbench_running ?
+	                 testbench_leg_target_rad[2] : +NNDRIVE_LEG_NOMINAL_RAD;
+	             CyberGearMotorList[3].desired_angle = DBG_testbench_running ?
+	                 testbench_leg_target_rad[3] : -NNDRIVE_LEG_NOMINAL_RAD;
 
 	             // No inter-command delay: Motor_SendMITCommand() waits for a free
 	             // CAN TX mailbox internally, so all four frames queue back-to-back.
@@ -1128,6 +1235,242 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+static void TestBench_Stop(void)
+{
+	DBG_testbench_start = 0u;
+	DBG_testbench_running = 0u;
+	DBG_testbench_waiting = 0u;
+	DBG_testbench_recovering = 0u;
+	DBG_testbench_continue = 0u;
+	DBG_testbench_stage = TESTBENCH_STAGE_IDLE;
+	DBG_testbench_stage_time_s = 0.0f;
+	DBG_desired_velocity_mps = 0.0f;
+	DBG_desired_yawrate_radps = 0.0f;
+	testbench_left_extension_deg = 0.0f;
+	testbench_right_extension_deg = 0.0f;
+	testbench_stage_start_left_deg = 0.0f;
+	testbench_stage_start_right_deg = 0.0f;
+	testbench_leg_target_rad[0] = +NNDRIVE_LEG_NOMINAL_RAD;
+	testbench_leg_target_rad[1] = -NNDRIVE_LEG_NOMINAL_RAD;
+	testbench_leg_target_rad[2] = +NNDRIVE_LEG_NOMINAL_RAD;
+	testbench_leg_target_rad[3] = -NNDRIVE_LEG_NOMINAL_RAD;
+}
+
+static void TestBench_Update(void)
+{
+	if (DBG_testbench_running == 0u) {
+		if (DBG_testbench_start == 0u) {
+			return;
+		}
+		if (isFallen() && !isStartupStrategy) {
+			DBG_testbench_start = 0u;
+			return;
+		}
+
+		DBG_testbench_running = 1u;
+		DBG_testbench_waiting = 0u;
+		DBG_testbench_recovering = 0u;
+		DBG_testbench_continue = 0u;
+		DBG_testbench_fall_count = 0u;
+		DBG_testbench_stage = TESTBENCH_STAGE_SETTLE;
+		DBG_testbench_stage_time_s = 0.0f;
+		testbench_left_extension_deg = 0.0f;
+		testbench_right_extension_deg = 0.0f;
+		testbench_stage_start_left_deg = 0.0f;
+		testbench_stage_start_right_deg = 0.0f;
+		DBG_desired_velocity_mps = 0.0f;
+		DBG_desired_yawrate_radps = 0.0f;
+		testbench_policy_reset_requested = 1u;
+		PaperMetrics_Reset();
+		MET_reset = 1u;
+	}
+
+	// Setting the start switch back to zero is the emergency abort.
+	if (DBG_testbench_start == 0u) {
+		TestBench_Stop();
+		return;
+	}
+
+	// A fall during an active stage marks that stage as failed and pauses with
+	// neutral commands. After the robot is upright, continue advances to the next
+	// stage instead of restarting the complete test.
+	if (DBG_testbench_recovering != 0u) {
+		DBG_desired_velocity_mps = 0.0f;
+		DBG_desired_yawrate_radps = 0.0f;
+		testbench_left_extension_deg = 0.0f;
+		testbench_right_extension_deg = 0.0f;
+		testbench_stage_start_left_deg = 0.0f;
+		testbench_stage_start_right_deg = 0.0f;
+		testbench_leg_target_rad[0] = +NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[1] = -NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[2] = +NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[3] = -NNDRIVE_LEG_NOMINAL_RAD;
+		if (DBG_testbench_continue == 0u || isFallen()) {
+			return;
+		}
+
+		DBG_testbench_continue = 0u;
+		DBG_testbench_waiting = 0u;
+		DBG_testbench_recovering = 0u;
+		testbench_policy_reset_requested = 1u;
+		DBG_testbench_stage++;
+		// The crossed-pose return stage is unnecessary after recovery already
+		// returned every leg to nominal.
+		if (DBG_testbench_stage == TESTBENCH_STAGE_NEUTRAL_AFTER_CROSSED) {
+			DBG_testbench_stage++;
+		}
+		DBG_testbench_stage_time_s = 0.0f;
+		if ((uint32_t)DBG_testbench_stage >
+		    (sizeof(testbench_steps) / sizeof(testbench_steps[0]))) {
+			TestBench_Stop();
+		}
+		return;
+	}
+
+	if (DBG_testbench_waiting == 0u && isFallen() && !isStartupStrategy) {
+		DBG_testbench_waiting = 1u;
+		DBG_testbench_recovering = 1u;
+		DBG_testbench_continue = 0u;
+		if (DBG_testbench_fall_count < UINT8_MAX) {
+			DBG_testbench_fall_count++;
+		}
+		testbench_policy_reset_requested = 1u;
+		DBG_desired_velocity_mps = 0.0f;
+		DBG_desired_yawrate_radps = 0.0f;
+		testbench_left_extension_deg = 0.0f;
+		testbench_right_extension_deg = 0.0f;
+		testbench_stage_start_left_deg = 0.0f;
+		testbench_stage_start_right_deg = 0.0f;
+		testbench_leg_target_rad[0] = +NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[1] = -NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[2] = +NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[3] = -NNDRIVE_LEG_NOMINAL_RAD;
+		return;
+	}
+
+	uint32_t step_index = (uint32_t)DBG_testbench_stage - 1u;
+	if (step_index >= (sizeof(testbench_steps) / sizeof(testbench_steps[0]))) {
+		TestBench_Stop();
+		return;
+	}
+
+	const TestBenchStep *step = &testbench_steps[step_index];
+	while (true) {
+		if (step->duration_s < 0.0f) {
+			if (DBG_testbench_waiting == 0u) {
+				testbench_policy_reset_requested = 1u;
+			}
+			DBG_testbench_waiting = 1u;
+			DBG_desired_velocity_mps = 0.0f;
+			DBG_desired_yawrate_radps = 0.0f;
+			testbench_left_extension_deg = 0.0f;
+			testbench_right_extension_deg = 0.0f;
+			testbench_stage_start_left_deg = 0.0f;
+			testbench_stage_start_right_deg = 0.0f;
+			testbench_leg_target_rad[0] = +NNDRIVE_LEG_NOMINAL_RAD;
+			testbench_leg_target_rad[1] = -NNDRIVE_LEG_NOMINAL_RAD;
+			testbench_leg_target_rad[2] = +NNDRIVE_LEG_NOMINAL_RAD;
+			testbench_leg_target_rad[3] = -NNDRIVE_LEG_NOMINAL_RAD;
+			if (DBG_testbench_continue == 0u || isFallen()) {
+				return;
+			}
+
+			DBG_testbench_continue = 0u;
+			DBG_testbench_waiting = 0u;
+			testbench_policy_reset_requested = 1u;
+			DBG_testbench_stage++;
+			DBG_testbench_stage_time_s = 0.0f;
+			step_index++;
+		} else if (DBG_testbench_stage_time_s >= step->duration_s) {
+			testbench_stage_start_left_deg = testbench_left_extension_deg;
+			testbench_stage_start_right_deg = testbench_right_extension_deg;
+			DBG_testbench_stage++;
+			DBG_testbench_stage_time_s = 0.0f;
+			step_index++;
+		} else {
+			break;
+		}
+
+		if (step_index >= (sizeof(testbench_steps) / sizeof(testbench_steps[0]))) {
+			TestBench_Stop();
+			return;
+		}
+		step = &testbench_steps[step_index];
+	}
+
+	DBG_desired_velocity_mps =
+		step->velocity_scale * DBG_testbench_linear_mps;
+	DBG_desired_yawrate_radps =
+		step->yaw_rate_scale * DBG_testbench_yaw_rate_radps;
+
+	if (DBG_testbench_stage == TESTBENCH_STAGE_ONE_LEG_SINE_FORWARD ||
+	    DBG_testbench_stage == TESTBENCH_STAGE_ONE_LEG_SINE_REVERSE) {
+		float phase = (2.0f * 3.14159265358979323846f *
+		               DBG_testbench_stage_time_s) / TESTBENCH_SINE_PERIOD_S;
+		testbench_left_extension_deg = DBG_testbench_leg_degrees *
+		                               0.5f * (1.0f - cosf(phase));
+		testbench_right_extension_deg = 0.0f;
+	} else if (step->sine_legs) {
+		float phase = (2.0f * 3.14159265358979323846f *
+		               DBG_testbench_stage_time_s) / TESTBENCH_SINE_PERIOD_S;
+		float extension_deg = DBG_testbench_leg_degrees *
+		                      0.5f * (1.0f - cosf(phase));
+		testbench_left_extension_deg = extension_deg;
+		testbench_right_extension_deg = extension_deg;
+	} else {
+		float blend = clamp_float(DBG_testbench_stage_time_s /
+		                          TESTBENCH_LEG_RAMP_S, 0.0f, 1.0f);
+		// Raised-cosine interpolation avoids a step in leg angle or velocity.
+		blend = 0.5f * (1.0f - cosf(3.14159265358979323846f * blend));
+		float left_target_deg =
+			step->left_leg_scale * DBG_testbench_leg_degrees;
+		float right_target_deg =
+			step->right_leg_scale * DBG_testbench_leg_degrees;
+		testbench_left_extension_deg = testbench_stage_start_left_deg +
+			(left_target_deg - testbench_stage_start_left_deg) * blend;
+		testbench_right_extension_deg = testbench_stage_start_right_deg +
+			(right_target_deg - testbench_stage_start_right_deg) * blend;
+	}
+
+	float left_rad = NNDRIVE_LEG_NOMINAL_RAD +
+	                 testbench_left_extension_deg * TESTBENCH_DEG_TO_RAD;
+	float right_rad = NNDRIVE_LEG_NOMINAL_RAD +
+	                  testbench_right_extension_deg * TESTBENCH_DEG_TO_RAD;
+	// Each physical leg uses two opposed CyberGears. These signs match the
+	// existing folded-zero convention in system_init.c.
+	testbench_leg_target_rad[0] = +left_rad;
+	testbench_leg_target_rad[1] = -left_rad;
+	testbench_leg_target_rad[2] = +right_rad;
+	testbench_leg_target_rad[3] = -right_rad;
+
+	if (DBG_testbench_stage == TESTBENCH_STAGE_CROSSED_ASYMMETRIC_HOLD) {
+		float blend = clamp_float(DBG_testbench_stage_time_s /
+		                          TESTBENCH_LEG_RAMP_S, 0.0f, 1.0f);
+		blend = 0.5f * (1.0f - cosf(3.14159265358979323846f * blend));
+		float crossed_rad = NNDRIVE_LEG_NOMINAL_RAD +
+		                    DBG_testbench_leg_degrees * TESTBENCH_DEG_TO_RAD * blend;
+		// Physical test showed indices 1 and 2 moving the same (front) pair,
+		// so select the other left actuator to produce a crossed diagonal pose.
+		testbench_leg_target_rad[0] = +crossed_rad; // left-back (physical)
+		testbench_leg_target_rad[1] = -NNDRIVE_LEG_NOMINAL_RAD; // left-front (physical)
+		testbench_leg_target_rad[2] = +crossed_rad; // right-front
+		testbench_leg_target_rad[3] = -NNDRIVE_LEG_NOMINAL_RAD; // right-back
+	} else if (DBG_testbench_stage == TESTBENCH_STAGE_NEUTRAL_AFTER_CROSSED) {
+		float blend = clamp_float(DBG_testbench_stage_time_s /
+		                          TESTBENCH_LEG_RAMP_S, 0.0f, 1.0f);
+		blend = 0.5f * (1.0f - cosf(3.14159265358979323846f * blend));
+		float crossed_rad = NNDRIVE_LEG_NOMINAL_RAD +
+		                    DBG_testbench_leg_degrees * TESTBENCH_DEG_TO_RAD *
+		                    (1.0f - blend);
+		testbench_leg_target_rad[0] = +crossed_rad;
+		testbench_leg_target_rad[1] = -NNDRIVE_LEG_NOMINAL_RAD;
+		testbench_leg_target_rad[2] = +crossed_rad;
+		testbench_leg_target_rad[3] = -NNDRIVE_LEG_NOMINAL_RAD;
+	}
+
+	DBG_testbench_stage_time_s += NNDRIVE_TICK_DT_S;
+}
+
 static void DDSM115_UpdateCompletedMetrics(void)
 {
 	uint8_t completed = DDSM115TakeCompletedMask();
@@ -1438,6 +1781,13 @@ void ANN_Run(void)
     float pitch_rad, pitch_rate_radps, roll_rad, roll_rate_radps, yaw_rad, yaw_rate_radps;
     NN_ReadImu(&pitch_rad, &pitch_rate_radps, &roll_rad, &roll_rate_radps, &yaw_rad, &yaw_rate_radps);
 
+    if (testbench_policy_reset_requested != 0u) {
+        refs_valid = false;
+        prev_wheel_current_A[0] = 0.0f;
+        prev_wheel_current_A[1] = 0.0f;
+        testbench_policy_reset_requested = 0u;
+    }
+
     if (!refs_valid) {
         x_odom_ref_m = WHEEL_RADIUS_R * 0.5f * (phi_left + phi_right);
         pos_ref_m = 0.0f;
@@ -1449,6 +1799,7 @@ void ANN_Run(void)
 #endif
         refs_valid = true;
     }
+
     float x_odom_m = WHEEL_RADIUS_R * 0.5f * (phi_left + phi_right) - x_odom_ref_m;
     float velocity_mps = WHEEL_RADIUS_R * 0.5f * (omega_left + omega_right);
 
@@ -1701,7 +2052,12 @@ static void PAPER_SendTelemetry(void)
 	if (bno_data_valid) sample.flags |= (1u << 0);
 	if (isFallen()) sample.flags |= (1u << 1);
 	if (isStartupStrategy) sample.flags |= (1u << 2);
+	if (DBG_testbench_running) sample.flags |= (1u << 3);
+	if (DBG_testbench_waiting) sample.flags |= (1u << 4);
+	if (DBG_testbench_recovering) sample.flags |= (1u << 5);
 	sample.flags |= ((uint32_t)ACTIVE_NN_POLICY & 0x03u) << 8;
+	sample.flags |= ((uint32_t)DBG_testbench_stage & 0xFFu) << 16;
+	sample.flags |= ((uint32_t)DBG_testbench_fall_count & 0xFFu) << 24;
 
 	sample.attitude[0] = pitch_rad;
 	sample.attitude[1] = pitch_rate_radps;
