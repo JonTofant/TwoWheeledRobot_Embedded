@@ -1,0 +1,9 @@
+scenario,kind,unit,B_rms_error,C_rms_error
+forward,velocity,m/s,0.4202,0.2713
+reverse,velocity,m/s,0.2981,0.1916
+spin +,yaw,rad/s,0.1601,0.0675
+spin -,yaw,rad/s,0.2582,0.1636
+sine legs fwd,velocity,m/s,0.5504,0.2429
+sine legs rev,velocity,m/s,0.4576,0.1693
+one-leg fwd,velocity,m/s,0.4568,0.2525
+one-leg rev,velocity,m/s,0.4226,0.1848

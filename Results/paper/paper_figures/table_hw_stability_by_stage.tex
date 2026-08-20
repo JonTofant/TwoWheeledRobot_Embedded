@@ -1,0 +1,23 @@
+\begin{table}[H]
+\caption{Hardware stability by test-bench stage, Variant B (range DR, MLP) vs. Variant C (range DR, GRU). RMS and max pitch are computed over the pitch signal within each stage; RMS current is the RMS of the mean absolute measured left/right wheel current. Lower is preferable in every column.}
+\begin{tabularx}{\textwidth}{Xccccc}
+\toprule
+\multirow{2}{*}{Stage} & \multirow{2}{*}{Dur. (s)} & \multicolumn{2}{c}{RMS / max pitch ($^\circ$)} & \multicolumn{2}{c}{RMS current (A)} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+ & & B & C & B & C \\
+\midrule
+left leg & 5.0 & 4.1 / 10.1 & 2.9 / 5.2 & 0.172 & 0.126 \\
+right leg & 5.0 & 8.6 / 19.3 & 2.8 / 6.0 & 0.253 & 0.128 \\
+forward & 3.0 & 3.0 / 7.6 & 3.4 / 7.1 & 0.101 & 0.123 \\
+reverse & 3.0 & 4.5 / 8.7 & 2.3 / 4.7 & 0.184 & 0.130 \\
+spin + & 5.0 & 3.2 / 11.6 & 1.3 / 4.2 & 0.122 & 0.102 \\
+spin - & 5.0 & 2.9 / 10.9 & 1.4 / 4.6 & 0.138 & 0.105 \\
+sine legs fwd & 4.0 & 6.8 / 13.2 & 3.8 / 10.8 & 0.242 & 0.189 \\
+sine legs rev & 4.0 & 6.3 / 14.9 & 1.8 / 2.9 & 0.256 & 0.123 \\
+crossed hold & 5.0 & 5.9 / 13.1 & 2.6 / 6.3 & 0.192 & 0.118 \\
+one-leg fwd & 4.0 & 6.5 / 16.8 & 2.6 / 5.2 & 0.206 & 0.117 \\
+one-leg rev & 4.0 & 3.7 / 8.1 & 1.7 / 3.8 & 0.204 & 0.127 \\
+\bottomrule
+\end{tabularx}
+\label{tab:hw-stability-by-stage}
+\end{table}

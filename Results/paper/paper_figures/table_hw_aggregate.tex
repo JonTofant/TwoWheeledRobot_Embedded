@@ -1,0 +1,13 @@
+\begin{table}[H]
+\caption{Hardware aggregate metrics, embedded STM32F446RE deployment. Each row summarizes one single continuous run of the automatic test-bench sequence described in Sec.~2.8 (single run per variant; no multi-seed statistics as in Table~10). RMS values are mean $\pm$ s.d. across the relevant test-bench stages: RMS pitch and RMS current over all 11 stages, RMS $e_v$ over the 6 driving stages, RMS $e_{\dot\psi}$ over the 2 spin stages, and drift over the 3 pure-balance stages (left/right leg extension, crossed-asymmetric hold). Lower is preferable for every column.}
+\begin{tabularx}{\textwidth}{lXccccc}
+\toprule
+Variant & Outcome & RMS $e_v$ (m/s) & RMS $e_{\dot\psi}$ (rad/s) & Drift (m) & RMS pitch ($^\circ$) & RMS current (A) \\
+\midrule
+A (point, MLP) & DNF -- fell before the test bench could start (\texttt{isFallen()} blocked entry past \texttt{idle}) & --- & --- & --- & --- & --- \\
+B (range DR, MLP) & completed, 0 falls & 0.434 $\pm$ 0.082 & 0.209 $\pm$ 0.069 & 0.492 $\pm$ 0.399 & 5.04 $\pm$ 1.88 & 0.188 $\pm$ 0.052 \\
+C (range DR, GRU) & completed, 0 falls & 0.219 $\pm$ 0.042 & 0.116 $\pm$ 0.068 & 0.073 $\pm$ 0.036 & 2.42 $\pm$ 0.81 & 0.126 $\pm$ 0.023 \\
+\bottomrule
+\end{tabularx}
+\label{tab:hw-aggregate}
+\end{table}
