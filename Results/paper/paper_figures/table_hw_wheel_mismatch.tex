@@ -1,0 +1,12 @@
+\begin{table}[H]
+\caption{Hardware robustness to an unmodeled wheel-radius mismatch. The range\_gru policy (Variant C) was deployed unchanged with the left DDSM115 wheel replaced by a unit with 50\% larger diameter, well outside the $\pm$3\% odometry-scale randomization used in training (Table~8), and driven through the same 11-stage test-bench sequence as the matched-wheel run. Values are mean $\pm$ s.d. across the 11 stages; RMS pitch and RMS current increase in every stage under the mismatch (see Fig.~X), indicating higher overall control effort rather than a clean left-right current split.}
+\begin{tabularx}{\textwidth}{Xcccc}
+\toprule
+Condition & RMS left current (A) & RMS right current (A) & Mean bias, L$-$R (A) & RMS pitch ($^\circ$) \\
+\midrule
+Matched wheels & 0.125 $\pm$ 0.025 & 0.132 $\pm$ 0.022 & -0.004 $\pm$ 0.166 & 2.42 $\pm$ 0.81 \\
+Left wheel +50% diameter & 0.151 $\pm$ 0.030 & 0.149 $\pm$ 0.029 & -0.013 $\pm$ 0.178 & 4.32 $\pm$ 0.95 \\
+\bottomrule
+\end{tabularx}
+\label{tab:hw-wheel-mismatch}
+\end{table}
