@@ -54,11 +54,7 @@ static uint32_t DWT_GetMicros(void)
 // budget leaves undrained stays queued and is picked up on the next pass -- see
 // the _bnoIntFlag handling at the end of BNO08x_Service(), which is what makes
 // capping this safe with an edge-triggered INT.
-//
-// Measured with this value: control loop 58.4-58.6 Hz, pitch refresh 36.6-41.7 Hz
-// (up from 49.3 / 33.9 Hz at the stock 10000 us). Still short of the 66.7 Hz the
-// ESP32-bridge firmware managed; see BNO08X_READ_GAP_US for where the rest goes.
-#define BNO08X_SERVICE_BUDGET_US   2000U
+#define BNO08X_SERVICE_BUDGET_US   4000U
 
 // Busy-wait between the SHTP header read and the full-packet re-read in
 // hal_read(). The BNO08x resets its output pointer on every I2C START, so the
@@ -71,17 +67,15 @@ static uint32_t DWT_GetMicros(void)
 // inside every 15 ms control tick, which is what was dropping ticks (66.7 Hz down
 // to 49.3, then 58.4 after the budget cap above).
 //
-// 1000 us is the value carried over from the port and is what the 2026-09-07
-// measurement set was recorded with. It is almost certainly far more than the
-// sensor needs (it is ~40x the I2C byte time at 400 kHz) and is the main
-// remaining cost in the loop, but it has not been reduced and bench-verified, so
-// it stays at the value the data was taken with.
-#define BNO08X_READ_GAP_US         1000U
+// 250 us is still an order of magnitude longer than the I2C byte time at 400 kHz.
+// IF THE IMU DOES NOT COME UP after changing this -- bno_data_valid stays 0, which
+// you can see in STM Studio within a second of boot, and LOG_theta_deg stays at
+// exactly 0.000 -- put it back to 1000U. That is the whole revert.
+#define BNO08X_READ_GAP_US         250U
 
-// Per-stream report intervals; see BNO08x_Init. Split into two constants
-// because the streams are not equally urgent, though both are 100 Hz here.
+// Per-stream report intervals. See BNO08x_Init for why they differ.
 #define BNO08X_FAST_INTERVAL_US    10000U   // gravity + gyro: 100 Hz
-#define BNO08X_YAW_INTERVAL_US     10000U   // rotation vector: 100 Hz
+#define BNO08X_YAW_INTERVAL_US     50000U   // rotation vector: 20 Hz
 
 // ----------------------------------------------------------------
 // SH2 HAL glue (I2C)
@@ -233,10 +227,20 @@ void BNO08x_Init(I2C_HandleTypeDef *hi2c, uint16_t intPin)
 
     for (int i = 0; i < 20; i++) { sh2_service(); HAL_Delay(10); }
 
-    // All three streams at 100 Hz. The rates are split into two constants because
-    // the three are not equally urgent -- gravity and gyro carry the balance loop,
-    // the rotation vector only carries the low-bandwidth heading term -- but for
-    // this measurement set they are the same value.
+    // Report rates are NOT uniform, because every packet costs BNO08X_READ_GAP_US
+    // of superloop time and the three streams are not equally urgent:
+    //
+    //   GRAVITY   -> theta. The balance axis. Must be fresh every control tick.
+    //   GYRO      -> theta_dot, and the vector rotated into world Z for yaw rate.
+    //                Same, it is the derivative term of the balance loop.
+    //   ROTATION  -> yaw angle only, plus the quaternion used to rotate that gyro
+    //                vector. Heading is a low-bandwidth term (the policy sees it
+    //                as wrap_pi(yaw - yaw_ref)) and body orientation changes far
+    //                slower than the gyro does, so a stale quaternion costs
+    //                nothing measurable while a stale gravity vector costs a lot.
+    //
+    // 100 + 100 + 20 Hz instead of 3x100 cuts packet traffic by a quarter and
+    // spends what is left on the two channels that actually hold the robot up.
     sh2_SensorConfig_t cfg = {0};
     cfg.reportInterval_us = BNO08X_FAST_INTERVAL_US;
     sh2_setSensorConfig(SH2_GYROSCOPE_CALIBRATED, &cfg);
