@@ -40,6 +40,7 @@
 #include "StateEstimator.h"
 #include "state_machine.h"
 #include "JumpStrategy.h"
+#include "bno08x.h"
 
 /* USER CODE END Includes */
 
@@ -135,6 +136,67 @@ static float prev_action_right = 0.0f;
 #define YAW_SIGN                   (-1.0f)
 #define YAW_RATE_SIGN              (-1.0f)
 
+// ===== BNO08x mount mapping (replaces the removed ESP32 IMU bridge) =====
+// The four *_esp32 globals below used to be filled from a 25-byte UART1 packet
+// sent by an ESP32 that carried the BNO. That ESP32 is gone; the BNO08x is now
+// wired straight to I2C3 and IMU_UpdateFromBNO() fills the same globals, so the
+// PITCH_/YAW_ signs above and everything downstream (ANN_Run, MET_Update,
+// LOG_Update, isFallen) stay exactly as they were for the ERK measurements.
+//
+// The mounting changed along with the wiring. It was NOT measured off the
+// hardware; it is inferred from the recorded runs, and everything below follows
+// from that inference: the old and new sensor frames are related by a
+// 180-degree rotation about the chassis Z (up) axis, i.e. sensor X and Y flip
+// and Z is unchanged. It is the only axis-aligned rotation that fits both the
+// measured pitch evidence and a sensor whose Z still points up. That is what
+// makes every mapping below a straight 1:1 assignment rather than a negation:
+//
+//   theta      old ESP32 euler "roll" = +rot about old sensor X.
+//              new body_pitch_rad = atan2(g_y,-g_z) = -rot about new sensor X.
+//              New X is anti-parallel to old X, so the two cancel and the new
+//              value carries the same sign as the old one for the same lean.
+//              Confirmed against the recorded runs: d(action)/d(theta) is
+//              positive in both meritve_erk/ (+1.4..+4.6) and the current
+//              firmware's captures (+2.1..+2.6), i.e. the policy's pitch
+//              feedback has the same sign under both mountings.
+//   theta_dot  body_pitch_rate_rad_s is -bno_gx, and -(new X) = +(old X), so it
+//              equals the old gx_esp32. Verified as the true derivative of
+//              theta in both data sets (slope +1.00, corr +0.97 on a 200 ms
+//              baseline), so the theta/theta_dot pair stays self-consistent.
+//   yaw,       Both come from the BNO's gravity-aligned world frame (quaternion
+//   yaw_rate   yaw, and the gyro vector rotated into world Z - see
+//              IMU_UpdateFromBNO). YAW_RATE_SIGN below still applies. Note the
+//              newer TwoWheeledRobotEmbeddedCore firmware instead drops that
+//              -1 and crosses the two wheel destinations at the actuator; do
+//              NOT copy that here - this project has no crossing, so it needs
+//              the sign. Yaw itself is only ever used as wrap_pi(yaw - yaw_ref)
+//              against a reference latched at run start, so the constant
+//              heading offset between the two mountings cancels.
+//
+// YAW_MOUNT_SIGN is applied to the yaw angle and the yaw rate together, so the
+// pair stays coherent whichever way it is set (yaw_rate_obs = d(yaw_err)/dt
+// either way). With a coherent pair the whole yaw loop reduces to one condition.
+// Fitting all 8 obs against the differential action across the four ERK runs
+// gives the network's yaw law as D = aL-aR = -2.0*obs4 - 2.5*obs5 (R2 0.96..0.999,
+// both signs consistent across runs) - a PD on heading error. Closing the loop:
+//
+//     yaw_err_ddot = (YAW_MOUNT_SIGN * k / J) * (0.637*yaw_err + 0.625*yaw_err_dot)
+//
+// where k = +/-1 is the physical yaw actuation polarity. Stable iff
+//
+//     YAW_MOUNT_SIGN * k < 0
+//
+// Two hardware runs on 2026-09-07 pinned k down. Both spun up, so both remaining
+// unknowns are now resolved:
+//   -1.0f  ran away  ->  k = -1  ->  +1.0f is the stable setting.
+// k = -1 means this chassis' physical yaw response is inverted relative to the
+// ERK era, which is the same finding that made TwoWheeledRobotEmbeddedCore cross
+// its two wheel destinations at the actuator. Crossing there and flipping the
+// sign here are equivalent for the yaw loop, and neither touches forward drive
+// (ddsm[0]-ddsm[1] = aL+aR either way). Pitch is independent of all of this and
+// was already confirmed correct on hardware - see the theta entry above.
+#define YAW_MOUNT_SIGN             (+1.0f)
+
 #define DDSM_CURRENT_SIGN_LEFT     (+1.0f)
 #define DDSM_CURRENT_SIGN_RIGHT    (-1.0f)
 #define STM32_TEST_CURRENT_LIMIT_A (0.5f)
@@ -228,6 +290,7 @@ static float clamp_float(float value, float min_value, float max_value);
 static float wrap_pi(float angle_rad);
 static void MET_Update(void);
 static void LOG_Update(void);
+static void IMU_UpdateFromBNO(void);
 
 
 /* USER CODE END PFP */
@@ -294,10 +357,13 @@ int main(void)
   HAL_UART_Transmit(&huart3, (uint8_t*)boot, strlen(boot), 100);
   HAL_Delay(100);*/
 
-  // Kick off DMA+Idle for USART1
-  HAL_UARTEx_ReceiveToIdle_IT(&huart1,
-                             uart1RxBuffer,
-                             UART1_RX_BUFFER_SIZE);
+  // USART1 reception intentionally NOT started: it only ever carried the ESP32
+  // IMU packet, and the BNO08x is now read directly over I2C3 (see
+  // IMU_UpdateFromBNO). Leaving it disarmed means the parser below can never
+  // fire and overwrite the *_esp32 globals with stale/garbage frames.
+  // HAL_UARTEx_ReceiveToIdle_IT(&huart1,
+  //                            uart1RxBuffer,
+  //                            UART1_RX_BUFFER_SIZE);
 
 
   // Enable UART DMA for uart2
@@ -321,6 +387,13 @@ int main(void)
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
   //------------------------------------------------
+
+  // BNO08x on I2C3 (PA8/PC9), INT on PA1, RST on PB15 - all already configured
+  // by MX_GPIO_Init/MX_I2C3_Init. Must come after the DWT block above: the SH-2
+  // HAL glue timestamps its reads from DWT->CYCCNT. Blocks ~0.5 s while the
+  // sensor resets and the three reports are enabled, which is fine here (still
+  // before the TIM4 control tick starts).
+  BNO08x_Init(&hi2c3, BNO080_INT_Pin);
 
 
 // SEND QUERY TO DDSM115
@@ -420,7 +493,11 @@ int main(void)
 	  // ----- MAIN CONTROL LOOP -----
 	  // Seperated by flags for auxiliary tasks and a state machine
 
-
+	 // Service the BNO08x (no-ops unless its INT pin has signaled new data) and
+	 // refresh the *_esp32 globals every pass, before any consumer below reads
+	 // them. Replaces the ESP32 UART1 packet that used to do this in an ISR.
+	 BNO08x_Service();
+	 IMU_UpdateFromBNO();
 
 	 if (isCANReady) {
 		 isCANReady = false;
@@ -720,7 +797,9 @@ static void MX_I2C3_Init(void)
 
   /* USER CODE END I2C3_Init 1 */
   hi2c3.Instance = I2C3;
-  hi2c3.Init.ClockSpeed = 100000;
+  /* 400 kHz: the BNO08x SH-2 stack polls a 4-byte header then the full packet on
+     every INT assertion; 100 kHz cannot keep up with the 15 ms control tick. */
+  hi2c3.Init.ClockSpeed = 400000;
   hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c3.Init.OwnAddress1 = 0;
   hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -1346,6 +1425,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 	        // Restart reception for next frame
 	        HAL_UARTEx_ReceiveToIdle_IT(&huart5, RS485_RxBuffer, RS485_BUFFER_SIZE);
 	    }
+    // DEAD PATH: the ESP32 that sent this packet no longer exists and USART1
+    // reception is never armed (see USER CODE BEGIN 2). The BNO08x is read
+    // directly over I2C3 by IMU_UpdateFromBNO(). Kept for reference only - do
+    // not re-arm USART1 without first removing the *_esp32 writes below, or it
+    // will fight the I2C3 source.
     if (huart->Instance == USART1)
     {
         // Size = number of bytes received into uart1RxBuffer[]
@@ -1719,6 +1803,72 @@ static void LOG_Update(void)
     // No current feedback from the DDSM115 drives - mirror the commanded value.
     LOG_I_L_meas_A = ddsm_NN_current_command[0];
     LOG_I_R_meas_A = ddsm_NN_current_command[1];
+}
+
+// Fills the legacy *_esp32 orientation globals from the directly-wired BNO08x,
+// so every existing consumer (ANN_Run, MET_Update, LOG_Update, isFallen) keeps
+// working unchanged. Call once per main-loop pass, after BNO08x_Service().
+// See the "BNO08x mount mapping" block near PITCH_SIGN for why each of these is
+// a straight assignment and not a negation.
+static void IMU_UpdateFromBNO(void)
+{
+    // Leave the last good values in place until the sensor has produced its
+    // first gravity/gyro/rotation report, so nothing downstream sees garbage.
+    if (!bno_data_valid)
+        return;
+
+    // Balance axis. The old ESP32 packet called this "roll"; the training
+    // contract calls the same quantity "pitch" (STM32_DEPLOYMENT.md: pitch
+    // reads body-frame gravity Y). Same physical angle, same sign - only the
+    // name changed. theta_rad = PITCH_SIGN * roll_esp32 downstream.
+    roll_esp32  = atan2f(bno_gravity_y, -bno_gravity_z);
+
+    // d(roll_esp32)/dt. Negated because atan2(g_y,-g_z) decreases as the
+    // right-handed rotation about sensor X increases.
+    gx_esp32    = -bno_gx;
+
+    // Yaw angle and yaw rate. Both must live in the same frame or the policy
+    // gets an angle and a rate that disagree; YAW_SIGN and YAW_RATE_SIGN
+    // downstream are unchanged.
+    //
+    // bno_yaw_rad comes from the game-rotation quaternion, i.e. the BNO's
+    // gravity-aligned WORLD frame. Raw bno_gz is BODY-frame gyro Z and on this
+    // mounting has the opposite sense, so it cannot be used here (measured:
+    // yaw_rate = -0.87 * d(yaw_err)/dt, corr -0.90, against +0.6..+0.9 in the
+    // ERK runs). Rotate the complete gyro vector into world Z instead, which is
+    // also what the training contract specifies (root_ang_vel_w[:, 2]) and what
+    // TwoWheeledRobotEmbeddedCore's StateEstimator computes.
+    float qw = bno_qw, qx = bno_qx, qy = bno_qy, qz = bno_qz;
+    float q_norm_sq = qw*qw + qx*qx + qy*qy + qz*qz;
+    float yaw_rate_world;
+    if (q_norm_sq > 1.0e-8f) {
+        float inv_q_norm = 1.0f / sqrtf(q_norm_sq);
+        qw *= inv_q_norm; qx *= inv_q_norm; qy *= inv_q_norm; qz *= inv_q_norm;
+        float r20 = 2.0f * (qx*qz - qw*qy);
+        float r21 = 2.0f * (qy*qz + qw*qx);
+        float r22 = 1.0f - 2.0f * (qx*qx + qy*qy);
+        yaw_rate_world = r20*bno_gx + r21*bno_gy + r22*bno_gz;
+    } else {
+        yaw_rate_world = bno_gz;
+    }
+
+    yaw_esp32   = YAW_MOUNT_SIGN * bno_yaw_rad;
+    gz_esp32    = YAW_MOUNT_SIGN * yaw_rate_world;
+
+    // Not used by the policy or the metrics - kept current only so the
+    // diagnostic sprintf() further up still prints something meaningful.
+    pitch_esp32 = atan2f(bno_gravity_x, -bno_gravity_z);
+    gy_esp32    = bno_gy;
+}
+
+// EXTI line 1 is the BNO08x data-ready INT (PA1). stm32f4xx_it.c's
+// EXTI1_IRQHandler already calls HAL_GPIO_EXTI_IRQHandler(BNO080_INT_Pin);
+// this is the HAL's weak callback it dispatches to.
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == BNO080_INT_Pin) {
+        BNO08x_EXTI_Callback(GPIO_Pin);
+    }
 }
 
 /* USER CODE END 4 */

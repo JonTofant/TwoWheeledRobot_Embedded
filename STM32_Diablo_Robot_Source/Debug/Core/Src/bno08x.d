@@ -1,5 +1,5 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
+Core/Src/bno08x.o: ../Core/Src/bno08x.c ../Core/Inc/bno08x.h \
+ ../Core/Inc/main.h ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h \
@@ -35,20 +35,10 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h \
- ../AI/App/app_x-cube-ai.h ../Middlewares/ST/AI/Inc/stai.h \
- ../Middlewares/ST/AI/Inc/ai_datatypes_defines.h \
- ../Middlewares/ST/AI/Inc/ai_platform.h \
- ../Middlewares/ST/AI/Inc/core_assert.h ../AI/App/network.h \
- ../Middlewares/ST/AI/Inc/stai_debug.h ../Middlewares/ST/AI/Inc/stai.h \
- ../AI/App/user_init.h ../Core/Inc/cybergear.h ../Core/Inc/DDSM115.h \
- ../Core/Inc/kinematics.h ../Core/Inc/cybergear.h \
- ../Core/Inc/system_init.h ../Core/Inc/main.h ../Core/Inc/DDSM115.h \
- ../Core/Inc/telemetry.h ../Core/Inc/controler.h \
- ../Core/Inc/StateEstimator.h ../Core/Inc/telemetry.h \
- ../Core/Inc/kinematics.h ../Core/Inc/joystick.h ../Core/Inc/controler.h \
- ../Core/Inc/state_machine.h ../Core/Inc/StartupStrategy.h \
- ../Core/Inc/StateEstimator.h ../Core/Inc/state_machine.h \
- ../Core/Inc/JumpStrategy.h ../Core/Inc/bno08x.h
+ ../Core/Inc/SH2Sensorhub/sh2.h ../Core/Inc/SH2Sensorhub/sh2_hal.h \
+ ../Core/Inc/SH2Sensorhub/sh2_SensorValue.h \
+ ../Core/Inc/SH2Sensorhub/sh2.h ../Core/Inc/SH2Sensorhub/sh2_err.h
+../Core/Inc/bno08x.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -86,32 +76,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_bus.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_gpio.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_spi.h:
-../AI/App/app_x-cube-ai.h:
-../Middlewares/ST/AI/Inc/stai.h:
-../Middlewares/ST/AI/Inc/ai_datatypes_defines.h:
-../Middlewares/ST/AI/Inc/ai_platform.h:
-../Middlewares/ST/AI/Inc/core_assert.h:
-../AI/App/network.h:
-../Middlewares/ST/AI/Inc/stai_debug.h:
-../Middlewares/ST/AI/Inc/stai.h:
-../AI/App/user_init.h:
-../Core/Inc/cybergear.h:
-../Core/Inc/DDSM115.h:
-../Core/Inc/kinematics.h:
-../Core/Inc/cybergear.h:
-../Core/Inc/system_init.h:
-../Core/Inc/main.h:
-../Core/Inc/DDSM115.h:
-../Core/Inc/telemetry.h:
-../Core/Inc/controler.h:
-../Core/Inc/StateEstimator.h:
-../Core/Inc/telemetry.h:
-../Core/Inc/kinematics.h:
-../Core/Inc/joystick.h:
-../Core/Inc/controler.h:
-../Core/Inc/state_machine.h:
-../Core/Inc/StartupStrategy.h:
-../Core/Inc/StateEstimator.h:
-../Core/Inc/state_machine.h:
-../Core/Inc/JumpStrategy.h:
-../Core/Inc/bno08x.h:
+../Core/Inc/SH2Sensorhub/sh2.h:
+../Core/Inc/SH2Sensorhub/sh2_hal.h:
+../Core/Inc/SH2Sensorhub/sh2_SensorValue.h:
+../Core/Inc/SH2Sensorhub/sh2.h:
+../Core/Inc/SH2Sensorhub/sh2_err.h:
