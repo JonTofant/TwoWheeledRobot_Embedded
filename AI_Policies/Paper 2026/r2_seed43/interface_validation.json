@@ -1,0 +1,151 @@
+{
+  "arm_A_point_s43.onnx": {
+    "checker_passed": true,
+    "inputs": [
+      {
+        "name": "obs",
+        "shape": [
+          1,
+          13
+        ],
+        "dtype": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "current_a",
+        "shape": [
+          1,
+          2
+        ],
+        "dtype": 1
+      }
+    ]
+  },
+  "arm_B_range_s43.onnx": {
+    "checker_passed": true,
+    "inputs": [
+      {
+        "name": "obs",
+        "shape": [
+          1,
+          13
+        ],
+        "dtype": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "current_a",
+        "shape": [
+          1,
+          2
+        ],
+        "dtype": 1
+      }
+    ]
+  },
+  "arm_C_range_gru_s43.onnx": {
+    "checker_passed": true,
+    "inputs": [
+      {
+        "name": "obs",
+        "shape": [
+          1,
+          13
+        ],
+        "dtype": 1
+      },
+      {
+        "name": "h_in",
+        "shape": [
+          1,
+          1,
+          64
+        ],
+        "dtype": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "current_a",
+        "shape": [
+          1,
+          2
+        ],
+        "dtype": 1
+      },
+      {
+        "name": "h_out",
+        "shape": [
+          1,
+          1,
+          64
+        ],
+        "dtype": 1
+      }
+    ]
+  },
+  "arm_C_range_gru_s43_stm32ai.onnx": {
+    "checker_passed": true,
+    "inputs": [
+      {
+        "name": "obs",
+        "shape": [
+          1,
+          13
+        ],
+        "dtype": 1
+      },
+      {
+        "name": "h_in",
+        "shape": [
+          1,
+          64
+        ],
+        "dtype": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "current_a",
+        "shape": [
+          1,
+          2
+        ],
+        "dtype": 1
+      },
+      {
+        "name": "h_out",
+        "shape": [
+          1,
+          64
+        ],
+        "dtype": 1
+      }
+    ]
+  },
+  "arm_D_range_wide_s43.onnx": {
+    "checker_passed": true,
+    "inputs": [
+      {
+        "name": "obs",
+        "shape": [
+          1,
+          13
+        ],
+        "dtype": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "current_a",
+        "shape": [
+          1,
+          2
+        ],
+        "dtype": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "generation": "r2",
+  "training_seed": 43,
+  "prepared_on": "2026-10-05",
+  "training_commit": "d2e3992ec58658e058dbcd1b5839e340160547e5",
+  "checkpoint_selection": "last checkpoint at a common fixed training budget",
+  "observation_contract": {
+    "dtype": "float32",
+    "shape": [
+      1,
+      13
+    ],
+    "previous_current_features": "previous clamped logical policy commands / 2 A"
+  },
+  "action_contract": {
+    "dtype": "float32",
+    "shape": [
+      1,
+      2
+    ],
+    "units": "ampere",
+    "order": [
+      "logical_left",
+      "logical_right"
+    ],
+    "scaling_already_in_graph": "2*tanh(actor_output)",
+    "current_limit_a": 2.0
+  },
+  "hardware_validation_complete": false,
+  "policies": [
+    {
+      "arm": "A",
+      "description": "Point-estimate MLP [64,64]",
+      "actor_parameters": 5186,
+      "training_seed": 43,
+      "checkpoint": "model_1395.pt",
+      "checkpoint_sha256": "58f76e8a6dbb7ec07cfcf9e867335ba1a8c08ed7e610660297d8fa62e84a0ab6",
+      "source_run": "/home/jon/Projects/TwoWheeledRobot/ExportedPolicy/fixedstance_r2_point_s43/2026-10-02_19-43-49_r2_point_s43_stage5",
+      "native_onnx": "arm_A_point_s43.onnx",
+      "deploy_onnx": "arm_A_point_s43.onnx",
+      "native_onnx_sha256": "5dfd150353186084087628aaee10c108dd7041727dc6a18c8cd4ac188c36761b",
+      "pytorch_onnx_validation": {
+        "max_action_error": 3.5762787e-07,
+        "tolerance": 0.0001,
+        "source": "completed training export log"
+      },
+      "benchmark_file": "arm_A_under_range_s43.json",
+      "benchmark_evaluation_seed": 42
+    },
+    {
+      "arm": "B",
+      "description": "Range-randomized MLP [64,64]",
+      "actor_parameters": 5186,
+      "training_seed": 43,
+      "checkpoint": "model_1395.pt",
+      "checkpoint_sha256": "ce593e6da808424a88065a2505d97458327bc8b7055b25b3a50196d71acc1e9c",
+      "source_run": "/home/jon/Projects/TwoWheeledRobot/ExportedPolicy/fixedstance_r2_range_s43/2026-10-02_22-29-12_r2_range_s43_stage5",
+      "native_onnx": "arm_B_range_s43.onnx",
+      "deploy_onnx": "arm_B_range_s43.onnx",
+      "native_onnx_sha256": "aec34badded6f3ae5ca9698821276709e6dc69e6132c20f440653d9bbf132c16",
+      "pytorch_onnx_validation": {
+        "max_action_error": 3.5762787e-07,
+        "tolerance": 0.0001,
+        "source": "completed training export log"
+      },
+      "benchmark_file": "arm_B_under_range_s43.json",
+      "benchmark_evaluation_seed": 42
+    },
+    {
+      "arm": "C",
+      "description": "Range-randomized GRU(13,64) + MLP [64,64]",
+      "actor_parameters": 23618,
+      "training_seed": 43,
+      "checkpoint": "model_1395.pt",
+      "checkpoint_sha256": "43097d934426ce42e28bf3e7f5f959a5aa368d6894aece96954f42a8ec8d1b37",
+      "source_run": "/home/jon/Projects/TwoWheeledRobot/ExportedPolicy/fixedstance_r2_range_gru_s43/2026-10-03_01-05-32_r2_range_gru_s43_stage5",
+      "native_onnx": "arm_C_range_gru_s43.onnx",
+      "deploy_onnx": "arm_C_range_gru_s43_stm32ai.onnx",
+      "native_onnx_sha256": "b2b8962da0961def577e66baac5336fe6a26b73c442667a203e43171530460d7",
+      "pytorch_onnx_validation": {
+        "max_action_error": 3.1590462e-06,
+        "tolerance": 0.0001,
+        "source": "completed training export log"
+      },
+      "benchmark_file": "arm_C_under_range_s43.json",
+      "benchmark_evaluation_seed": 42,
+      "deploy_onnx_sha256": "1388996bbfb690a12b3ca74b5e436eeb95c2eec503f6ec1c1ab3870ba84095df",
+      "stm32ai_graph_validation": {
+        "steps": 1024,
+        "tolerance": 0.0001,
+        "max_action_error": 9.9465251e-06,
+        "max_hidden_state_error": 1.2487173e-05,
+        "on_target": false
+      },
+      "hidden_state_contract": {
+        "dtype": "float32",
+        "shape": [
+          1,
+          64
+        ],
+        "pass_h_out_into_next_h_in": true,
+        "zero_on_boot_rearm_fall_and_testbench_checkpoint": true
+      }
+    },
+    {
+      "arm": "D",
+      "description": "Range-randomized actor-size-matched MLP [145,145]",
+      "actor_parameters": 23492,
+      "training_seed": 43,
+      "checkpoint": "model_1395.pt",
+      "checkpoint_sha256": "5513e8a919b5a9303b5e7659d980407195695dc94e426e9fdde4eec8ffa21ef3",
+      "source_run": "/home/jon/Projects/TwoWheeledRobot/ExportedPolicy/fixedstance_r2_range_wide_s43/2026-10-03_03-39-00_r2_range_wide_s43_stage5",
+      "native_onnx": "arm_D_range_wide_s43.onnx",
+      "deploy_onnx": "arm_D_range_wide_s43.onnx",
+      "native_onnx_sha256": "6b6acac520356231983f0b5648e57de7e59e3fa30ab1586776359daa861ba170",
+      "pytorch_onnx_validation": {
+        "max_action_error": 6.5565109e-07,
+        "tolerance": 0.0001,
+        "source": "completed training export log"
+      },
+      "benchmark_file": "arm_D_under_range_s43.json",
+      "benchmark_evaluation_seed": 42
+    }
+  ],
+  "statistics_note": "All three training seeds retained in the primary audit. C42 remains a reported failed run; any exclusion analysis must be labelled separately.",
+  "interface_validation_file": "interface_validation.json"
+}
