@@ -1,0 +1,43 @@
+{
+  "candidates": [
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_0_model_1096.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_11-38-15_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage4/model_1096.pt",
+      "gate_failures": [
+        "drive_forward_slow: rms_vel_err_mps 0.133 > 0.120",
+        "payload_while_still: world_drift_m 0.538 > 0.500"
+      ],
+      "gate_passed": false,
+      "iteration": 1096,
+      "score": 0.9514772080296232,
+      "sha256": "c6bb812b311104f54856e1019a258f4be79aaa5644136aeea892b37935b0fcd2"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_1_model_1150.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1150.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1150,
+      "score": 0.6854741378523642,
+      "sha256": "4eec9bfce0ecd2e567a984f3e89baac0e1ed331fae75f31be8b066b256201540"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_2_model_1175.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1175.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1175,
+      "score": 0.6933656750003484,
+      "sha256": "2d592447708b98a4f1d5b639b6b2d4109ea0a66fdfe4d6bcebb016cbae93dd98"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_3_model_1245.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1245.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1245,
+      "score": 0.773518356839189,
+      "sha256": "2af90f4e9dff94c9e28bd99be0fa8704a81837e31d6d4e6bc9695091a9b55002"
+    }
+  ]
+}

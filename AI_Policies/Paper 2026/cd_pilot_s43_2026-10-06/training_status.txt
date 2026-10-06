@@ -1,0 +1,25 @@
+PRECHECK started
+PRECHECK passed
+[10:16:27] === retrain (r3_cd_pilot_20261006T101555Z) started for seeds: 43, arms: C D, iterations: 300 350 200 250 150 ===
+[10:16:27] repo commit: 98658ed 0 dirty files
+[10:16:27] --- seed 43 ---
+[10:16:27] START train arm C (range_gru) seed 43 -> /workspace/TwoWheeledRobot/logs/retrain_r3_cd_pilot_20261006T101555Z_2026-10-06/r3_cd_pilot_20261006T101555Z_range_gru_s43_train.log
+[12:25:32] OK train arm C seed 43 -> 2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5
+[12:25:32]   stage 1: config verified as 'range' + audit fixes; seed=43
+[12:25:32]   stage 2: config verified as 'range' + audit fixes; seed=43
+[12:25:32]   stage 3: config verified as 'range' + audit fixes; seed=43
+[12:25:32]   stage 4: config verified as 'range' + audit fixes; seed=43
+[12:25:32]   stage 5: config verified as 'range' + audit fixes; seed=43
+[12:25:32] START held-out selection/test/export arm C -> /workspace/TwoWheeledRobot/logs/retrain_r3_cd_pilot_20261006T101555Z_2026-10-06/arm_C_s43_selection.log
+[13:45:53] OK held-out selection/test/export arm C
+[13:45:53] START train arm D (range_wide) seed 43 -> /workspace/TwoWheeledRobot/logs/retrain_r3_cd_pilot_20261006T101555Z_2026-10-06/r3_cd_pilot_20261006T101555Z_range_wide_s43_train.log
+[15:48:51] OK train arm D seed 43 -> 2026-10-06_15-31-35_r3_cd_pilot_20261006T101555Z_range_wide_s43_stage5
+[15:48:51]   stage 1: config verified as 'range' + audit fixes; seed=43
+[15:48:51]   stage 2: config verified as 'range' + audit fixes; seed=43
+[15:48:51]   stage 3: config verified as 'range' + audit fixes; seed=43
+[15:48:51]   stage 4: config verified as 'range' + audit fixes; seed=43
+[15:48:51]   stage 5: config verified as 'range' + audit fixes; seed=43
+[15:48:51] START held-out selection/test/export arm D -> /workspace/TwoWheeledRobot/logs/retrain_r3_cd_pilot_20261006T101555Z_2026-10-06/arm_D_s43_selection.log
+[16:48:22] OK held-out selection/test/export arm D
+[16:48:22] --- seed 43 complete ---
+[16:48:22] === retrain (r3_cd_pilot_20261006T101555Z) finished ===

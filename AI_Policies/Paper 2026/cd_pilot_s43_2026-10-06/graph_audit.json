@@ -1,0 +1,194 @@
+{
+  "C": {
+    "actor_parameters": 23618,
+    "critic_parameters": 40129,
+    "all_checkpoint_weights_finite": true,
+    "action_std": [
+      0.14999999105930328,
+      0.14999999105930328
+    ],
+    "models": {
+      "policy_drive.onnx": {
+        "inputs": [
+          {
+            "name": "obs",
+            "shape": [
+              1,
+              13
+            ],
+            "type": "tensor(float)"
+          },
+          {
+            "name": "h_in",
+            "shape": [
+              1,
+              1,
+              64
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "current_a",
+            "shape": [
+              1,
+              2
+            ],
+            "type": "tensor(float)"
+          },
+          {
+            "name": "h_out",
+            "shape": [
+              1,
+              1,
+              64
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "finite_smoke_steps": 64,
+        "peak_current_A": 1.9029569625854492,
+        "current_limit_A": 2.0,
+        "onnx_checker": "passed",
+        "node_types": [
+          "Constant",
+          "GRU",
+          "Gemm",
+          "Mul",
+          "Relu",
+          "Squeeze",
+          "Tanh",
+          "Unsqueeze"
+        ]
+      },
+      "policy_drive_stm32ai.onnx": {
+        "inputs": [
+          {
+            "name": "obs",
+            "shape": [
+              1,
+              13
+            ],
+            "type": "tensor(float)"
+          },
+          {
+            "name": "h_in",
+            "shape": [
+              1,
+              64
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "current_a",
+            "shape": [
+              1,
+              2
+            ],
+            "type": "tensor(float)"
+          },
+          {
+            "name": "h_out",
+            "shape": [
+              1,
+              64
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "finite_smoke_steps": 64,
+        "peak_current_A": 1.9029567241668701,
+        "current_limit_A": 2.0,
+        "onnx_checker": "passed",
+        "node_types": [
+          "Add",
+          "Gemm",
+          "Identity",
+          "Mul",
+          "Relu",
+          "Sigmoid",
+          "Sub",
+          "Tanh"
+        ]
+      }
+    }
+  },
+  "D": {
+    "actor_parameters": 23492,
+    "critic_parameters": 18433,
+    "all_checkpoint_weights_finite": true,
+    "action_std": [
+      0.14999999105930328,
+      0.14999999105930328
+    ],
+    "models": {
+      "policy_drive.onnx": {
+        "inputs": [
+          {
+            "name": "obs",
+            "shape": [
+              1,
+              13
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "current_a",
+            "shape": [
+              1,
+              2
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "finite_smoke_steps": 64,
+        "peak_current_A": 1.9997135400772095,
+        "current_limit_A": 2.0,
+        "onnx_checker": "passed",
+        "node_types": [
+          "Gemm",
+          "Mul",
+          "Relu",
+          "Tanh"
+        ]
+      },
+      "policy_drive_stm32ai.onnx": {
+        "inputs": [
+          {
+            "name": "obs",
+            "shape": [
+              1,
+              13
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "current_a",
+            "shape": [
+              1,
+              2
+            ],
+            "type": "tensor(float)"
+          }
+        ],
+        "finite_smoke_steps": 64,
+        "peak_current_A": 1.9997135400772095,
+        "current_limit_A": 2.0,
+        "onnx_checker": "passed",
+        "node_types": [
+          "Gemm",
+          "Mul",
+          "Relu",
+          "Tanh"
+        ]
+      }
+    }
+  }
+}

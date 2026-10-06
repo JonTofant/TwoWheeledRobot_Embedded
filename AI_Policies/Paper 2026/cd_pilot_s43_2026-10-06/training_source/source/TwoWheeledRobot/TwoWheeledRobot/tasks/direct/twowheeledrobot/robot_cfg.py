@@ -1,0 +1,177 @@
+"""
+Robot articulation configuration for the custom two-wheeled robot.
+
+Purpose:
+    Connect the USD asset to Isaac Lab and define actuator groups for DDSM115
+    wheel joints, CyberGear leg joints, and passive bearing joints.
+
+Edit here when:
+    The USD path, joint-name patterns, actuator effort limits, or default
+    articulation properties need to change.
+
+Avoid changing here without also checking:
+    Joint names used in standup_env.py, nn_drive_env.py,
+    contact sensor body names, and deployment documentation.
+"""
+
+import os
+
+from pxr import Usd, UsdPhysics
+
+import isaaclab.sim as sim_utils
+from isaaclab.actuators import ImplicitActuatorCfg
+from isaaclab.assets import ArticulationCfg
+from isaaclab.sim.utils import clone
+
+from .sim_params import (
+    ANGULAR_DAMPING,
+    BEARING_DAMPING,
+    CYBERGEAR_DAMPING,
+    CYBERGEAR_STIFFNESS,
+    LINEAR_DAMPING,
+    MUJOCO_WHEEL_TORQUE_LIMIT,
+    MUJOCO_WHEEL_VELOCITY_LIMIT,
+    SOLVER_POSITION_ITERS,
+    SOLVER_VELOCITY_ITERS,
+    WHEEL_DRIVE_STIFFNESS,
+    WHEEL_INTERNAL_DAMPING,
+)
+
+# USD path — ColectedUSD_v2/World0.usd lives inside docs/
+_USD_PATH = os.path.normpath(os.path.join(
+    os.path.dirname(__file__),    # .../TwoWheeledRobot/tasks/direct/twowheeledrobot/
+    "..", "..", "..", "..",        # up to source/TwoWheeledRobot/
+    "docs", "ColectedUSD_v2", "World0.usd"
+))
+
+_CYBERGEAR_LIMITS_DEG = {
+    "front_left": (-10.0, 90.0),
+    "front_right": (-90.0, 10.0),
+    "back_left": (-90.0, 10.0),
+    "back_right": (-10.0, 90.0),
+}
+
+
+@clone
+def _spawn_robot_with_joint_limits(
+    prim_path: str,
+    cfg: sim_utils.UsdFileCfg,
+    translation: tuple[float, float, float] | None = None,
+    orientation: tuple[float, float, float, float] | None = None,
+    **kwargs,
+) -> Usd.Prim:
+    """Spawn the robot with its four hardware hard stops authored pre-PhysX."""
+    # Call the undecorated stock spawner so this wrapper authors the source
+    # prim before its own @clone invocation copies it to the other envs.
+    prim = sim_utils.spawn_from_usd.__wrapped__(
+        prim_path,
+        cfg,
+        translation=translation,
+        orientation=orientation,
+        **kwargs,
+    )
+
+    authored: set[str] = set()
+    for child in Usd.PrimRange(prim, Usd.TraverseInstanceProxies()):
+        joint_name = child.GetName()
+        limits = _CYBERGEAR_LIMITS_DEG.get(joint_name)
+        if limits is None or not child.IsA(UsdPhysics.RevoluteJoint):
+            continue
+        joint = UsdPhysics.RevoluteJoint(child)
+        joint.CreateLowerLimitAttr(limits[0])
+        joint.CreateUpperLimitAttr(limits[1])
+        authored.add(joint_name)
+
+    missing = set(_CYBERGEAR_LIMITS_DEG) - authored
+    if missing:
+        raise RuntimeError(
+            "Could not author CyberGear hard stops before PhysX initialization; "
+            f"missing revolute joint prims: {sorted(missing)}"
+        )
+    return prim
+
+TWO_WHEELED_ROBOT_CFG = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        func=_spawn_robot_with_joint_limits,
+        usd_path=_USD_PATH,
+        # Required by NNDrive's contact-based fall termination (2026-08-07). With
+        # this False a ContactSensor still constructs and still reports — it just
+        # reports zeros forever, so every episode looks contact-free and nothing
+        # ever terminates. Verify non-zero force on the WHEELS before trusting any
+        # contact-derived number; see scripts/verify_contact_and_reward.py.
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            retain_accelerations=False,
+            linear_damping=LINEAR_DAMPING,
+            angular_damping=ANGULAR_DAMPING,
+            max_linear_velocity=10.0,
+            max_angular_velocity=50.0,
+            max_depenetration_velocity=1.0,
+        ),
+        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            enabled_self_collisions=False,
+            solver_position_iteration_count=SOLVER_POSITION_ITERS,
+            solver_velocity_iteration_count=SOLVER_VELOCITY_ITERS,
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 0.06859),
+        rot=(1.0, 0.0, 0.0, 0.0),
+        # NOTE: Add initial joint positions here if the new USD requires
+        # specific rest poses for linkage joints.  Wheel joints (Revolute_13,
+        # Revolute_6) start at 0 by default.
+        joint_pos={},
+    ),
+    actuators={
+        # ------------------------------------------------------------------ #
+        # Wheel drive joints — current-controlled (DDSM115).                 #
+        #   Kt  = 0.75 Nm/A                                                  #
+        #   Absolute measured peak at wheel: 2 Nm                             #
+        #   Rated continuous training envelope: 0.96 Nm                       #
+        #   Torque-speed saturation is applied in StandupEnv.                 #
+        # ------------------------------------------------------------------ #
+        "wheel_joints": ImplicitActuatorCfg(
+            joint_names_expr=["DDSM115_Levi", "DDSM115_Desni"],
+            effort_limit_sim=MUJOCO_WHEEL_TORQUE_LIMIT,
+            velocity_limit_sim=MUJOCO_WHEEL_VELOCITY_LIMIT,
+            stiffness=WHEEL_DRIVE_STIFFNESS,
+            damping=WHEEL_INTERNAL_DAMPING,
+        ),
+        # ------------------------------------------------------------------ #
+        # CyberGear leg motors — MIT control (PD + torque feedforward).      #
+        #   Gains from cybergear.c:  kp = 30.0 Nm/rad, kd = 3.0 Nm·s/rad   #
+        #   (kp range 0–500 Nm/rad, kd range 0–5 Nm·s/rad in firmware)      #
+        #   Verified against the firmware repo 2026-08-05; this comment      #
+        #   previously read 3.0 / 0.5, which matched nothing.                #
+        #   Torque feedforward is zero here; IK sets position target only.   #
+        # ------------------------------------------------------------------ #
+        "cybergear_joints": ImplicitActuatorCfg(
+            joint_names_expr=["front_left", "front_right", "back_left", "back_right"],
+            effort_limit_sim=12.0,         # Nm — CyberGear M5 peak
+            velocity_limit=30.0,           # rad/s
+            stiffness=CYBERGEAR_STIFFNESS,  # Nm/rad — matches kp in cybergear.c
+            damping=CYBERGEAR_DAMPING,      # Nm·s/rad — matches kd in cybergear.c
+        ),
+        # ------------------------------------------------------------------ #
+        # Passive revolute joints — leg parallelogram bearings.              #
+        #   No motor; only rolling-element bearing friction.                 #
+        #                                                                    #
+        #   IMPORTANT: Isaac Lab does NOT enforce exclusive joint matching.  #
+        #   find_joints() is called independently per actuator group, so    #
+        #   ".*" would match ALL joints (including wheels and CyberGear)     #
+        #   and overwrite their PhysX stiffness=0 / effort_limit=0 since    #
+        #   bearing_joints is processed last.  Use a negative lookahead to   #
+        #   explicitly exclude the named actuator joints.                    #
+        # ------------------------------------------------------------------ #
+        "bearing_joints": ImplicitActuatorCfg(
+            joint_names_expr=[
+                "(?!DDSM115_Levi|DDSM115_Desni|front_left|front_right|back_left|back_right).+"
+            ],
+            effort_limit_sim=0.0,          # no motor torque
+            velocity_limit=50.0,
+            stiffness=0.0,                 # free to rotate
+            damping=BEARING_DAMPING,       # 0.005 Nm·s/rad — ball-bearing viscous friction
+        ),
+    },
+)

@@ -1,0 +1,69 @@
+{
+  "arm": "C",
+  "candidates": [
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_0_model_1096.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_11-38-15_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage4/model_1096.pt",
+      "gate_failures": [
+        "drive_forward_slow: rms_vel_err_mps 0.133 > 0.120",
+        "payload_while_still: world_drift_m 0.538 > 0.500"
+      ],
+      "gate_passed": false,
+      "iteration": 1096,
+      "score": 0.9514772080296232,
+      "sha256": "c6bb812b311104f54856e1019a258f4be79aaa5644136aeea892b37935b0fcd2"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_1_model_1150.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1150.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1150,
+      "score": 0.6854741378523642,
+      "sha256": "4eec9bfce0ecd2e567a984f3e89baac0e1ed331fae75f31be8b066b256201540"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_2_model_1175.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1175.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1175,
+      "score": 0.6933656750003484,
+      "sha256": "2d592447708b98a4f1d5b639b6b2d4109ea0a66fdfe4d6bcebb016cbae93dd98"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_3_model_1245.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1245.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1245,
+      "score": 0.773518356839189,
+      "sha256": "2af90f4e9dff94c9e28bd99be0fa8704a81837e31d6d4e6bc9695091a9b55002"
+    }
+  ],
+  "exports": {
+    "policy.onnx": "fe1932246dd0658a1e529dcbd5d2b5ac00ab26b06582710c60adedcb8994f10f",
+    "policy.pt": "784c2aa1fc51050732b7933ebea9a795903e8dac481f70a60cdc80a859182014",
+    "policy_drive.onnx": "4100fcff3353cf7874818c2827c4b8e722acf99a8810cb252667af918ec505ea",
+    "policy_drive_stm32ai.onnx": "1a8e67c916bbddb7d871aeaadd24d9255207789afde0d2ae753a555062064431"
+  },
+  "fallback_used": false,
+  "fixed_budget_final": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1245.pt",
+  "fixed_budget_final_sha256": "2af90f4e9dff94c9e28bd99be0fa8704a81837e31d6d4e6bc9695091a9b55002",
+  "hardware_validation_complete": false,
+  "protocol_sha256": "6a1a559566562a0517dd4c03bc2399922097793290e05edad741c6d4636e0307",
+  "selected": {
+    "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_C_s43/validation_1_model_1150.json",
+    "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_12-07-53_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage5/model_1150.pt",
+    "gate_failures": [],
+    "gate_passed": true,
+    "iteration": 1150,
+    "score": 0.6854741378523642,
+    "sha256": "4eec9bfce0ecd2e567a984f3e89baac0e1ed331fae75f31be8b066b256201540"
+  },
+  "selection": "held-out validation among four predetermined candidates",
+  "status": "selected export validated; hardware test pending",
+  "test_base_seed": 2001,
+  "training_seed": 43,
+  "validation_base_seed": 1001
+}

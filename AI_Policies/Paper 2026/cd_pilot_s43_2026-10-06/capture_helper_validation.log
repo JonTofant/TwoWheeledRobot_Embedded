@@ -1,0 +1,3 @@
+PASS: helpers compile; ruff check passed.
+PASS: mocked recorder exercised C ID 2 and D ID 1, correct row/sidecar SHA256 identities, preservation of raw telemetry, mismatched ID detection and existing-file overwrite refusal.
+No serial device accessed; no target hardware tests performed.

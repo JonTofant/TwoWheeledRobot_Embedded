@@ -1,0 +1,72 @@
+{
+  "run_tag": "r3_cd_pilot_20261006T101555Z",
+  "source_commit": "98658ede576b64a9d19ad7715622e45a3748e59a",
+  "embedded_base_commit": "7ebd151ceab7bae8870ac4fb087947b63954289b",
+  "status": "validated ONNX handoff; manual CubeAI generation/build and supervised hardware test pending",
+  "hardware_validation_complete": false,
+  "cubeai_generated": false,
+  "firmware_build_checked": false,
+  "arms": {
+    "C": {
+      "directory": "C_GRU",
+      "selected_iteration": 1150,
+      "selected_checkpoint_sha256": "4eec9bfce0ecd2e567a984f3e89baac0e1ed331fae75f31be8b066b256201540",
+      "exports": {
+        "policy.onnx": "fe1932246dd0658a1e529dcbd5d2b5ac00ab26b06582710c60adedcb8994f10f",
+        "policy.pt": "784c2aa1fc51050732b7933ebea9a795903e8dac481f70a60cdc80a859182014",
+        "policy_drive.onnx": "4100fcff3353cf7874818c2827c4b8e722acf99a8810cb252667af918ec505ea",
+        "policy_drive_stm32ai.onnx": "1a8e67c916bbddb7d871aeaadd24d9255207789afde0d2ae753a555062064431"
+      },
+      "validation_gate_passed": true,
+      "test_gates": {
+        "range": [],
+        "nominal": []
+      },
+      "legacy_firmware_policy_id": 2,
+      "generation_network_name": "nn_arm_c_range_gru"
+    },
+    "D": {
+      "directory": "D_Wide_MLP",
+      "selected_iteration": 1245,
+      "selected_checkpoint_sha256": "3e3491e28ca426fd16c763f7619bc7096ae6e4fcb0773d0cea4886a2578e4b3f",
+      "exports": {
+        "policy.onnx": "477060fc66b3ded29b761ca4b72e6d713a0a81523b2d174f3bf79d396c3b0092",
+        "policy.pt": "b00fec40fcbbb879286241ca08622b37778eabaca27190a9398c9e84ed50ad37",
+        "policy_drive.onnx": "49ee8614773be835441db7fec6d1817b71b420b2035adcb237679f8685ded140",
+        "policy_drive_stm32ai.onnx": "49ee8614773be835441db7fec6d1817b71b420b2035adcb237679f8685ded140"
+      },
+      "validation_gate_passed": true,
+      "test_gates": {
+        "range": [
+          "drive_backward_slow: rms_vel_err_mps 0.135 > 0.120",
+          "payload_while_still: world_drift_m 0.524 > 0.500"
+        ],
+        "nominal": [
+          "drive_backward_slow: rms_vel_err_mps 0.135 > 0.120",
+          "payload_while_still: world_drift_m 0.513 > 0.500"
+        ]
+      },
+      "legacy_firmware_policy_id": 1,
+      "generation_network_name": "nn_arm_a_range"
+    }
+  },
+  "rollback": {
+    "directory": "Rollback",
+    "model": "Rollback/rollback_old_gru_stm32ai.onnx",
+    "sha256": "d17ac3167ea1e2e5752424cda3f857bd27d39235b1e732662698f5098f371a46",
+    "identity": "original August hardware-proven GRU, not the recovered policy or new C"
+  },
+  "training_stages_verified": 10,
+  "environment_comparison": "C/D envs identical excluding log_dir; identical PPO algorithm, budgets, rollout and exploration floor",
+  "graph_audit": "passed; graph_audit.json",
+  "capture_helper_tests": "passed mocked-recorder identity/preservation/mismatch/overwrite tests; no hardware access",
+  "toolchain_availability": {
+    "CubeAI": false,
+    "CubeIDE": false,
+    "arm_none_eabi_gcc": false
+  },
+  "deployment_instructions": "LOADING.md",
+  "hardware_test_plan": "HARDWARE_TEST_PLAN.md",
+  "comparison": "COMPARISON.md",
+  "model_hash_telemetry": "host-side operator-declared SHA256 CSV/sidecar; UART broadcasts legacy ID only"
+}

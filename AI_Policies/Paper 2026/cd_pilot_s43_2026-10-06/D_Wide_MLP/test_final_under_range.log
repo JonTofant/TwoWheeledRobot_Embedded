@@ -1,0 +1,455 @@
+[INFO][AppLauncher]: Using device: cuda:0
+[INFO][AppLauncher]: Loading experience file: /workspace/isaaclab/apps/isaaclab.python.headless.kit
+[INFO]: Parsing configuration from: TwoWheeledRobot.tasks.direct.twowheeledrobot.nn_drive_env_cfg:NNDriveFixedStanceEnvCfg
+[INFO]: Parsing configuration from: TwoWheeledRobot.tasks.direct.twowheeledrobot.agents.rsl_rl_nn_drive_cfg:NNDriveFixedStanceWidePPORunnerCfg
+
+[36m======================================================================================[0m
+[36m[1m[INFO][IsaacLab]: Logging to file: /tmp/isaaclab/logs/isaaclab_2026-10-06_16-29-38.log[0m
+[36m======================================================================================[0m
+
+[33m16:29:38 [simulation_context.py] WARNING: The `enable_external_forces_every_iteration` parameter in the PhysxCfg is set to False. If you are experiencing noisy velocities, consider enabling this flag. You may need to slightly increase the number of velocity iterations (setting it to 1 or 2 rather than 0), together with this flag, to improve the accuracy of velocity updates.[0m
+[INFO]: Base environment:
+	Environment device    : cuda:0
+	Environment seed      : 2001
+	Physics step-size     : 0.001
+	Rendering step-size   : 0.02
+	Environment step-size : 0.015
+[INFO] Generating terrains randomly took : 0.429907 seconds
+[NNDriveEnv] terrain_mode=generator, ground friction static/dynamic=1.000/1.000 (per_episode)
+[INFO]: Time taken for scene creation : 1.100143 seconds
+[INFO]: Scene manager:  <class InteractiveScene>
+	Number of environments: 64
+	Environment spacing   : 2.5
+	Source prim name      : /World/envs/env_0
+	Global prim paths     : ['/World/ground']
+	Replicate physics     : True
+[INFO]: Starting the simulation. This may take a few seconds. Please wait...
+[33m16:29:40 [actuator_pd.py] WARNING: The <ImplicitActuatorCfg> object has a value for 'velocity_limit'. Previously, although this value was specified, it was not getting used by implicit actuators. Since this parameter affects the simulation behavior, we continue to not use it. This parameter will be removed in the future. To set the velocity limit, please use 'velocity_limit_sim' instead.[0m
+/isaac-sim/kit/python/lib/python3.11/site-packages/rsl_rl/utils/utils.py:245: UserWarning: The observation configuration dictionary 'obs_groups' must contain the 'policy' key. As an observation group with the name 'policy' was found, this is assumed to be the observation set. Consider adding the 'policy' key to the 'obs_groups' dictionary for clarity. This behavior will be removed in a future version.
+  warnings.warn(
+/isaac-sim/kit/python/lib/python3.11/site-packages/rsl_rl/utils/utils.py:291: UserWarning: The observation configuration dictionary 'obs_groups' must contain the 'critic' key. As the configuration for 'critic' is missing, the observations from the 'policy' set are used. Consider adding the 'critic' key to the 'obs_groups' dictionary for clarity. This behavior will be removed in a future version.
+  warnings.warn(
+[INFO]: Time taken for simulation start : 0.745441 seconds
+[INFO]: Completed setting up the environment...
+[StandupEnv] CyberGear PhysX limit readback verified [fl, fr, bl, br]: lower=[-10.0, -90.0, -90.0, -10.0]°, upper=[90.0, 10.0, 10.0, 90.0]°
+[StandupEnv] num_envs=64  obs=13  act=2  episode=20 s  success_required=1000000000 steps  cg_gains=fixed  wheel_actuator=mujoco_torque
+[PureNNBalanceEnv] pure NN current controller active, dt=0.015s, obs=13, act=2, I_max=2.00A, curriculum_stage=1
+ACTIVE RANDOMIZATION SUMMARY
+motor gain: active, range (0.97, 1.03)
+motor deadzone: active, range (0.031, 0.078) A
+obs delay: values (0, 1) policy steps
+action delay: values (0, 1) policy steps
+wheel viscous damping: active, range (0.0007, 0.0007) Nm*s/rad
+ground static/dynamic friction: active per-episode on the robot material (see below)
+mass/COM/inertia/wheel radius: inactive
+NN DRIVE EXTRA RANDOMIZATION
+body mass/inertia scale: active, range (0.85, 1.15)
+platform COM offset: active, y (fore/aft) (0.0, 0.0) m, z (-0.01, 0.015) m
+odometry scale (obs): active, range (0.97, 1.03)
+pitch-rate gyro bias: active, range (-0.03, 0.03) rad/s
+yaw-rate gyro bias: active, range (-0.03, 0.03) rad/s
+cybergear kp/kd: active, ranges (30.0, 30.0) / (3.0, 3.0)
+cybergear calibration bias: active, range (-0.017453292519943295, 0.017453292519943295) rad
+force noise: active, amp (0.0, 0.6) N
+contact friction: active per-episode (effective tire/floor), static (0.5, 1.1), dynamic (0.4, 0.9) (dynamic <= static), pool of 64
+prev-current observation source: command
+obs delay steps: (0, 1), action delay steps: (0, 1)
+[NNDriveEnv] joystick drive controller active, dt=0.015s, obs=13, act=2, terrain=generator, curriculum_stage=1, leg_actions=fixed, v_max=0.15 m/s, w_max=0.00 rad/s
+[PureNNBalanceEnv] reset randomization sample #1
+  env_ids=[0, 1, 2, 3]
+  wheel_viscous_damping_LR=[[0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555]]
+  motor_gain_LR=[[1.0132219791412354, 0.9725050926208496], [1.018123984336853, 1.013717770576477], [1.0144352912902832, 0.989450991153717], [1.0003981590270996, 0.9951716065406799]]
+  motor_deadzone_LR=[[0.06481587886810303, 0.039193518459796906], [0.06836903840303421, 0.033296894282102585], [0.053215205669403076, 0.07323480397462845], [0.06874807924032211, 0.0532674603164196]]
+--------------------------------------------------------------------------------
+Resolved observation sets: 
+	 policy :  ['policy']
+	 critic :  ['policy']
+--------------------------------------------------------------------------------
+Actor MLP: MLP(
+  (0): Linear(in_features=13, out_features=145, bias=True)
+  (1): ReLU()
+  (2): Linear(in_features=145, out_features=145, bias=True)
+  (3): ReLU()
+  (4): Linear(in_features=145, out_features=2, bias=True)
+)
+Critic MLP: MLP(
+  (0): Linear(in_features=13, out_features=128, bias=True)
+  (1): ReLU()
+  (2): Linear(in_features=128, out_features=128, bias=True)
+  (3): ReLU()
+  (4): Linear(in_features=128, out_features=1, bias=True)
+)
+[PureNNBalanceEnv] reset randomization sample #2
+  env_ids=[0, 1, 2, 3]
+  wheel_viscous_damping_LR=[[0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555]]
+  motor_gain_LR=[[1.0115877389907837, 1.0132219791412354], [1.0011467933654785, 1.018123984336853], [1.0015974044799805, 1.0144352912902832], [1.0053939819335938, 1.0003981590270996]]
+  motor_deadzone_LR=[[0.032962311059236526, 0.0652456283569336], [0.04623657837510109, 0.05071774125099182], [0.03244695067405701, 0.0539386160671711], [0.059695880860090256, 0.037268202751874924]]
+[33m16:29:41 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:29:46 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:29:51 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:29:56 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:01 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:06 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:11 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:16 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:21 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:26 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[station_keeping] v_cmd=+0.00 m/s, w_cmd=+0.00 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.0362382
+rms_yaw_rate_err_radps: 0.0572664
+rms_pitch_deg: 0.544725
+rms_roll_deg: 0.372395
+max_pos_err_m: 0.0552863
+final_pos_err_m: 0.0459609
+mean_velocity_mps: 0.00019976
+mean_yaw_rate_radps: 0.000184913
+achieved_speed_mps: 0.0295022
+world_drift_m: 0.0599515
+rms_current_a: 0.0931389
+sampled_env_fraction: 1
+[PureNNBalanceEnv] reset randomization sample #3
+  env_ids=[0, 1, 2, 3]
+  wheel_viscous_damping_LR=[[0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555], [0.000699999975040555, 0.000699999975040555]]
+  motor_gain_LR=[[0.9913453459739685, 0.9744385480880737], [1.0034058094024658, 0.9932518601417542], [1.0059534311294556, 0.9922289848327637], [1.0171231031417847, 0.9826644659042358]]
+  motor_deadzone_LR=[[0.06994340568780899, 0.05870560556650162], [0.04363665729761124, 0.03612501919269562], [0.059695277363061905, 0.03691317141056061], [0.05192618444561958, 0.05155628174543381]]
+[33m16:30:31 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:36 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:41 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:46 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:51 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:30:56 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:01 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:06 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:11 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:16 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[drive_forward_slow] v_cmd=+0.10 m/s, w_cmd=+0.00 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.108113
+rms_yaw_rate_err_radps: 0.112982
+rms_pitch_deg: 1.78894
+rms_roll_deg: 0.732167
+max_pos_err_m: 0.756764
+final_pos_err_m: 0.412832
+mean_velocity_mps: 0.166168
+mean_yaw_rate_radps: -0.00312276
+achieved_speed_mps: 0.17044
+world_drift_m: 2.3694
+rms_current_a: 0.139587
+sampled_env_fraction: 1
+[33m16:31:21 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:26 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:31 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:36 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:41 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:46 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:51 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:31:56 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:01 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:06 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[drive_backward_slow] v_cmd=-0.10 m/s, w_cmd=+0.00 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.134968
+rms_yaw_rate_err_radps: 0.118376
+rms_pitch_deg: 2.15775
+rms_roll_deg: 0.644651
+max_pos_err_m: 0.752225
+final_pos_err_m: 0.400416
+mean_velocity_mps: -0.177678
+mean_yaw_rate_radps: 0.014244
+achieved_speed_mps: 0.190249
+world_drift_m: 2.41443
+rms_current_a: 0.165364
+sampled_env_fraction: 1
+[33m16:32:11 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:16 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:21 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:26 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:31 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:36 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:41 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:46 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:51 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:32:56 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[drive_forward] v_cmd=+0.30 m/s, w_cmd=+0.00 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.110492
+rms_yaw_rate_err_radps: 0.0750018
+rms_pitch_deg: 2.0938
+rms_roll_deg: 0.751349
+max_pos_err_m: 0.778056
+final_pos_err_m: 0.472347
+mean_velocity_mps: 0.38785
+mean_yaw_rate_radps: 0.00679397
+achieved_speed_mps: 0.388191
+world_drift_m: 5.46306
+rms_current_a: 0.0933353
+sampled_env_fraction: 1
+[33m16:33:01 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:06 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:11 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:17 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:22 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:27 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:32 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:37 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:42 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:47 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[drive_backward] v_cmd=-0.30 m/s, w_cmd=+0.00 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.0861042
+rms_yaw_rate_err_radps: 0.079419
+rms_pitch_deg: 1.81652
+rms_roll_deg: 0.734437
+max_pos_err_m: 0.837749
+final_pos_err_m: 0.454573
+mean_velocity_mps: -0.352538
+mean_yaw_rate_radps: 0.00531989
+achieved_speed_mps: 0.352589
+world_drift_m: 4.86445
+rms_current_a: 0.125535
+sampled_env_fraction: 1
+[33m16:33:52 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:33:57 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:02 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:07 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:12 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:17 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:22 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:27 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:32 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:37 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[turn_in_place] v_cmd=+0.00 m/s, w_cmd=+0.40 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.0736044
+rms_yaw_rate_err_radps: 0.115248
+rms_pitch_deg: 0.8487
+rms_roll_deg: 0.398117
+max_pos_err_m: 0.257307
+final_pos_err_m: 0.116781
+mean_velocity_mps: 0.00959183
+mean_yaw_rate_radps: 0.400565
+achieved_speed_mps: 0.0623324
+world_drift_m: 0.140485
+rms_current_a: 0.0879292
+sampled_env_fraction: 1
+[33m16:34:42 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:47 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:52 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:34:57 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:02 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:07 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:12 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:17 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:22 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:27 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[drive_and_turn] v_cmd=+0.25 m/s, w_cmd=+0.35 rad/s, disturbance=none, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.120894
+rms_yaw_rate_err_radps: 0.0846461
+rms_pitch_deg: 1.43532
+rms_roll_deg: 2.37656
+max_pos_err_m: 0.815945
+final_pos_err_m: 0.440026
+mean_velocity_mps: 0.349245
+mean_yaw_rate_radps: 0.358242
+achieved_speed_mps: 0.350014
+world_drift_m: 1.49739
+rms_current_a: 0.0839021
+sampled_env_fraction: 1
+[33m16:35:32 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:37 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:42 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:47 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:52 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:35:57 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:02 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:07 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:13 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:18 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[push_while_still] v_cmd=+0.00 m/s, w_cmd=+0.00 rad/s, disturbance=human_push, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.0504814
+rms_yaw_rate_err_radps: 0.0788527
+rms_pitch_deg: 0.841188
+rms_roll_deg: 0.370264
+max_pos_err_m: 0.0840301
+final_pos_err_m: 0.0506838
+mean_velocity_mps: 0.000211715
+mean_yaw_rate_radps: 0.000454025
+achieved_speed_mps: 0.033655
+world_drift_m: 0.0696626
+rms_current_a: 0.10346
+sampled_env_fraction: 1
+[33m16:36:23 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:28 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:33 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:38 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:43 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:48 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:53 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:36:58 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:03 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:08 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[push_while_driving] v_cmd=+0.30 m/s, w_cmd=+0.00 rad/s, disturbance=human_push, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.138975
+rms_yaw_rate_err_radps: 0.0794197
+rms_pitch_deg: 2.14206
+rms_roll_deg: 0.71002
+max_pos_err_m: 0.770578
+final_pos_err_m: 0.436625
+mean_velocity_mps: 0.412534
+mean_yaw_rate_radps: 0.00772121
+achieved_speed_mps: 0.413298
+world_drift_m: 5.83766
+rms_current_a: 0.0969621
+sampled_env_fraction: 1
+[33m16:37:13 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:18 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:23 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:28 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:33 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:38 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:43 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:48 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:53 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:37:58 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[payload_while_still] v_cmd=+0.00 m/s, w_cmd=+0.00 rad/s, disturbance=payload, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.108866
+rms_yaw_rate_err_radps: 0.127774
+rms_pitch_deg: 2.29542
+rms_roll_deg: 0.417708
+max_pos_err_m: 0.140459
+final_pos_err_m: 0.0811503
+mean_velocity_mps: 0.0119976
+mean_yaw_rate_radps: -0.00620031
+achieved_speed_mps: 0.0805943
+world_drift_m: 0.524446
+rms_current_a: 0.162903
+sampled_env_fraction: 1
+[33m16:38:03 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:08 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:13 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:18 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:23 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:28 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:33 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:38 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:43 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+[33m16:38:48 [articulation.py] WARNING: The function 'set_external_force_and_torque' will be deprecated in a future release. Please use 'permanent_wrench_composer.set_forces_and_torques' instead.[0m
+
+[payload_while_driving] v_cmd=+0.35 m/s, w_cmd=+0.00 rad/s, disturbance=payload, terrain=generator
+survival_time_s: 15
+fall_rate: 0
+physics_broken_rate: 0
+invalid_state_rate: 0
+timeout_rate: 0
+termination_rate: 0
+rms_vel_err_mps: 0.177667
+rms_yaw_rate_err_radps: 0.0770681
+rms_pitch_deg: 3.50618
+rms_roll_deg: 1.10352
+max_pos_err_m: 0.786617
+final_pos_err_m: 0.465605
+mean_velocity_mps: 0.438911
+mean_yaw_rate_radps: 0.00623076
+achieved_speed_mps: 0.442264
+world_drift_m: 6.16693
+rms_current_a: 0.098244
+sampled_env_fraction: 1
+
+Wrote benchmark JSON: /workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_D_s43/test_final_under_range.json
+Loading user config located at: '/isaac-sim/kit/data/Kit/Isaac-Sim/5.1/user.config.json'
+[Info] [carb] Logging to file: /isaac-sim/kit/logs/Kit/Isaac-Sim/5.1/kit_20261006_162933.log
+2026-10-06T16:29:33Z [0ms] [Warning] [carb.crashreporter-breakpad.plugin] [previous crash] preventing upload of minidump due to user opt-out: '/isaac-sim/kit/data/Kit/Isaac-Sim/5.1/8e927a3f-1ce7-4581-9e726ca8-b08c1cf6.dmp'
+2026-10-06T16:29:33Z [0ms] [Warning] [carb.crashreporter-breakpad.plugin] [previous crash] preventing upload of minidump due to user opt-out: '/isaac-sim/kit/data/Kit/Isaac-Sim/5.1/6f80bc5e-e765-443d-2ac9eaa7-e1acb803.dmp'
+2026-10-06T16:29:33Z [0ms] [Warning] [carb.crashreporter-breakpad.plugin] [previous crash] preventing upload of minidump due to user opt-out: '/isaac-sim/kit/data/Kit/Isaac-Sim/5.1/43af6bb7-1f69-4ca5-4b04d890-41b5b5ff.dmp'
+2026-10-06T16:29:33Z [0ms] [Warning] [carb.crashreporter-breakpad.plugin] [previous crash] preventing upload of minidump due to user opt-out: '/isaac-sim/kit/data/Kit/Isaac-Sim/5.1/a45998c3-2d2c-48e6-cca90b98-e40bf0f7.dmp'
+2026-10-06T16:29:33Z [316ms] [Warning] [omni.usd_config.extension] Enable omni.materialx.libs extension to use MaterialX
+2026-10-06T16:29:33Z [596ms] [Warning] [carb] Acquiring non optional plugin interface which is not listed as dependency: [omni::physx::IPhysxBenchmarks v1.0] (plugin: <default plugin>), by client: omni.physics.physx.plugin. Add it to CARB_PLUGIN_IMPL_DEPS() macro of a client.
+2026-10-06T16:29:34Z [734ms] [Warning] [omni.isaac.dynamic_control] omni.isaac.dynamic_control is deprecated as of Isaac Sim 4.5. No action is needed from end-users.
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.178.04    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA GeForce RTX 5080          | Yes: 0 |     | 16549   MB | 10de      | 0          |
+|     |                                  |        |     |            | 2c02      | 8bf44253.. |
+|     |                                  |        |     |            | 1         |            |
+|=============================================================================================|
+| OS: 24.04.2 LTS (Noble Numbat) ubuntu, Version: 24.04.2, Kernel: 7.0.0-31-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101011 (1.21.1.11)
+| Processor: Intel(R) Core(TM) i9-14900KF
+| Bare Metal Cores: 24 | Bare Metal Logical Cores: 48
+| Available Cores:  32 
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 64117 | Free Memory: 42526
+| Total Page/Swap (MB): 8191 | Free Page/Swap: 0
+|---------------------------------------------------------------------------------------------|
+2026-10-06T16:29:37Z [3,949ms] [Warning] [gpu.foundation.plugin] CPU performance profile is set to powersave. This profile sets the CPU to the lowest frequency reducing performance.
+2026-10-06T16:29:37Z [3,957ms] [Warning] [gpu.foundation.plugin] IOMMU is enabled.

@@ -1,0 +1,46 @@
+{
+  "candidates": [
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_D_s43/validation_0_model_1096.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_15-02-43_r3_cd_pilot_20261006T101555Z_range_wide_s43_stage4/model_1096.pt",
+      "gate_failures": [
+        "drive_backward_slow: rms_vel_err_mps 0.189 > 0.120"
+      ],
+      "gate_passed": false,
+      "iteration": 1096,
+      "score": 1.0668258231517898,
+      "sha256": "fa652c701fa4f406cc67885ef0fcfc6afa5f6e77092d97032270bb84d52121d4"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_D_s43/validation_1_model_1150.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_15-31-35_r3_cd_pilot_20261006T101555Z_range_wide_s43_stage5/model_1150.pt",
+      "gate_failures": [
+        "drive_backward_slow: rms_vel_err_mps 0.131 > 0.120"
+      ],
+      "gate_passed": false,
+      "iteration": 1150,
+      "score": 0.9164893411217157,
+      "sha256": "0dbcdc25f21688a363aeeb925f0cd09ebc5128a2ed4d79a936bdaf0364076743"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_D_s43/validation_2_model_1175.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_15-31-35_r3_cd_pilot_20261006T101555Z_range_wide_s43_stage5/model_1175.pt",
+      "gate_failures": [
+        "payload_while_still: world_drift_m 0.518 > 0.500"
+      ],
+      "gate_passed": false,
+      "iteration": 1175,
+      "score": 0.9243476538561286,
+      "sha256": "1f62f8e52584363ce23c5d54ea5faeaa33f732f0114137b5954c2d2d8d29b55a"
+    },
+    {
+      "benchmark": "/workspace/TwoWheeledRobot/logs/pilot_outputs/r3_cd_pilot_20261006T101555Z/arm_D_s43/validation_3_model_1245.json",
+      "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-06_15-31-35_r3_cd_pilot_20261006T101555Z_range_wide_s43_stage5/model_1245.pt",
+      "gate_failures": [],
+      "gate_passed": true,
+      "iteration": 1245,
+      "score": 0.8821701259350315,
+      "sha256": "3e3491e28ca426fd16c763f7619bc7096ae6e4fcb0773d0cea4886a2578e4b3f"
+    }
+  ]
+}

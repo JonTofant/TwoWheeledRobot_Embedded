@@ -1,0 +1,150 @@
+{
+  "C": {
+    "selected": {
+      "range": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.07333109663291411,
+        "rms_yaw_rate_err_radps": 0.06763202595439824,
+        "rms_current_a": 0.12494394183158875,
+        "station_drift_m": 0.05287271738052368,
+        "forward_mean_mps": 0.34286174178123474,
+        "backward_mean_mps": -0.2976128160953522,
+        "gate_failures": []
+      },
+      "nominal": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.0731165510686961,
+        "rms_yaw_rate_err_radps": 0.06604687869548798,
+        "rms_current_a": 0.12454350766810504,
+        "station_drift_m": 0.05237090587615967,
+        "forward_mean_mps": 0.3428729176521301,
+        "backward_mean_mps": -0.29762452840805054,
+        "gate_failures": []
+      }
+    },
+    "final": {
+      "range": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.07382837920026346,
+        "rms_yaw_rate_err_radps": 0.0703288618136536,
+        "rms_current_a": 0.12452444434165955,
+        "station_drift_m": 0.11312501132488251,
+        "forward_mean_mps": 0.26923224329948425,
+        "backward_mean_mps": -0.34557652473449707,
+        "gate_failures": [
+          "drive_backward_slow: rms_vel_err_mps 0.129 > 0.120"
+        ]
+      },
+      "nominal": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.07347281751307574,
+        "rms_yaw_rate_err_radps": 0.06802877343513748,
+        "rms_current_a": 0.12305603989145973,
+        "station_drift_m": 0.11374534666538239,
+        "forward_mean_mps": 0.2695622444152832,
+        "backward_mean_mps": -0.3452977240085602,
+        "gate_failures": [
+          "drive_backward_slow: rms_vel_err_mps 0.128 > 0.120"
+        ]
+      }
+    }
+  },
+  "D": {
+    "selected": {
+      "range": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.10421849584037607,
+        "rms_yaw_rate_err_radps": 0.09145944700999693,
+        "rms_current_a": 0.1136691536415707,
+        "station_drift_m": 0.05995149165391922,
+        "forward_mean_mps": 0.38784968852996826,
+        "backward_mean_mps": -0.3525382876396179,
+        "gate_failures": [
+          "drive_backward_slow: rms_vel_err_mps 0.135 > 0.120",
+          "payload_while_still: world_drift_m 0.524 > 0.500"
+        ]
+      },
+      "nominal": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.10380295325409282,
+        "rms_yaw_rate_err_radps": 0.0897396748716181,
+        "rms_current_a": 0.11237205971371043,
+        "station_drift_m": 0.059621863067150116,
+        "forward_mean_mps": 0.38792890310287476,
+        "backward_mean_mps": -0.3529875874519348,
+        "gate_failures": [
+          "drive_backward_slow: rms_vel_err_mps 0.135 > 0.120",
+          "payload_while_still: world_drift_m 0.513 > 0.500"
+        ]
+      }
+    },
+    "final": {
+      "range": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.10421849584037607,
+        "rms_yaw_rate_err_radps": 0.09145944700999693,
+        "rms_current_a": 0.1136691536415707,
+        "station_drift_m": 0.05995149165391922,
+        "forward_mean_mps": 0.38784968852996826,
+        "backward_mean_mps": -0.3525382876396179,
+        "gate_failures": [
+          "drive_backward_slow: rms_vel_err_mps 0.135 > 0.120",
+          "payload_while_still: world_drift_m 0.524 > 0.500"
+        ]
+      },
+      "nominal": {
+        "fall_rate": 0.0,
+        "termination_rate": 0.0,
+        "physics_broken_rate": 0.0,
+        "invalid_state_rate": 0.0,
+        "survival_time_s": 15.0,
+        "sampled_env_fraction": 1.0,
+        "rms_vel_err_mps": 0.10380295325409282,
+        "rms_yaw_rate_err_radps": 0.0897396748716181,
+        "rms_current_a": 0.11237205971371043,
+        "station_drift_m": 0.059621863067150116,
+        "forward_mean_mps": 0.38792890310287476,
+        "backward_mean_mps": -0.3529875874519348,
+        "gate_failures": [
+          "drive_backward_slow: rms_vel_err_mps 0.135 > 0.120",
+          "payload_while_still: world_drift_m 0.513 > 0.500"
+        ]
+      }
+    }
+  }
+}

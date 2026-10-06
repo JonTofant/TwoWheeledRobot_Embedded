@@ -1,0 +1,9 @@
+{
+  "candidates": [],
+  "run": "2026-10-06_10-44-50_r3_cd_pilot_20261006T101555Z_range_gru_s43_stage2",
+  "selected_checkpoint": "model_648.pt",
+  "selected_via_gate_failure_fallback": false,
+  "selection": "last",
+  "selection_score": null,
+  "stage": 2
+}
