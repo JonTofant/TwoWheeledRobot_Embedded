@@ -1,5 +1,11 @@
 # r2 seed-43 policies for the four-arm hardware comparison
 
+> **Hardware update, 2026-10-06:** The newly deployed r2 GRU was reported to
+> fall under small pushes and command insufficient current, despite good
+> simulator scores. See `../gru_recovery_2026-10-06/` for a restored-floor
+> warm-start candidate and the byte-identical original August rollback model.
+> Hardware validation of the recovery candidate is pending.
+
 All four arms use training seed 43 and the final `model_1395.pt` checkpoint at
 one common training budget. These exports come from training commit
 `d2e3992ec58658e058dbcd1b5839e340160547e5` in TwoWheeledRobot.

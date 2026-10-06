@@ -1,0 +1,82 @@
+diff --git a/scripts/rsl_rl/train.py b/scripts/rsl_rl/train.py
+index 8f47015..ee56b0a 100644
+--- a/scripts/rsl_rl/train.py
++++ b/scripts/rsl_rl/train.py
+@@ -46,6 +46,11 @@ parser.add_argument(
+ )
+ parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
+ parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
++parser.add_argument(
++    "--reset_optimizer",
++    action="store_true",
++    help="Warm-start model weights without restoring optimizer state or its saved learning rate.",
++)
+ parser.add_argument(
+     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
+ )
+@@ -227,7 +232,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
+     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
+         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
+         # load previously trained model
+-        runner.load(resume_path)
++        runner.load(resume_path, load_optimizer=not args_cli.reset_optimizer)
+ 
+     enforce_action_std_floor(runner, getattr(agent_cfg, "action_std_floor", None))
+ 
+diff --git a/scripts/tools/run_retrain_arms.sh b/scripts/tools/run_retrain_arms.sh
+index 43588e9..3128891 100755
+--- a/scripts/tools/run_retrain_arms.sh
++++ b/scripts/tools/run_retrain_arms.sh
+@@ -12,7 +12,8 @@
+ #   tire friction    effective static 0.5-1.1 / dynamic 0.4-0.9 per env per
+ #                    episode (was one draw per run, halved by the 0.5 default
+ #                    robot material)              ground_friction_randomization_mode=per_episode
+-#   noise floor      action std floor 0.05 (was 0.15)
++#   noise floor      restored to 0.15 after C43's hardware regression;
++#                    the archived r2 run used 0.05
+ #   selection        fixed budget, last checkpoint of each stage (was a gated
+ #                    shortlist benchmarked on the same seed the paper reports)
+ #   removed          inert: joint friction coefficient, current bias, randomized
+@@ -40,7 +41,8 @@ fi
+ 
+ REPO=/workspace/TwoWheeledRobot
+ PY=/isaac-sim/python.sh
+-TAG=${RETRAIN_TAG:-r2}
++# Changed defaults must not overwrite the completed r2 benchmark records.
++TAG=${RETRAIN_TAG:-r3}
+ RUN_ROOT=$REPO/logs/rsl_rl/nn_drive_fixed_stance
+ LOG_DIR=$REPO/logs/retrain_${TAG}_$(date +%Y-%m-%d)
+ DATA_DIR=${RETRAIN_DATA_DIR:-$REPO/docs/paper/figures/data_${TAG}}
+@@ -113,8 +115,8 @@ for key, value in want.items():
+     if got != value:
+         bad.append(f"{key}: got {got}, expected {value}")
+ floor = tuple(agent.get("action_std_floor") or ())
+-if floor != (0.05, 0.05):
+-    bad.append(f"action_std_floor: got {floor}, expected (0.05, 0.05)")
++if floor != (0.15, 0.15):
++    bad.append(f"action_std_floor: got {floor}, expected (0.15, 0.15)")
+ if bad:
+     print("CONFIG MISMATCH (" + expect + "):\n  " + "\n  ".join(bad))
+     sys.exit(1)
+diff --git a/source/TwoWheeledRobot/TwoWheeledRobot/tasks/direct/twowheeledrobot/agents/rsl_rl_nn_drive_cfg.py b/source/TwoWheeledRobot/TwoWheeledRobot/tasks/direct/twowheeledrobot/agents/rsl_rl_nn_drive_cfg.py
+index eda8ed0..85fb3a3 100644
+--- a/source/TwoWheeledRobot/TwoWheeledRobot/tasks/direct/twowheeledrobot/agents/rsl_rl_nn_drive_cfg.py
++++ b/source/TwoWheeledRobot/TwoWheeledRobot/tasks/direct/twowheeledrobot/agents/rsl_rl_nn_drive_cfg.py
+@@ -68,11 +68,12 @@ class NNDriveFixedStancePPORunnerCfg(NNDrivePPORunnerCfg):
+     """Matched PPO config for the two-action fixed-stance diagnostic task."""
+ 
+     experiment_name = "nn_drive_fixed_stance"
+-    # 0.15 -> 0.05 (2026-10-01). Policy/mean_noise_std sat pinned at 0.15 for
+-    # 86-100% of every stage of the 2026-08 arms, and the 0.05 stage-5 fine-tune
+-    # improved velocity tracking on all 11 benchmark scenarios
+-    # (docs/experiments/2026-08-23-breakaway-and-noise-floor.md, hold-smoothness).
+-    action_std_floor: list[float] = [0.05, 0.05]
++    # Restore the hardware-proven August exploration floor (2026-10-06).
++    # The r2 0.05 floor improved simulated tracking, but C43 regressed on the
++    # physical robot. Its causal contribution is unproven: r2 also changed the
++    # plant and checkpoint selection. This is training exploration, not an
++    # inference current limit. Keep the same floor for all comparison arms.
++    action_std_floor: list[float] = [0.15, 0.15]
+ 
+ 
+ @configclass

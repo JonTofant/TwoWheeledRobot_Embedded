@@ -1,0 +1,13 @@
+{
+  "source_sha256": "bd62a650822cd27fc0eb8092fcced70cf6c0e8d7495188c529acf34843f1e68b",
+  "old_model_mean_absolute_replay_error_a": 1.0498033019253895e-07,
+  "scope": "same historical observation sequence, not new hardware trials",
+  "forward_rms_current_a": {
+    "old": 0.13854178785999774,
+    "r2_c43": 0.08420833406059194
+  },
+  "final_hold_rms_current_a": {
+    "old": 0.24237267208288585,
+    "r2_c43": 0.1582853291448356
+  }
+}

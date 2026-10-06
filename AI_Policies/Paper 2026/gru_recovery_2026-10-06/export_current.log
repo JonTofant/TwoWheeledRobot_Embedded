@@ -1,0 +1,2 @@
+Exported /workspace/TwoWheeledRobot/ExportedPolicy/gru_recovery_floor015_s43_2026-10-06_retry1/policy_drive.onnx (outputs=2 + recurrent state (h_out[, c_out]) passed through unchanged, cg_lower_rad=[-0.17453292519943295, -1.5707963267948966, -1.5707963267948966, -0.17453292519943295], cg_upper_rad=[1.5707963267948966, 0.17453292519943295, 0.17453292519943295, 1.5707963267948966], i_max_a=2.0)
+ONNX validation passed: max_error=2.682209e-06 < 0.0001

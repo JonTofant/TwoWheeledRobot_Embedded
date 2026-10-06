@@ -1,0 +1,289 @@
+{
+  "source": "/home/jon/Projects/TwoWheeledRobot_Embedded/Results/paper/range_gru_segmented.csv",
+  "source_sha256": "bd62a650822cd27fc0eb8092fcced70cf6c0e8d7495188c529acf34843f1e68b",
+  "limitation": "Replay of historical old-policy sensor trajectory, not closed-loop evaluation. Initial recurrent state is unavailable; checkpoint resets are reconstructed from exact-zero previous-current features. No model strength or hardware transfer guarantee follows from replay.",
+  "old": {
+    "frames": 8044,
+    "mean_abs_difference_from_recorded_action_a": 1.0498033019253895e-07,
+    "rms_replayed_current_a": 0.15532489126967647,
+    "by_stage": {
+      "settle": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 8.210547093767673e-08,
+        "rms_replayed_current_a": 0.1579740288391669
+      },
+      "left_leg": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 7.072980181051943e-08,
+        "rms_replayed_current_a": 0.15672470281730558
+      },
+      "neutral_after_left": {
+        "frames": 134,
+        "mean_abs_difference_from_recorded_action_a": 1.0939676478790092e-07,
+        "rms_replayed_current_a": 0.14786442007243508
+      },
+      "right_leg": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 1.024597737112802e-07,
+        "rms_replayed_current_a": 0.16834666892532643
+      },
+      "neutral_after_right": {
+        "frames": 134,
+        "mean_abs_difference_from_recorded_action_a": 1.9751357978015248e-07,
+        "rms_replayed_current_a": 0.1375038123069427
+      },
+      "checkpoint_before_forward": {
+        "frames": 710,
+        "mean_abs_difference_from_recorded_action_a": 9.111831594720928e-08,
+        "rms_replayed_current_a": 0.14554506552853255
+      },
+      "forward": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 7.129274308681488e-08,
+        "rms_replayed_current_a": 0.13854178785999774
+      },
+      "hold_after_forward": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 1.1527212336659431e-07,
+        "rms_replayed_current_a": 0.12831866775017703
+      },
+      "checkpoint_before_reverse": {
+        "frames": 286,
+        "mean_abs_difference_from_recorded_action_a": 7.681945872890366e-08,
+        "rms_replayed_current_a": 0.15178611298595865
+      },
+      "reverse": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 7.99549525254406e-08,
+        "rms_replayed_current_a": 0.14316380249449412
+      },
+      "hold_after_reverse": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 1.0673626093193888e-07,
+        "rms_replayed_current_a": 0.1802375652561397
+      },
+      "spin_positive": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 7.894135172294821e-08,
+        "rms_replayed_current_a": 0.11384760480288249
+      },
+      "hold_after_positive_spin": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 1.9747698388528078e-07,
+        "rms_replayed_current_a": 0.10968875013119021
+      },
+      "spin_negative": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 1.5533742533918626e-07,
+        "rms_replayed_current_a": 0.11354549391895757
+      },
+      "hold_after_negative_spin": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 2.0957446395186707e-07,
+        "rms_replayed_current_a": 0.08757418768472788
+      },
+      "checkpoint_before_sine_forward": {
+        "frames": 144,
+        "mean_abs_difference_from_recorded_action_a": 6.22918479267456e-08,
+        "rms_replayed_current_a": 0.1445082981315642
+      },
+      "sine_legs_forward": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 1.5221071697262285e-07,
+        "rms_replayed_current_a": 0.2562439949283909
+      },
+      "checkpoint_before_sine_reverse": {
+        "frames": 413,
+        "mean_abs_difference_from_recorded_action_a": 9.845353699047975e-08,
+        "rms_replayed_current_a": 0.18298927586803476
+      },
+      "sine_legs_reverse": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 1.3083185519227822e-07,
+        "rms_replayed_current_a": 0.13443448472197891
+      },
+      "final_hold": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 1.052179140970111e-07,
+        "rms_replayed_current_a": 0.24237267208288585
+      },
+      "crossed_asymmetric_hold": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 7.967655020654425e-08,
+        "rms_replayed_current_a": 0.14932998069864523
+      },
+      "neutral_after_crossed": {
+        "frames": 67,
+        "mean_abs_difference_from_recorded_action_a": 1.0663556602241388e-07,
+        "rms_replayed_current_a": 0.14724839232062104
+      },
+      "checkpoint_before_one_leg_forward": {
+        "frames": 270,
+        "mean_abs_difference_from_recorded_action_a": 4.7053887370835854e-08,
+        "rms_replayed_current_a": 0.14806215424503916
+      },
+      "one_leg_sine_forward": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 5.719093440191241e-08,
+        "rms_replayed_current_a": 0.12551446758888277
+      },
+      "checkpoint_before_one_leg_reverse": {
+        "frames": 430,
+        "mean_abs_difference_from_recorded_action_a": 8.09044523034678e-08,
+        "rms_replayed_current_a": 0.1687101608001198
+      },
+      "one_leg_sine_reverse": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 1.387433009396555e-07,
+        "rms_replayed_current_a": 0.13890894493765005
+      },
+      "idle": {
+        "frames": 1118,
+        "mean_abs_difference_from_recorded_action_a": 1.1474297746177929e-07,
+        "rms_replayed_current_a": 0.15439788647359112
+      }
+    }
+  },
+  "r2_c43": {
+    "frames": 8044,
+    "mean_abs_difference_from_recorded_action_a": 0.12596172278867596,
+    "rms_replayed_current_a": 0.14176274113621956,
+    "by_stage": {
+      "settle": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.15962904713887838,
+        "rms_replayed_current_a": 0.12482487104613556
+      },
+      "left_leg": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 0.125452227242693,
+        "rms_replayed_current_a": 0.16932399911294585
+      },
+      "neutral_after_left": {
+        "frames": 134,
+        "mean_abs_difference_from_recorded_action_a": 0.09757180112227168,
+        "rms_replayed_current_a": 0.11595410289085084
+      },
+      "right_leg": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 0.17644575413242944,
+        "rms_replayed_current_a": 0.16550438897796518
+      },
+      "neutral_after_right": {
+        "frames": 134,
+        "mean_abs_difference_from_recorded_action_a": 0.12720170709073852,
+        "rms_replayed_current_a": 0.14738167047146153
+      },
+      "checkpoint_before_forward": {
+        "frames": 710,
+        "mean_abs_difference_from_recorded_action_a": 0.1317744045577187,
+        "rms_replayed_current_a": 0.1421060401526487
+      },
+      "forward": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.08950640263516106,
+        "rms_replayed_current_a": 0.08420833406059194
+      },
+      "hold_after_forward": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.13218026870616087,
+        "rms_replayed_current_a": 0.09330373636310191
+      },
+      "checkpoint_before_reverse": {
+        "frames": 286,
+        "mean_abs_difference_from_recorded_action_a": 0.15700276953848644,
+        "rms_replayed_current_a": 0.12050069188479655
+      },
+      "reverse": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.046560769874777176,
+        "rms_replayed_current_a": 0.11873146140522421
+      },
+      "hold_after_reverse": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.12030843190384985,
+        "rms_replayed_current_a": 0.13621220157176656
+      },
+      "spin_positive": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 0.12884413396602054,
+        "rms_replayed_current_a": 0.09707121980055354
+      },
+      "hold_after_positive_spin": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.09615804126438889,
+        "rms_replayed_current_a": 0.10080653967276243
+      },
+      "spin_negative": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 0.14827381698823358,
+        "rms_replayed_current_a": 0.0780375734902126
+      },
+      "hold_after_negative_spin": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.08764420531901124,
+        "rms_replayed_current_a": 0.0737025391717268
+      },
+      "checkpoint_before_sine_forward": {
+        "frames": 144,
+        "mean_abs_difference_from_recorded_action_a": 0.1491123420617239,
+        "rms_replayed_current_a": 0.10143898866711296
+      },
+      "sine_legs_forward": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 0.18918725785647864,
+        "rms_replayed_current_a": 0.20345239207958976
+      },
+      "checkpoint_before_sine_reverse": {
+        "frames": 413,
+        "mean_abs_difference_from_recorded_action_a": 0.17374727407125098,
+        "rms_replayed_current_a": 0.22443214004126535
+      },
+      "sine_legs_reverse": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 0.05379263297601277,
+        "rms_replayed_current_a": 0.1079141589964863
+      },
+      "final_hold": {
+        "frames": 200,
+        "mean_abs_difference_from_recorded_action_a": 0.14455873570390396,
+        "rms_replayed_current_a": 0.1582853291448356
+      },
+      "crossed_asymmetric_hold": {
+        "frames": 334,
+        "mean_abs_difference_from_recorded_action_a": 0.13279664384275977,
+        "rms_replayed_current_a": 0.14649800181637698
+      },
+      "neutral_after_crossed": {
+        "frames": 67,
+        "mean_abs_difference_from_recorded_action_a": 0.1248000515375109,
+        "rms_replayed_current_a": 0.18270856186585366
+      },
+      "checkpoint_before_one_leg_forward": {
+        "frames": 270,
+        "mean_abs_difference_from_recorded_action_a": 0.1430911203891625,
+        "rms_replayed_current_a": 0.14595685092178717
+      },
+      "one_leg_sine_forward": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 0.07068640308397733,
+        "rms_replayed_current_a": 0.08517079407026096
+      },
+      "checkpoint_before_one_leg_reverse": {
+        "frames": 430,
+        "mean_abs_difference_from_recorded_action_a": 0.14012043925916282,
+        "rms_replayed_current_a": 0.1856538231558653
+      },
+      "one_leg_sine_reverse": {
+        "frames": 267,
+        "mean_abs_difference_from_recorded_action_a": 0.07973516158111461,
+        "rms_replayed_current_a": 0.11709906965254481
+      },
+      "idle": {
+        "frames": 1118,
+        "mean_abs_difference_from_recorded_action_a": 0.11277572704039542,
+        "rms_replayed_current_a": 0.13897077006576786
+      }
+    }
+  }
+}
