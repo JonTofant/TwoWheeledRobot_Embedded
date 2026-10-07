@@ -1,41 +1,41 @@
 Neural Network Tools for STM32 family v1.7.0 (stm.ai v8.1.0-19520)
-Created date          : 2026-08-18 13:49:42
-Parameters            : generate --name nn_arm_c_range_gru -m C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/AI_Policies/Paper 2026/policy_arm_c_range_gru_stm32ai.onnx --type onnx --compression none --verbosity 1 --workspace C:\Users\jon\AppData\Local\Temp\mxAI_workspace57693070074550011445889313718989021 --output C:\Users\jon\.stm32cubemx\nn_arm_c_range_gru_output --allocate-inputs --series stm32f4 --allocate-outputs
+Created date          : 2026-10-07 09:00:04
+Parameters            : generate --name nn_arm_c_range_gru -m C:/Users/jon/OneDrive - Univerza v Mariboru/Dokumenti/GitHub/BipedRobot/AI_Policies/Paper 2026/cd_pilot_s43_2026-10-06/C_GRU/policy_drive_stm32ai.onnx --type onnx --compression none --verbosity 1 --workspace C:\Users\jon\AppData\Local\Temp\mxAI_workspace1517465816440005940065061343529390 --output C:\Users\jon\.stm32cubemx\nn_arm_c_range_gru_output --allocate-inputs --series stm32f4 --allocate-outputs
 
 Exec/report summary (generate)
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-model file         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\AI_Policies\Paper 2026\policy_arm_c_range_gru_stm32ai.onnx   
-type               :   onnx                                                                                                                                 
-c_name             :   nn_arm_c_range_gru                                                                                                                   
-compression        :   none                                                                                                                                 
-options            :   allocate-inputs, allocate-outputs                                                                                                    
-optimization       :   balanced                                                                                                                             
-target/series      :   stm32f4                                                                                                                              
-workspace dir      :   C:\Users\jon\AppData\Local\Temp\mxAI_workspace57693070074550011445889313718989021                                                    
-output dir         :   C:\Users\jon\.stm32cubemx\nn_arm_c_range_gru_output                                                                                  
-model_fmt          :   float                                                                                                                                
-model_name         :   policy_arm_c_range_gru_stm32ai                                                                                                       
-model_hash         :   be0b6e8cf359426401b5c782dfbf2572                                                                                                     
-params #           :   23,620 items (92.27 KiB)                                                                                                             
-------------------------------------------------------------------------------------------------------------------------------------------------------------
-input 1/2          :   'obs' (domain:activations/**default**)                                                                                               
-                   :   13 items, 52 B, ai_float, float, (1,13)                                                                                              
-input 2/2          :   'h_in' (domain:activations/**default**)                                                                                              
-                   :   64 items, 256 B, ai_float, float, (1,64)                                                                                             
-inputs (total)     :   308 B                                                                                                                                
-output 1/2         :   'current_a' (domain:activations/**default**)                                                                                         
-                   :   2 items, 8 B, ai_float, float, (1,2)                                                                                                 
-output 2/2         :   'h_out' (domain:activations/**default**)                                                                                             
-                   :   64 items, 256 B, ai_float, float, (1,64)                                                                                             
-outputs (total)    :   264 B                                                                                                                                
-macc               :   26,137                                                                                                                               
-weights (ro)       :   94,480 B (92.27 KiB) (1 segment)                                                                                                     
-activations (rw)   :   1,332 B (1.30 KiB) (1 segment) *                                                                                                     
-ram (total)        :   1,332 B (1.30 KiB) = 1,332 + 0 + 0                                                                                                   
-------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\jon\OneDrive - Univerza v Mariboru\Dokumenti\GitHub\BipedRobot\AI_Policies\Paper 2026\cd_pilot_s43_2026-10-06\C_GRU\policy_drive_stm32ai.onnx   
+type               :   onnx                                                                                                                                                     
+c_name             :   nn_arm_c_range_gru                                                                                                                                       
+compression        :   none                                                                                                                                                     
+options            :   allocate-inputs, allocate-outputs                                                                                                                        
+optimization       :   balanced                                                                                                                                                 
+target/series      :   stm32f4                                                                                                                                                  
+workspace dir      :   C:\Users\jon\AppData\Local\Temp\mxAI_workspace1517465816440005940065061343529390                                                                         
+output dir         :   C:\Users\jon\.stm32cubemx\nn_arm_c_range_gru_output                                                                                                      
+model_fmt          :   float                                                                                                                                                    
+model_name         :   policy_drive_stm32ai                                                                                                                                     
+model_hash         :   bbf8929d1933d72b83e629bf54985f4e                                                                                                                         
+params #           :   23,620 items (92.27 KiB)                                                                                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+input 1/2          :   'obs' (domain:activations/**default**)                                                                                                                   
+                   :   13 items, 52 B, ai_float, float, (1,13)                                                                                                                  
+input 2/2          :   'h_in' (domain:activations/**default**)                                                                                                                  
+                   :   64 items, 256 B, ai_float, float, (1,64)                                                                                                                 
+inputs (total)     :   308 B                                                                                                                                                    
+output 1/2         :   'current_a' (domain:activations/**default**)                                                                                                             
+                   :   2 items, 8 B, ai_float, float, (1,2)                                                                                                                     
+output 2/2         :   'h_out' (domain:activations/**default**)                                                                                                                 
+                   :   64 items, 256 B, ai_float, float, (1,64)                                                                                                                 
+outputs (total)    :   264 B                                                                                                                                                    
+macc               :   26,137                                                                                                                                                   
+weights (ro)       :   94,480 B (92.27 KiB) (1 segment)                                                                                                                         
+activations (rw)   :   1,332 B (1.30 KiB) (1 segment) *                                                                                                                         
+ram (total)        :   1,332 B (1.30 KiB) = 1,332 + 0 + 0                                                                                                                       
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers can be used from the activations buffer
 
-Model name - policy_arm_c_range_gru_stm32ai ['obs', 'h_in'] ['current_a', 'h_out']
+Model name - policy_drive_stm32ai ['obs', 'h_in'] ['current_a', 'h_out']
 ------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------- 
 m_id   layer (type,original)                                 oshape             param/size        macc                     connected to   | c_size          c_macc            c_type                    
 ------ ----------------------------------------------------- ------------------ -------------- ------- -------------------------------- --- --------------- ----------------- ------------------------- 
@@ -154,7 +154,7 @@ model/c-model: macc=26,137/26,137  weights=94,480/94,480  activations=--/1,332 i
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name            : policy_arm_c_range_gru_stm32ai
+model name            : policy_drive_stm32ai
 c-name                : nn_arm_c_range_gru
 c-node #              : 24
 c-array #             : 46

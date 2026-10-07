@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    nn_arm_c_range_gru.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    Tue Aug 18 13:49:42 2026
+  * @date    Wed Oct  7 09:00:03 2026
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -25,7 +25,7 @@
 
 /******************************************************************************/
 #define AI_NN_ARM_C_RANGE_GRU_MODEL_NAME          "nn_arm_c_range_gru"
-#define AI_NN_ARM_C_RANGE_GRU_ORIGIN_MODEL_NAME   "policy_arm_c_range_gru_stm32ai"
+#define AI_NN_ARM_C_RANGE_GRU_ORIGIN_MODEL_NAME   "policy_drive_stm32ai"
 
 /******************************************************************************/
 #define AI_NN_ARM_C_RANGE_GRU_ACTIVATIONS_ALIGNMENT   (4)

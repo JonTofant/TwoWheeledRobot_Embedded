@@ -47,6 +47,8 @@
 #include "nn_arm_a_range_data.h"
 #include "nn_arm_c_range_gru.h"
 #include "nn_arm_c_range_gru_data.h"
+#include "nn_arm_d_range_matchedsize_mlp.h"
+#include "nn_arm_d_range_matchedsize_mlp_data.h"
 
 /* USER CODE END Includes */
 
@@ -159,7 +161,10 @@ int16_t velocityDDSM_RPM = 0;
 #define POLICY_POINT_MLP  0   // nn_arm_a_point - point-training baseline, 13 in / 2 out
 #define POLICY_RANGE_MLP  1   // nn_arm_a_range - range-randomized policy B, 13 in / 2 out
 #define POLICY_RANGE_GRU  2   // nn_arm_c_range_gru - range-randomized recurrent policy C
-#define ACTIVE_NN_POLICY  POLICY_RANGE_GRU
+#define POLICY_RANGE_WIDE_MLP 3 // nn_arm_d_range_matchedsize_mlp - policy D
+#ifndef ACTIVE_NN_POLICY
+#define ACTIVE_NN_POLICY  POLICY_RANGE_GRU // C; change to POLICY_RANGE_WIDE_MLP for D
+#endif
 
 #define NNDRIVE_OBS_DIM    13
 #define NNDRIVE_ACT_DIM    2
@@ -171,9 +176,26 @@ int16_t velocityDDSM_RPM = 0;
 #define NN_ACTIVATIONS_SIZE AI_NN_ARM_A_RANGE_DATA_ACTIVATION_1_SIZE
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_GRU
 #define NN_ACTIVATIONS_SIZE AI_NN_ARM_C_RANGE_GRU_DATA_ACTIVATION_1_SIZE
+#elif ACTIVE_NN_POLICY == POLICY_RANGE_WIDE_MLP
+#define NN_ACTIVATIONS_SIZE AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_ACTIVATION_1_SIZE
+#else
+#error "Unsupported ACTIVE_NN_POLICY"
 #endif
 
+_Static_assert(AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_IN_NUM == 1 &&
+               AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_IN_1_SIZE == NNDRIVE_OBS_DIM &&
+               AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_OUT_NUM == 1 &&
+               AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_OUT_1_SIZE == NNDRIVE_ACT_DIM,
+               "Policy D must have 13 observations and 2 current outputs");
+volatile const uint32_t DBG_nn_active_policy = ACTIVE_NN_POLICY;
+
 static ai_handle nn_policy = AI_HANDLE_NULL;
+// Live Expressions: entered/completed counters locate a stalled inference.
+volatile uint32_t DBG_nn_run_entered = 0u;
+volatile uint32_t DBG_nn_run_completed = 0u;
+volatile int32_t DBG_nn_last_batch = 0;
+volatile uint32_t DBG_nn_invalid_count = 0u;
+
 static ai_buffer* nn_input  = NULL;
 static ai_buffer* nn_output = NULL;
 AI_ALIGNED(4) float nn_in_obs[NNDRIVE_OBS_DIM];      // not static: read by telemetry.c
@@ -1723,6 +1745,15 @@ void ANN_Init(void)
     nn_output[1].data = (ai_handle)nn_gru_h_out;
     memset(nn_gru_h, 0, sizeof(nn_gru_h));
     memset(nn_gru_h_out, 0, sizeof(nn_gru_h_out));
+#elif ACTIVE_NN_POLICY == POLICY_RANGE_WIDE_MLP
+    err = ai_nn_arm_d_range_matchedsize_mlp_create_and_init(&nn_policy, act_addr, NULL);
+    if (err.type != AI_ERROR_NONE) {
+        Error_Handler();
+    }
+    nn_input = ai_nn_arm_d_range_matchedsize_mlp_inputs_get(nn_policy, NULL);
+    nn_output = ai_nn_arm_d_range_matchedsize_mlp_outputs_get(nn_policy, NULL);
+    nn_input[0].data = (ai_handle)nn_in_obs;
+    nn_output[0].data = (ai_handle)nn_out_action;
 #endif
 }
 
@@ -1846,13 +1877,18 @@ void ANN_Run(void)
 
     // ---- run network ----
 	uint32_t inference_start = PaperMetrics_CycleNow();
+    DBG_nn_run_entered++;
 #if ACTIVE_NN_POLICY == POLICY_RANGE_GRU
     ai_i32 batch = ai_nn_arm_c_range_gru_run(nn_policy, nn_input, nn_output);
+#elif ACTIVE_NN_POLICY == POLICY_RANGE_WIDE_MLP
+    ai_i32 batch = ai_nn_arm_d_range_matchedsize_mlp_run(nn_policy, nn_input, nn_output);
 #elif ACTIVE_NN_POLICY == POLICY_RANGE_MLP
     ai_i32 batch = ai_nn_arm_a_range_run(nn_policy, nn_input, nn_output);
 #else
     ai_i32 batch = ai_nn_arm_a_point_run(nn_policy, nn_input, nn_output);
 #endif
+    DBG_nn_last_batch = batch;
+    DBG_nn_run_completed++;
 	PaperMetrics_RecordDuration(PAPER_Q_INFERENCE, inference_start);
 	uint32_t action_start = PaperMetrics_CycleNow();
     bool inference_valid =
@@ -1863,6 +1899,7 @@ void ANN_Run(void)
     }
 #endif
     if (!inference_valid) {
+        DBG_nn_invalid_count++;
         ddsm_NN_current_command[0] = 0.0f;
         ddsm_NN_current_command[1] = 0.0f;
 		prev_wheel_current_A[0] = 0.0f;

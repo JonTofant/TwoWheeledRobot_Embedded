@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * @file    nn_arm_a_point_data.c
+  * @file    nn_arm_d_range_matchedsize_mlp_data.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    Wed Oct  7 08:59:47 2026
+  * @date    Wed Oct  7 09:00:12 2026
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -15,54 +15,54 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   ******************************************************************************
   */
-#include "nn_arm_a_point_data.h"
+#include "nn_arm_d_range_matchedsize_mlp_data.h"
 #include "ai_platform_interface.h"
 
 AI_API_DECLARE_BEGIN
-ai_buffer g_nn_arm_a_point_data_map_activations[AI_NN_ARM_A_POINT_DATA_ACTIVATIONS_COUNT] = {
+ai_buffer g_nn_arm_d_range_matchedsize_mlp_data_map_activations[AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_ACTIVATIONS_COUNT] = {
   AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
-    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 512, 1, 1),
-    512, NULL, NULL),    /* heap_overlay_pool */
+    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 1160, 1, 1),
+    1160, NULL, NULL),    /* heap_overlay_pool */
   };
-ai_buffer g_nn_arm_a_point_data_map_weights[AI_NN_ARM_A_POINT_DATA_WEIGHTS_COUNT] = {
+ai_buffer g_nn_arm_d_range_matchedsize_mlp_data_map_weights[AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_WEIGHTS_COUNT] = {
   AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
-    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 20748, 1, 1),
-    20748, NULL, s_nn_arm_a_point_weights_array_u64),   /* weights_array */
+    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 93972, 1, 1),
+    93972, NULL, s_nn_arm_d_range_matchedsize_mlp_weights_array_u64),   /* weights_array */
   };
 
 
 /*!
  * @brief Get network activations buffer initialized struct.
- * @ingroup nn_arm_a_point_data
+ * @ingroup nn_arm_d_range_matchedsize_mlp_data
  * @param[in] ptr a pointer to the activations array storage area
  * @return an ai_buffer initialized struct
  */
 AI_DEPRECATED
 AI_API_ENTRY
-ai_buffer ai_nn_arm_a_point_data_activations_buffer_get(const ai_handle ptr)
+ai_buffer ai_nn_arm_d_range_matchedsize_mlp_data_activations_buffer_get(const ai_handle ptr)
 {
   ai_buffer buf = AI_BUFFER_INIT(
     AI_FLAG_NONE, AI_BUFFER_FORMAT_U8,
-    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, AI_NN_ARM_A_POINT_DATA_ACTIVATIONS_SIZE, 1, AI_NN_ARM_A_POINT_DATA_ACTIVATIONS_COUNT),
-    AI_NN_ARM_A_POINT_DATA_ACTIVATIONS_SIZE,
+    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_ACTIVATIONS_SIZE, 1, AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_ACTIVATIONS_COUNT),
+    AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_ACTIVATIONS_SIZE,
     NULL, ptr);
   return buf;
 }
 
 /*!
  * @brief Get network weights buffer initialized struct.
- * @ingroup nn_arm_a_point_data
+ * @ingroup nn_arm_d_range_matchedsize_mlp_data
  * @param[in] ptr a pointer to the weights array storage area
  * @return an ai_buffer initialized struct
  */
 AI_DEPRECATED
 AI_API_ENTRY
-ai_buffer ai_nn_arm_a_point_data_weights_buffer_get(const ai_handle ptr)
+ai_buffer ai_nn_arm_d_range_matchedsize_mlp_data_weights_buffer_get(const ai_handle ptr)
 {
   ai_buffer buf = AI_BUFFER_INIT(
     AI_FLAG_NONE, AI_BUFFER_FORMAT_U8|AI_BUFFER_FMT_FLAG_CONST,
-    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, AI_NN_ARM_A_POINT_DATA_WEIGHTS_SIZE, 1, AI_NN_ARM_A_POINT_DATA_WEIGHTS_COUNT),
-    AI_NN_ARM_A_POINT_DATA_WEIGHTS_SIZE,
+    AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_WEIGHTS_SIZE, 1, AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_WEIGHTS_COUNT),
+    AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_WEIGHTS_SIZE,
     NULL, ptr);
   return buf;
 }
@@ -70,33 +70,33 @@ ai_buffer ai_nn_arm_a_point_data_weights_buffer_get(const ai_handle ptr)
 
 /*!
  * @brief Get network weights array pointer as a handle ptr.
- * @ingroup nn_arm_a_point_data
+ * @ingroup nn_arm_d_range_matchedsize_mlp_data
  * @return a ai_handle pointer to the weights array
  */
 AI_DEPRECATED
 AI_API_ENTRY
-ai_handle ai_nn_arm_a_point_data_weights_get(void)
+ai_handle ai_nn_arm_d_range_matchedsize_mlp_data_weights_get(void)
 {
-  return AI_HANDLE_PTR(g_nn_arm_a_point_weights_table);
+  return AI_HANDLE_PTR(g_nn_arm_d_range_matchedsize_mlp_weights_table);
 
 }
 
 
 /*!
  * @brief Get network params configuration data structure.
- * @ingroup nn_arm_a_point_data
+ * @ingroup nn_arm_d_range_matchedsize_mlp_data
  * @return true if a valid configuration is present, false otherwise
  */
 AI_API_ENTRY
-ai_bool ai_nn_arm_a_point_data_params_get(ai_network_params* params)
+ai_bool ai_nn_arm_d_range_matchedsize_mlp_data_params_get(ai_network_params* params)
 {
   if (!params) return false;
   
   const ai_buffer_array map_activations = 
-    AI_BUFFER_ARRAY_OBJ_INIT(AI_FLAG_NONE, AI_NN_ARM_A_POINT_DATA_ACTIVATIONS_COUNT, g_nn_arm_a_point_data_map_activations);
+    AI_BUFFER_ARRAY_OBJ_INIT(AI_FLAG_NONE, AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_ACTIVATIONS_COUNT, g_nn_arm_d_range_matchedsize_mlp_data_map_activations);
   
   const ai_buffer_array map_weights = 
-    AI_BUFFER_ARRAY_OBJ_INIT(AI_FLAG_NONE, AI_NN_ARM_A_POINT_DATA_WEIGHTS_COUNT, g_nn_arm_a_point_data_map_weights);
+    AI_BUFFER_ARRAY_OBJ_INIT(AI_FLAG_NONE, AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_DATA_WEIGHTS_COUNT, g_nn_arm_d_range_matchedsize_mlp_data_map_weights);
 
   return ai_platform_bind_network_params(params, &map_weights, &map_activations);
 }

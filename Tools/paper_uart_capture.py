@@ -85,6 +85,7 @@ POLICY_NAMES = {
     0: "point_mlp",
     1: "range_mlp",
     2: "range_gru",
+    3: "range_wide_mlp",
 }
 
 TESTBENCH_STAGE_NAMES = {

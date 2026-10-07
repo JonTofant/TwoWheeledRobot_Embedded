@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    nn_arm_c_range_gru.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    Tue Aug 18 13:49:42 2026
+  * @date    Wed Oct  7 09:00:03 2026
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -35,14 +35,14 @@
 #define AI_NET_OBJ_INSTANCE g_nn_arm_c_range_gru
  
 #undef AI_NN_ARM_C_RANGE_GRU_MODEL_SIGNATURE
-#define AI_NN_ARM_C_RANGE_GRU_MODEL_SIGNATURE     "be0b6e8cf359426401b5c782dfbf2572"
+#define AI_NN_ARM_C_RANGE_GRU_MODEL_SIGNATURE     "bbf8929d1933d72b83e629bf54985f4e"
 
 #ifndef AI_TOOLS_REVISION_ID
 #define AI_TOOLS_REVISION_ID     ""
 #endif
 
 #undef AI_TOOLS_DATE_TIME
-#define AI_TOOLS_DATE_TIME   "Tue Aug 18 13:49:42 2026"
+#define AI_TOOLS_DATE_TIME   "Wed Oct  7 09:00:03 2026"
 
 #undef AI_TOOLS_COMPILE_TIME
 #define AI_TOOLS_COMPILE_TIME    __DATE__ " " __TIME__

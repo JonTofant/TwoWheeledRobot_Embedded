@@ -1,9 +1,9 @@
 
 /**
   ******************************************************************************
-  * @file    nn_arm_a_point_config.h
+  * @file    nn_arm_d_range_matchedsize_mlp_config.h
   * @author  AST Embedded Analytics Research Platform
-  * @date    Wed Oct  7 08:59:47 2026
+  * @date    Wed Oct  7 09:00:12 2026
   * @brief   AI Tool Automatic Code Generator for Custom Layers Implementation
   ******************************************************************************
   * @attention
@@ -17,8 +17,8 @@
   ******************************************************************************
   */
 
-#ifndef AI_NN_ARM_A_POINT_CONFIG_H
-#define AI_NN_ARM_A_POINT_CONFIG_H
+#ifndef AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_CONFIG_H
+#define AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_CONFIG_H
 #pragma once
 
 #undef AI_TOOLS_VERSION_MAJOR
@@ -44,4 +44,4 @@
 #define AI_TOOLS_API_VERSION_MINOR (5)
 #define AI_TOOLS_API_VERSION_MICRO (0)
 
-#endif /*AI_NN_ARM_A_POINT_CONFIG_H*/
+#endif /*AI_NN_ARM_D_RANGE_MATCHEDSIZE_MLP_CONFIG_H*/

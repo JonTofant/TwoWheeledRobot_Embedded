@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    nn_arm_c_range_gru_data.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    Tue Aug 18 13:49:42 2026
+  * @date    Wed Oct  7 09:00:03 2026
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
