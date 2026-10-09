@@ -1,0 +1,1 @@
+Development pilot; hardware untested. Import policy_drive_stm32ai.onnx into X-CUBE-AI. 13 normalized observations; outputs are amperes. Previous-current inputs are previous logical commands. GRU state persists between ticks; retain firmware reset events. Preserve established signs and normalization. manifest.json contains model identity, validation provenance and hashes.

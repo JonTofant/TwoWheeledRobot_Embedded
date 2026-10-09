@@ -1,0 +1,62 @@
+{
+  "kind": "GRU",
+  "training_seed": 42,
+  "hardware_validated": false,
+  "independent_test_gates_passed": true,
+  "source_protocol": "/workspace/TwoWheeledRobot/logs/gru_continued_oldplant_floor005_s42_20261008T095911Z/protocol.json",
+  "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-08_12-52-40_gru_continued_oldplant_floor005_s42_20261008T095911Z_stage5/model_999.pt",
+  "checkpoint_sha256": "a00121d7efd6b3754618bf02ed432dd8db13a79b033e294caf04bacb114db1fe",
+  "commands": [
+    [
+      "/isaac-sim/python.sh",
+      "/workspace/TwoWheeledRobot/scripts/rsl_rl/play.py",
+      "--task",
+      "Template-Twowheeledrobot-NNDriveFixedStanceGRU-v0",
+      "--checkpoint",
+      "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-08_12-52-40_gru_continued_oldplant_floor005_s42_20261008T095911Z_stage5/model_999.pt",
+      "--num_envs",
+      "1",
+      "--num_steps",
+      "1",
+      "--headless",
+      "env.wheel_viscous_damping_range=[0.006,0.014]",
+      "env.ground_friction_randomization_mode=per_episode",
+      "env.ground_static_friction_range=[0.44182803953736515,0.44182803953736515]",
+      "env.ground_dynamic_friction_range=[0.20625268880566675,0.20625268880566675]",
+      "env.cg_kp_range=[30.0,30.0]",
+      "env.cg_kd_range=[3.0,3.0]",
+      "env.prev_current_obs_source=command",
+      "env.obs_delay_mode=sensors",
+      "agent.action_std_floor=[0.05,0.05]"
+    ],
+    [
+      "/isaac-sim/python.sh",
+      "/workspace/TwoWheeledRobot/scripts/export_pure_nn_current_onnx.py",
+      "--policy",
+      "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-08_12-52-40_gru_continued_oldplant_floor005_s42_20261008T095911Z_stage5/exported/policy.pt",
+      "--actor-onnx",
+      "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-08_12-52-40_gru_continued_oldplant_floor005_s42_20261008T095911Z_stage5/exported/policy.onnx",
+      "--output",
+      "/workspace/TwoWheeledRobot/ExportedPolicy/matched_pilot_gru_gru_continued_oldplant_floor005_s42_20261008T095911Z/policy_drive.onnx",
+      "--obs-dim",
+      "13",
+      "--cg-outputs",
+      "0",
+      "--i-max-a",
+      "2.0",
+      "--require-validation"
+    ],
+    [
+      "/isaac-sim/python.sh",
+      "/workspace/TwoWheeledRobot/scripts/tools/expand_gru_for_stm32ai.py",
+      "/workspace/TwoWheeledRobot/ExportedPolicy/matched_pilot_gru_gru_continued_oldplant_floor005_s42_20261008T095911Z/policy_drive.onnx",
+      "/workspace/TwoWheeledRobot/ExportedPolicy/matched_pilot_gru_gru_continued_oldplant_floor005_s42_20261008T095911Z/policy_drive_stm32ai.onnx",
+      "--steps",
+      "1024"
+    ]
+  ],
+  "onnx_sha256": {
+    "policy_drive_stm32ai.onnx": "28a40afdb0ad8f833c6a1bf7bf388d53f0a62c9c251a95d00544c8d94822e986",
+    "policy_drive.onnx": "f305b9728db96d9cefed20f5fc5cd9bfce5305d2d4b00b3ed247a806b7b56177"
+  }
+}

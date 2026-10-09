@@ -1,0 +1,60 @@
+{
+  "kind": "MLP",
+  "training_seed": 42,
+  "hardware_validated": false,
+  "independent_test_gates_passed": false,
+  "independent_test_gate_failures": [
+    "station_keeping: world_drift_m 0.655 > 0.500",
+    "push_while_still: world_drift_m 0.519 > 0.500",
+    "payload_while_still: world_drift_m 1.498 > 0.500"
+  ],
+  "comparison_candidate_only": true,
+  "source_protocol": "/workspace/TwoWheeledRobot/logs/mlp_completed_oldplant_floor005_s42_20261009T060435Z/protocol.json",
+  "checkpoint": "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-09_08-35-47_mlp_completed_oldplant_floor005_s42_20261009T060435Z_stage5/model_1122.pt",
+  "checkpoint_sha256": "5da0ebd8a62a7fdeaa7160382a7d7e1e6d8f6be10e32c9d42fa1802b07e61b2e",
+  "commands": [
+    [
+      "/isaac-sim/python.sh",
+      "/workspace/TwoWheeledRobot/scripts/rsl_rl/play.py",
+      "--task",
+      "Template-Twowheeledrobot-NNDriveFixedStanceWide-v0",
+      "--checkpoint",
+      "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-09_08-35-47_mlp_completed_oldplant_floor005_s42_20261009T060435Z_stage5/model_1122.pt",
+      "--num_envs",
+      "1",
+      "--num_steps",
+      "1",
+      "--headless",
+      "env.wheel_viscous_damping_range=[0.006,0.014]",
+      "env.ground_friction_randomization_mode=per_episode",
+      "env.ground_static_friction_range=[0.44182803953736515,0.44182803953736515]",
+      "env.ground_dynamic_friction_range=[0.20625268880566675,0.20625268880566675]",
+      "env.cg_kp_range=[30.0,30.0]",
+      "env.cg_kd_range=[3.0,3.0]",
+      "env.prev_current_obs_source=command",
+      "env.obs_delay_mode=sensors",
+      "agent.action_std_floor=[0.05,0.05]"
+    ],
+    [
+      "/isaac-sim/python.sh",
+      "/workspace/TwoWheeledRobot/scripts/export_pure_nn_current_onnx.py",
+      "--policy",
+      "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-09_08-35-47_mlp_completed_oldplant_floor005_s42_20261009T060435Z_stage5/exported/policy.pt",
+      "--actor-onnx",
+      "/workspace/TwoWheeledRobot/logs/rsl_rl/nn_drive_fixed_stance/2026-10-09_08-35-47_mlp_completed_oldplant_floor005_s42_20261009T060435Z_stage5/exported/policy.onnx",
+      "--output",
+      "/workspace/TwoWheeledRobot/ExportedPolicy/matched_pilot_mlp_mlp_completed_oldplant_floor005_s42_20261009T060435Z/policy_drive.onnx",
+      "--obs-dim",
+      "13",
+      "--cg-outputs",
+      "0",
+      "--i-max-a",
+      "2.0",
+      "--require-validation"
+    ]
+  ],
+  "onnx_sha256": {
+    "policy_drive_stm32ai.onnx": "076694da0d60d1e1a78796ca67d6e9bbfe207267a8aba871e642ae6ef0cb5d77",
+    "policy_drive.onnx": "076694da0d60d1e1a78796ca67d6e9bbfe207267a8aba871e642ae6ef0cb5d77"
+  }
+}

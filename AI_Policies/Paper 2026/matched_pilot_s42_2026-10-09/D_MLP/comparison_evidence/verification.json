@@ -1,0 +1,75 @@
+{
+  "source_hash_differences": [],
+  "checkpoint_hashes": {
+    "stage1_parent": "84fe94cd5b111b453abc5bc751a98ad12821f69e62e425c8aa414cd5f8287fa6",
+    "MLP": "5da0ebd8a62a7fdeaa7160382a7d7e1e6d8f6be10e32c9d42fa1802b07e61b2e",
+    "GRU": "a00121d7efd6b3754618bf02ed432dd8db13a79b033e294caf04bacb114db1fe"
+  },
+  "onnx_hashes": {
+    "MLP/policy_drive_stm32ai.onnx": "076694da0d60d1e1a78796ca67d6e9bbfe207267a8aba871e642ae6ef0cb5d77",
+    "MLP/policy_drive.onnx": "076694da0d60d1e1a78796ca67d6e9bbfe207267a8aba871e642ae6ef0cb5d77",
+    "GRU/policy_drive_stm32ai.onnx": "28a40afdb0ad8f833c6a1bf7bf388d53f0a62c9c251a95d00544c8d94822e986",
+    "GRU/policy_drive.onnx": "f305b9728db96d9cefed20f5fc5cd9bfce5305d2d4b00b3ed247a806b7b56177"
+  },
+  "resolved_configs": {
+    "2": {
+      "env_sha256": "d128d9827669cbfa783e8e535d69ce0c78d9ca7ecff684cff0bfd7396690a3ab",
+      "agent_sha256": "ccf8f27f99ef36843c01977bd864bddae464b206ff643646c1657a2782159cb0"
+    },
+    "3": {
+      "env_sha256": "2bf31c35d64d77cc8a083a4976e528df639c896a24ad176a000afa31deda4758",
+      "agent_sha256": "230f6042d24194e4ca48c720a490cb656bdfbbfbfc0c4e2091eb2ecd68e42fe8"
+    },
+    "4": {
+      "env_sha256": "97272a2e4e9adcf0b2f609691c635121c15a97048e4c2f60747806441a083526",
+      "agent_sha256": "30d92bed2bd87a935fb91f41f1e82b383480ccf41dbd5852e455e0cbe76403c1"
+    },
+    "5": {
+      "env_sha256": "a5e63918b4395070e00de19032bbe58b67d82d3d3e01de091fd448b8fadf5a4e",
+      "agent_sha256": "730e6f426660d5f758bf784a14d63464199ecf47216b0875c1e796d197d495c7"
+    }
+  },
+  "stages": [
+    {
+      "stage": 2,
+      "checkpoint": "model_525.pt",
+      "sha256": "d57d73a695d5965e19d9bc1e9bcda83f2ace6b35eed94c66d5c0b5f7c6efd734",
+      "fallback": true,
+      "gate_failures": [
+        "station_keeping: world_drift_m 0.524 > 0.500"
+      ]
+    },
+    {
+      "stage": 3,
+      "checkpoint": "model_724.pt",
+      "sha256": "def2e575668e995d1f6ce9604b26f6142e37752081644abf64ce766fb8c92bb8",
+      "fallback": true,
+      "gate_failures": [
+        "station_keeping: world_drift_m 0.510 > 0.500",
+        "push_while_still: world_drift_m 0.561 > 0.500"
+      ]
+    },
+    {
+      "stage": 4,
+      "checkpoint": "model_973.pt",
+      "sha256": "492ddd2e2113b161cbfce5f336f18dc6a14493e53a2d34d076ea5f6ddc549184",
+      "fallback": true,
+      "gate_failures": [
+        "push_while_still: world_drift_m 0.509 > 0.500",
+        "payload_while_still: world_drift_m 1.046 > 0.500"
+      ]
+    },
+    {
+      "stage": 5,
+      "checkpoint": "model_1122.pt",
+      "sha256": "5da0ebd8a62a7fdeaa7160382a7d7e1e6d8f6be10e32c9d42fa1802b07e61b2e",
+      "fallback": true,
+      "gate_failures": [
+        "station_keeping: world_drift_m 0.540 > 0.500",
+        "push_while_still: world_drift_m 0.552 > 0.500",
+        "payload_while_still: world_drift_m 1.018 > 0.500",
+        "payload_while_driving: rms_vel_err_mps 0.243 > 0.227"
+      ]
+    }
+  ]
+}
