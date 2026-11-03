@@ -1,0 +1,19 @@
+{
+ "perm": [
+  1,
+  2,
+  0,
+  3
+ ],
+ "sign": [
+  -1.0,
+  -1.0,
+  -1.0,
+  -1.0
+ ],
+ "torque_gain": 2.159540128589711,
+ "angle_gain": 2.000422646737738,
+ "use_gain": false,
+ "calibrated": true,
+ "note": "calibrated 2026-11-03 14:00 with 0.475 kg, residual 0.475"
+}

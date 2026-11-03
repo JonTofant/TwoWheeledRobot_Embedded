@@ -32,6 +32,24 @@ The firmware changes compile cleanly (`arm-none-eabi-gcc -fsyntax-only`, includi
 3. Plug in the Nucleo's ST-Link USB. The port is `/dev/ttyACM0` on Linux or `COM3` (etc.) on
    Windows. The baud rate is 921600, as for the paper capture.
 
+## GUI (everything in one window)
+
+```bash
+python payload_gui.py            # or: --port COM7, --replay recordings/<file>.bin
+```
+
+Pick the ST-Link port (auto-selected when plugged in) and press **Connect** with an empty deck.
+The **Checks** box shows whether v3 frames arrive (bytes without frames = old v2 firmware),
+the firmware policy, and whether the robot is fallen. **1. Calibrate** walks through the six
+placements below, marking each target spot on the deck view, and grades the result. **Apply,
+save & tare** writes `calibration.json` (the old one becomes `calibration_previous.json`).
+**2. Live** shows mass and position, with Tare (`t`) and Reset (`r`).
+
+Each serial session is saved to `recordings/<time>.bin` (raw bytes, replayable with
+`--replay` or `payload_viewer.py replay`). Next to it, `<time>.events.jsonl` logs every tare,
+capture and calibration result with its telemetry sequence number. A calibration also writes
+its report and leg map there. The CLI below does the same things without the window.
+
 ## 1. Calibrate once (about 3 minutes, needs one known mass, ~1 kg)
 
 The sim knows its legs as front-left/front-right/back-left/back-right with its own signs.

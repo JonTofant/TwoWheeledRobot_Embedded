@@ -1,0 +1,26 @@
+A mapping was found but some checks are marginal (see orange/red rows). You can apply it and test with known masses, but treat results with care.
+
+??  Fit residual: 0.475
+      want < ~0.3 (sim: 0.05)
+BAD Runner-up mapping: 0.512  (best is 93% of it)
+      best should be well below the runner-up (sim: 0.28)
+BAD Torque vs sim: 0.46x
+      want ~1.0x; far off -> tick 'Use calibrated gains'
+OK  Leg stiffness: 29.1 Nm/rad  (per CG: 29.0, 33.4, 22.2, 29.2)
+      want ~30 (firmware kp); much lower -> torque misses friction
+
+Mapping: fl<-CG1-, fr<-CG2-, bl<-CG0-, br<-CG3-
+Angle vs sim: 0.50x
+
+Torque change, sim expected vs hardware (mapped), Nm  [fl fr bl br]:
+Centre sim [ 0.108 -0.106 -0.112  0.115]
+       hw  [ 0.036 -0.059 -0.043  0.021]
+Front  sim [ 0.129 -0.127 -0.081  0.084]
+       hw  [ 0.053 -0.07  -0.039  0.024]
+Back   sim [ 0.086 -0.086 -0.142  0.147]
+       hw  [ 0.029 -0.039 -0.136  0.043]
+Left   sim [ 0.142 -0.071 -0.147  0.081]
+       hw  [ 0.046 -0.032 -0.126  0.024]
+Right  sim [ 0.073 -0.142 -0.076  0.15 ]
+       hw  [ 0.024 -0.056 -0.053  0.046]
+
