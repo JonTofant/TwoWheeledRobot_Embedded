@@ -53,6 +53,10 @@ typedef struct {
 	/* theta, theta_init, theta_max_abs, theta_rms, current_rms,
 	 * recovery_time, x_final, run_time */
 	float run_value[PAPER_METRICS_RUN_VALUE_COUNT];
+	/* Protocol v3 (payload-mass estimator): CyberGear MIT feedback torque and the
+	 * position target sent that tick, CyberGearMotorList[] index order. */
+	float leg_torque_Nm[PAPER_METRICS_LEG_COUNT];
+	float leg_target_rad[PAPER_METRICS_LEG_COUNT];
 } PaperTelemetryState;
 
 void PaperMetrics_Init(UART_HandleTypeDef *huart);

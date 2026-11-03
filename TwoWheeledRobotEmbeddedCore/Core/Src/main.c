@@ -2124,6 +2124,8 @@ static void PAPER_SendTelemetry(void)
 	}
 	for (uint32_t i = 0; i < PAPER_METRICS_LEG_COUNT; i++) {
 		sample.leg_angle_rad[i] = CyberGearMotorList[i].angle;
+		sample.leg_torque_Nm[i] = CyberGearMotorList[i].torque;
+		sample.leg_target_rad[i] = CyberGearMotorList[i].desired_angle;
 	}
 	for (uint32_t i = 0; i < NNDRIVE_OBS_DIM; i++) {
 		sample.observation[i] = nn_in_obs[i];

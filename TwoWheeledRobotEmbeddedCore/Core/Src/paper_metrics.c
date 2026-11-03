@@ -12,7 +12,7 @@
 
 #define PAPER_UART_MAGIC_0        0xA5u
 #define PAPER_UART_MAGIC_1        0x5Au
-#define PAPER_UART_VERSION        2u
+#define PAPER_UART_VERSION        3u
 #define PAPER_UART_SAMPLE_TYPE    1u
 
 typedef struct {
@@ -44,6 +44,8 @@ typedef struct __attribute__((packed)) {
 	float observation[PAPER_METRICS_OBS_DIM];
 	float action[PAPER_METRICS_ACTION_DIM];
 	float run_value[PAPER_METRICS_RUN_VALUE_COUNT];
+	float leg_torque_Nm[PAPER_METRICS_LEG_COUNT];
+	float leg_target_rad[PAPER_METRICS_LEG_COUNT];
 } PaperTelemetryPayload;
 
 typedef struct __attribute__((packed)) {
@@ -55,8 +57,8 @@ typedef struct __attribute__((packed)) {
 	uint16_t crc16;
 } PaperTelemetryPacket;
 
-typedef char PaperPayloadSizeMustRemain412Bytes[
-	(sizeof(PaperTelemetryPayload) == 412u) ? 1 : -1];
+typedef char PaperPayloadSizeMustRemain444Bytes[
+	(sizeof(PaperTelemetryPayload) == 444u) ? 1 : -1];
 
 static UART_HandleTypeDef *paper_uart;
 static PaperTimingAccumulator timing[PAPER_Q_COUNT];
@@ -306,6 +308,9 @@ bool PaperMetrics_Send(const PaperTelemetryState *state)
 	memcpy(tx_packet.payload.observation, state->observation, sizeof(state->observation));
 	memcpy(tx_packet.payload.action, state->action, sizeof(state->action));
 	memcpy(tx_packet.payload.run_value, state->run_value, sizeof(state->run_value));
+	memcpy(tx_packet.payload.leg_torque_Nm, state->leg_torque_Nm, sizeof(state->leg_torque_Nm));
+	memcpy(tx_packet.payload.leg_target_rad, state->leg_target_rad,
+	       sizeof(state->leg_target_rad));
 
 	/* CRC covers version, type, payload_size and payload; the two magic bytes are
 	 * intentionally excluded so a receiver can resynchronize on them. */

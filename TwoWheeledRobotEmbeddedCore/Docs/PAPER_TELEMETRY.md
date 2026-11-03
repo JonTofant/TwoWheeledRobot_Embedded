@@ -63,6 +63,11 @@ body gyro vector rotated into world Z and consumed by NN observation 6),
 finite difference using SH-2 timestamps), and the left/right wheel velocities after
 the policy-layer direction signs. The raw body gyro and fused-yaw derivative remain
 diagnostics; the world-Z rate is the policy input required by the training contract.
+Protocol version 3 (branch `sidequest/payload-mass-estimator`) appends the four
+CyberGear MIT feedback torques (`leg_N_torque_Nm`) and the four position targets sent
+that tick (`leg_N_target_rad`), in `CyberGearMotorList[]` order, after `run_time_s`.
+The payload grows from 412 to 444 bytes. These channels feed the laptop-side
+payload-mass estimator in `Tools/payload_estimator/`.
 
 `flags` is a bit field: bit 0 means valid BNO data, bit 1 fallen, and bit 2
 startup strategy active. Bits 8-9 hold the active policy ID (`0` point MLP,

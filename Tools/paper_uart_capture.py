@@ -18,7 +18,7 @@ from pathlib import Path
 
 
 MAGIC = b"\xA5\x5A"
-VERSION = 2
+VERSION = 3
 SAMPLE_TYPE = 1
 HEADER = struct.Struct("<2sBBH")
 CRC = struct.Struct("<H")
@@ -75,6 +75,14 @@ STATE_FLOATS = [
     "recovery_time_s",
     "x_final_m",
     "run_time_s",
+    "leg_0_torque_Nm",
+    "leg_1_torque_Nm",
+    "leg_2_torque_Nm",
+    "leg_3_torque_Nm",
+    "leg_0_target_rad",
+    "leg_1_target_rad",
+    "leg_2_target_rad",
+    "leg_3_target_rad",
 ]
 
 TIMING_FLOAT_COUNT = len(QUANTITIES) * 4
